@@ -8,6 +8,11 @@ window.DDD_GAMES = [
     venuePostalCode: "29501",
     seats: "2 seats left",
     style: "High roleplay · Medium combat",
+    joinMode: "Instant join",
+    duration: "About 4 hours",
+    tableCulture: "Heroic fantasy · No PvP · New players welcome",
+    gmTrust: "Experienced host · Strong reliability history",
+    accessibility: "Public venue · Accessible entrance",
     tags: ["Beginner Friendly", "Verified Venue"]
   },
   {
@@ -19,6 +24,11 @@ window.DDD_GAMES = [
     venuePostalCode: "29505",
     seats: "3 seats left",
     style: "Mystery · Investigation · Horror",
+    joinMode: "Request to join",
+    duration: "About 4 hours",
+    tableCulture: "18+ horror · Mature themes · Boundaries reviewed first",
+    gmTrust: "12 games hosted · 96% would play again",
+    accessibility: "Public venue · Alcohol served",
     tags: ["18+", "Public Venue"]
   },
   {
@@ -30,6 +40,11 @@ window.DDD_GAMES = [
     venuePostalCode: "29506",
     seats: "4 seats left",
     style: "Beginner focused · Tactical combat",
+    joinMode: "Instant join",
+    duration: "About 3 hours",
+    tableCulture: "Teaching table · No experience required · Characters provided",
+    gmTrust: "Beginner-friendly host · Reliable attendee record",
+    accessibility: "Community venue · Quiet gaming area",
     tags: ["New Players Welcome", "Characters Provided"]
   }
 ];
