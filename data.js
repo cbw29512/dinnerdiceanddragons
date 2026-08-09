@@ -1,5 +1,6 @@
 window.DDD_GAMES = [
   {
+    slug: "shadows-over-florence",
     title: "Shadows Over Florence",
     system: "D&D 5e",
     type: "One-shot · Level 3",
@@ -16,6 +17,7 @@ window.DDD_GAMES = [
     tags: ["Beginner Friendly", "Verified Venue"]
   },
   {
+    slug: "lighthouse-at-blackwater",
     title: "The Lighthouse at Blackwater",
     system: "Call of Cthulhu",
     type: "Mystery one-shot",
@@ -32,6 +34,7 @@ window.DDD_GAMES = [
     tags: ["18+", "Public Venue"]
   },
   {
+    slug: "trouble-below-the-old-road",
     title: "Trouble Below the Old Road",
     system: "Pathfinder 2e",
     type: "Learn-to-play",
