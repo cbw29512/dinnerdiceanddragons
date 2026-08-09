@@ -19,24 +19,18 @@
     const details = document.createElement("div");
     details.className = "game-details";
     details.hidden = true;
-    [
-      ["Joining", game.joinMode],
-      ["Duration", game.duration],
-      ["Table culture", game.tableCulture],
-      ["GM trust", game.gmTrust],
-      ["Venue", game.accessibility]
-    ].forEach(([label, value]) => {
+    [["Joining", game.joinMode], ["Duration", game.duration], ["Table culture", game.tableCulture], ["GM trust", game.gmTrust], ["Venue", game.accessibility]].forEach(([label, value]) => {
       const row = document.createElement("p");
       const strong = document.createElement("strong");
       strong.textContent = `${label}: `;
       row.append(strong, document.createTextNode(value || "Details coming soon"));
       details.appendChild(row);
     });
-    const joinLink = document.createElement("a");
-    joinLink.className = "button primary";
-    joinLink.href = "join.html#player-signup";
-    joinLink.textContent = "Create Player Profile to Join";
-    details.appendChild(joinLink);
+    const viewLink = document.createElement("a");
+    viewLink.className = "button primary";
+    viewLink.href = `games/${game.slug}/`;
+    viewLink.textContent = "View Full Table";
+    details.appendChild(viewLink);
     return details;
   }
 
@@ -68,14 +62,20 @@
           details.hidden = !opening;
           detailsButton.setAttribute("aria-expanded", String(opening));
           detailsButton.textContent = opening ? "Hide Details" : "Details";
-        } catch (error) { logError("Unable to toggle game details", error); }
+        } catch (error) {
+          logError("Unable to toggle game details", error);
+        }
       });
 
       const passButton = document.createElement("button");
       passButton.type = "button";
       passButton.textContent = "Pass";
       passButton.addEventListener("click", () => {
-        try { article.hidden = true; } catch (error) { logError("Unable to pass game", error); }
+        try {
+          article.hidden = true;
+        } catch (error) {
+          logError("Unable to pass game", error);
+        }
       });
 
       const interestButton = document.createElement("button");
@@ -88,7 +88,9 @@
           const pressed = interestButton.getAttribute("aria-pressed") === "true";
           interestButton.setAttribute("aria-pressed", String(!pressed));
           interestButton.textContent = pressed ? "♥ Interested" : "✓ Interested";
-        } catch (error) { logError("Unable to update interest state", error); }
+        } catch (error) {
+          logError("Unable to update interest state", error);
+        }
       });
 
       actions.append(detailsButton, passButton, interestButton);
