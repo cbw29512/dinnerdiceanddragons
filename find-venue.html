@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Find a Venue | Dinner, Dice & Dragons</title>
+  <meta name="description" content="Game Masters can find verified tabletop-friendly restaurants, breweries, cafes, and community venues within their chosen travel radius.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header class="site-header"><div class="shell nav-wrap"><a class="brand" href="index.html"><span aria-hidden="true">🍽️ 🎲 🐉</span><span>Dinner, Dice &amp; Dragons</span></a><nav aria-label="Primary navigation"><a href="index.html#discover">Find a Game</a><a href="join.html">Join</a><a aria-current="page" href="find-venue.html">Find a Venue</a><a href="venues.html">For Venues</a><a href="conduct.html">Code of Conduct</a></nav></div></header>
+  <main id="main">
+    <section class="hero"><div class="shell hero-grid"><div><p class="eyebrow">FOR GAME MASTERS</p><h1>Find a willing place to run your next game.</h1><p class="lede">Use the same ZIP and travel radius as your profile to find public partner venues that actually want tabletop groups.</p></div><aside class="hero-card"><span class="badge">GM TOOL</span><h2>Venue first, event second.</h2><p>See availability, capacity, amenities, table policy, and approximate distance before deciding where to host.</p></aside></div></section>
+    <section class="section"><div class="shell"><div class="section-heading"><p class="eyebrow">NEARBY VENUES</p><h2>How far are you willing to travel?</h2><p>Your home ZIP stays private. Only public partner venue information is displayed.</p></div><form class="location-filter" id="venue-location-filter" novalidate><div><label for="venue-home-zip">Your ZIP code</label><input id="venue-home-zip" inputmode="numeric" autocomplete="postal-code" pattern="[0-9]{5}" maxlength="5" placeholder="29501" required></div><div><label for="venue-travel-radius">Willing to travel</label><select id="venue-travel-radius"><option value="5">5 miles</option><option value="10">10 miles</option><option value="25" selected>25 miles</option><option value="50">50 miles</option><option value="75">75 miles</option><option value="100">100 miles</option></select></div><div class="location-actions"><button class="button primary" type="submit">Find Partner Venues</button></div><p class="microcopy location-help">Distances are approximate straight-line miles from your ZIP centroid to the venue ZIP centroid.</p><p class="location-status" id="venue-location-status" role="status" aria-live="polite"></p></form><div class="game-grid" id="venue-results" aria-live="polite"><div class="panel empty-state"><h3>Enter your ZIP to see nearby partner venues.</h3><p>We’ll sort matching locations by approximate distance.</p></div></div></div></section>
+    <section class="section alt"><div class="shell split"><div><p class="eyebrow">WHAT YOU SEE</p><h2>No cold-calling random restaurants.</h2><p>The goal is to show GMs venues already willing to host games, along with the times and policies they have provided.</p></div><div class="panel"><ul><li>Verified/public venue status</li><li>Available tabletop hours</li><li>Approximate distance</li><li>Table capacity</li><li>Food, Wi-Fi, parking, accessibility, and other amenities</li><li>Minimum purchase or table-use policy</li></ul></div></div></section>
+    <section class="section callout"><div class="shell centered"><h2>Already know where you want to run?</h2><p>Create your GM profile now. A production event wizard will connect your profile, venue, table expectations, and available seats.</p><a class="button primary" href="join.html#gm-signup">Create GM Profile</a></div></section>
+  </main>
+  <footer class="site-footer"><div class="shell footer-grid"><div><strong>Dinner, Dice &amp; Dragons</strong><p>Find your table. Meet your party. Roll for adventure.</p></div><div><a href="index.html">Home</a> · <a href="venues.html">Partner Venues</a> · <a href="conduct.html">Code of Conduct</a></div></div></footer>
+  <script src="geo.js"></script><script src="venues-data.js"></script><script src="venue-discovery.js"></script>
+</body>
+</html>
