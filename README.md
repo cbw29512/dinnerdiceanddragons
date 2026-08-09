@@ -4,6 +4,10 @@ A local tabletop RPG community platform for connecting players, Game Masters, ga
 
 > Find your table. Meet your party. Roll for adventure.
 
+## Live Prototype
+
+https://cbw29512.github.io/dinnerdiceanddragons/
+
 ## Current Stage
 
 This repository contains the live static validation prototype plus the product documentation that governs future development.
