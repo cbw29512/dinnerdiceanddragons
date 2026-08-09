@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create a Game | Dinner, Dice & Dragons</title>
+  <meta name="description" content="Game Masters create a local tabletop RPG listing after matching their availability to a willing venue window.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site-header"><div class="shell nav-wrap"><a class="brand" href="index.html"><span aria-hidden="true">🍽️ 🎲 🐉</span><span>Dinner, Dice &amp; Dragons</span></a><nav aria-label="Primary navigation"><a href="join.html#gm">GM Profile</a><a href="find-venue.html">Match Venue</a><a aria-current="page" href="create-game.html">Create Game</a><a href="index.html#discover">Find Games</a></nav></div></header>
+<main id="main">
+<section class="hero"><div class="shell hero-grid"><div><p class="eyebrow">STEP 3 FOR GAME MASTERS</p><h1>Now build the table players will see.</h1><p class="lede">Your time and venue come first. This template describes the actual game: what you are running, who it is for, how many seats are available, and what players should expect.</p></div><aside class="hero-card"><p class="eyebrow">SELECTED SLOT</p><div id="selected-slot"><p>No venue slot selected yet.</p><a class="button secondary" href="find-venue.html">Match a Venue First</a></div></aside></div></section>
+
+<section class="section"><div class="shell"><div class="template-intro"><div><p class="eyebrow">GAME LISTING TEMPLATE</p><h2>One listing = one real table.</h2><p>Your reusable GM profile describes you. This form describes one specific session or recurring campaign table.</p></div><div class="template-summary"><strong>After this:</strong><span>Players inside the venue area can discover this table and review its expectations before joining.</span></div></div>
+<form class="panel form-grid prototype-form" id="game-form" data-profile-type="Game" novalidate>
+<h3 class="form-section-title">1. The game</h3>
+<label>Game title<input name="title" placeholder="Example: Shadows Over Florence" required></label><label>RPG system<select name="system" required><option value="">Choose system</option><option>D&D 5e 2014</option><option>D&D 5e 2024</option><option>Pathfinder 2e</option><option>Call of Cthulhu</option><option>Cyberpunk RED</option><option>Other</option></select></label><label>Game type<select name="game_type"><option>One-shot</option><option>Campaign session</option><option>New campaign</option><option>Learn-to-play</option><option>Organized play</option></select></label><label>Level / character guidance<input name="level" placeholder="Example: Level 3; pregens provided; investigators provided"></label><label>Short description<textarea name="description" rows="4" placeholder="What is the hook? What kind of adventure should players expect?" required></textarea></label>
+
+<h3 class="form-section-title">2. Confirmed schedule and venue</h3>
+<label>Day<input id="game-day" name="day" readonly required></label><label>Start time<input id="game-start" name="start_time" type="time" readonly required></label><label>Session length<input id="game-duration" name="duration" readonly required></label><label>Venue<input id="game-venue" name="venue" readonly required></label><p class="microcopy">To change these, return to <a href="find-venue.html">Match a Venue</a>. Production will send the venue an approval request when required.</p>
+
+<h3 class="form-section-title">3. Seats and joining</h3>
+<label>Player seats<select name="seats" required><option>3</option><option selected>4</option><option>5</option><option>6</option></select></label><label>How do players join?<select name="join_mode"><option>Instant join while seats remain</option><option>Request to join — GM approves</option></select></label><label>Experience expected<select name="experience"><option>Brand new players welcome</option><option>Some experience helpful</option><option>Experienced players preferred</option><option>Any experience level</option></select></label><label>Age guidance<select name="age"><option>All ages / family appropriate</option><option>Teen friendly</option><option>18+ adult table</option></select></label>
+
+<h3 class="form-section-title">4. Table expectations</h3>
+<label>Play style<textarea name="play_style" rows="3" placeholder="Example: high roleplay, medium combat, light puzzles" required></textarea></label><label>Table rules / boundaries<textarea name="boundaries" rows="4" placeholder="Example: no PvP, respectful table, mature content discussed first, breaks every 90 minutes" required></textarea></label><label>Homebrew / rules notes<textarea name="rules_notes" rows="3" placeholder="Optional: RAW, rule-of-cool, house rules, character creation rules"></textarea></label><label class="check-label"><input type="checkbox" required><span>I confirm this listing accurately describes the game and table expectations.</span></label>
+
+<button class="button primary" type="submit">Save Game Listing Preview</button><p class="form-status" role="status" aria-live="polite"></p><p class="microcopy">Prototype: this creates a local preview only. Production will add venue approval, publishing, seat reservations, and notifications.</p>
+</form>
+<div class="next-step"><strong>Preview flow →</strong><a class="button secondary" href="index.html#discover">See Player Discovery</a></div>
+</div></section>
+</main>
+<footer class="site-footer"><div class="shell footer-grid"><div><strong>Dinner, Dice &amp; Dragons</strong><p>GM time → venue → game listing → players.</p></div><div><a href="index.html">Home</a> · <a href="find-venue.html">Change Venue</a> · <a href="conduct.html">Code of Conduct</a></div></div></footer>
+<script src="forms.js"></script><script src="create-game.js"></script>
+</body></html>
