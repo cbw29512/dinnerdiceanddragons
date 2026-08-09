@@ -6,31 +6,41 @@ A local tabletop RPG community platform for connecting players, Game Masters, ga
 
 ## Current Stage
 
-This repository currently contains the first static public prototype plus the product documentation that governs future development.
+This repository contains the live static validation prototype plus the product documentation that governs future development.
 
-## Prototype
+## Prototype Surfaces
 
-The static prototype is intentionally dependency-free so it can be hosted on GitHub Pages.
+- `index.html` — homepage and ZIP/radius game discovery
+- `join.html` — Player and Game Master onboarding previews
+- `find-venue.html` — GM partner-venue discovery by ZIP/radius
+- `venues.html` — partner venue pitch and listing preview
+- `conduct.html` — community Code of Conduct
+- `games/<slug>/` — dedicated SEO-friendly game detail pages
 
-Files:
+## JavaScript Modules
 
-- `index.html` — semantic homepage and public prototype
-- `styles.css` — responsive and accessibility-conscious styling
-- `data.js` — realistic sample event data shaped toward the future schema
-- `app.js` — accessible prototype event-card interactions
-- `.github/workflows/pages.yml` — GitHub Pages deployment
+- `data.js` — sample events
+- `discovery.js` — event-card rendering and interactions
+- `geo.js` — shared ZIP lookup and distance calculation
+- `location.js` — Player/event geographic filtering
+- `game-detail.js` — saved-distance display on game pages
+- `venues-data.js` — sample willing partner venues
+- `venue-discovery.js` — GM/venue geographic matching
+- `forms.js` — local prototype signup persistence and validation
 
 ## Run Locally
 
-Open `index.html` in a browser, or serve the repository with any basic static HTTP server.
-
-Example with Python:
+Serve the repository with a basic static HTTP server so browser fetch behavior matches GitHub Pages:
 
 ```bash
 python -m http.server 8000
 ```
 
 Then open `http://localhost:8000`.
+
+## Automated Checks
+
+`.github/workflows/site-checks.yml` runs on pushes and pull requests. It checks required HTML metadata/landmarks, local links and script references, and JavaScript syntax. The checker uses only Python's standard library plus the Node runtime provided by the GitHub-hosted runner.
 
 ## Project Source of Truth
 
@@ -41,6 +51,8 @@ Read these before implementing product features:
 - `docs/DATA_SCHEMA.md`
 - `docs/DECISIONS.md`
 - `docs/ROADMAP.md`
+- `docs/LOCATION_MATCHING.md`
+- `docs/UX_AUDIT.md`
 
 GitHub Issues contain the actionable implementation backlog.
 
