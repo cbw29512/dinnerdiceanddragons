@@ -24,7 +24,8 @@ A feature is not considered usable merely because it is visible. The user must u
 - [x] Details are available before asking for interest.
 - [x] Swipe-like choices have explicit keyboard-accessible buttons.
 - [x] Cards expose joining method, duration, table culture, GM trust signal, and venue/accessibility note.
-- [ ] Add dedicated game-detail URLs for SEO and sharing.
+- [x] Dedicated game-detail URLs exist for each prototype event.
+- [x] Game detail pages show saved ZIP/radius distance when available.
 - [ ] Add system/date/play-style filters.
 - [ ] Add Map and Calendar discovery views.
 
@@ -49,7 +50,9 @@ A feature is not considered usable merely because it is visible. The user must u
 - [x] Systems run, experience, style, and availability are collected without a giant form.
 - [x] Code of Conduct acknowledgement is required.
 - [x] Prototype success/error feedback works through the shared form module.
-- [ ] Nearby venue discovery using GM travel radius.
+- [x] Nearby venue discovery uses the same GM travel preference model.
+- [x] Venue results show distance, availability, capacity, amenities, and table policy.
+- [x] Venue results provide a visible Host a Game Here action.
 - [ ] Real event creation wizard.
 - [ ] GM verification/trust workflow.
 
@@ -97,6 +100,7 @@ A feature is not considered usable merely because it is visible. The user must u
 
 - [x] Static prototype deploys without a backend.
 - [x] Core JS uses try/catch and meaningful console logging.
+- [x] Geographic ZIP/distance logic is shared between Player and GM discovery.
 - [x] Large discovery/location behavior is split into focused modules.
 - [x] Signup behavior is isolated in `forms.js`.
 - [ ] Automated browser smoke tests.
@@ -106,13 +110,12 @@ A feature is not considered usable merely because it is visible. The user must u
 ## Current critical gaps before claiming a complete interactive MVP
 
 1. Real authentication and persistent accounts.
-2. Dedicated event detail pages.
-3. Real seat reservation/request-to-join workflow.
-4. GM event-creation wizard.
-5. GM nearby-venue discovery.
-6. Venue verification.
-7. Functional reporting/moderation workflow.
-8. Map and calendar discovery.
-9. Automated browser/accessibility regression tests.
+2. Real seat reservation/request-to-join workflow.
+3. GM event-creation wizard.
+4. Venue verification.
+5. Functional reporting/moderation workflow.
+6. Map and calendar discovery.
+7. Search filters beyond distance.
+8. Automated browser/accessibility regression tests.
 
 These gaps are expected for the GitHub Pages validation prototype; they must not be represented as already implemented production functionality.
