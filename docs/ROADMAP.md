@@ -6,36 +6,39 @@
 
 - [x] Create living project charter
 - [x] Create decision log
-- [ ] Finalize Definition of Done
-- [ ] Define initial data schema
-- [ ] Define trust and safety requirements
-- [ ] Define moderation workflow
-- [ ] Define accessibility acceptance criteria
-- [ ] Define SEO page architecture
-- [ ] Define prototype page map
+- [x] Define Definition of Done
+- [x] Define initial data schema
+- [x] Define trust and safety requirements
+- [ ] Define moderation workflow in production detail
+- [x] Define accessibility acceptance criteria
+- [x] Define SEO page architecture direction
+- [x] Define prototype page map
 - [ ] Research working brand / naming risk
 
 ## Phase 1 — GitHub Pages Prototype
 
 **Goal:** Demonstrate the complete concept cheaply with realistic sample data.
 
-Planned prototype surfaces:
-
-- [ ] Homepage
-- [ ] Find a Game
-- [ ] Discover / card interface
+- [x] Homepage
+- [x] Find a Game / card discovery
+- [x] ZIP + travel-radius matching
+- [x] Dedicated game detail pages
+- [x] Table Expectations / table-culture presentation
+- [x] Player signup preview
+- [x] GM signup preview
+- [x] Venue signup preview
+- [x] GM nearby-partner-venue discovery
+- [x] Responsive mobile layout
+- [x] Keyboard-equivalent controls for swipe-style actions
+- [x] Semantic/accessible structure baseline
+- [x] SEO titles/descriptions and clean game routes
+- [x] GitHub Pages deployment workflow
+- [ ] System/date/play-style filters
 - [ ] Map-style discovery concept
 - [ ] Calendar-style discovery concept
-- [ ] Game detail page
-- [ ] Table Expectations view
-- [ ] GM profile
-- [ ] Venue profile
-- [ ] Join/request-seat interaction prototype
-- [ ] Responsive mobile layout
-- [ ] Keyboard-equivalent controls for all swipe actions
-- [ ] Semantic/accessible structure
-- [ ] SEO metadata and clean static routes where practical
-- [ ] GitHub Pages deployment workflow
+- [ ] Sample standalone GM profile
+- [ ] Sample standalone venue profile
+- [ ] Automated browser/accessibility smoke tests
 
 ## Phase 2 — Local Pilot Preparation
 
@@ -46,7 +49,7 @@ Planned prototype surfaces:
 - [ ] Recruit initial players
 - [ ] Document venue onboarding process
 - [ ] Document GM onboarding process
-- [ ] Create code of conduct
+- [x] Create code of conduct baseline
 - [ ] Create reporting policy
 - [ ] Create pilot feedback form
 - [ ] Define pilot success metrics
@@ -73,7 +76,7 @@ Planned MVP capabilities:
 - [ ] Player profiles
 - [ ] GM profiles
 - [ ] Venue profiles
-- [ ] Event creation
+- [ ] Event creation wizard
 - [ ] Event discovery
 - [ ] Search/filter
 - [ ] Join/request seat
@@ -83,6 +86,7 @@ Planned MVP capabilities:
 - [ ] Reporting and moderation cases
 - [ ] Basic notifications
 - [ ] Admin/moderator tools
+- [ ] Production geographic matching with cached coordinates/spatial indexing
 
 ## Phase 4 — Retention and Community
 
