@@ -13,9 +13,9 @@ window.DDD_GAMES = [
     joinMode: "Instant join",
     duration: "About 4 hours",
     tableCulture: "Heroic fantasy · No PvP · New players welcome",
-    gmTrust: "Experienced host · Strong reliability history",
+    gmTrust: "New to DDD · 12 years GMing self-reported · no verified platform history yet",
     accessibility: "Public venue · Accessible entrance",
-    tags: ["Beginner Friendly", "Verified Venue"]
+    tags: ["Beginner Friendly", "New GM on DDD", "Verified Venue"]
   },
   {
     slug: "lighthouse-at-blackwater",
@@ -31,9 +31,9 @@ window.DDD_GAMES = [
     joinMode: "Request to join",
     duration: "About 4 hours",
     tableCulture: "18+ horror · Mature themes · Boundaries reviewed first",
-    gmTrust: "12 games hosted · 96% would play again",
+    gmTrust: "Established · 12 verified games hosted · 96% would play again",
     accessibility: "Public venue · Alcohol served",
-    tags: ["18+", "Public Venue"]
+    tags: ["18+", "Established GM", "Public Venue"]
   },
   {
     slug: "trouble-below-the-old-road",
@@ -49,8 +49,8 @@ window.DDD_GAMES = [
     joinMode: "Instant join",
     duration: "About 3 hours",
     tableCulture: "Teaching table · No experience required · Characters provided",
-    gmTrust: "Beginner-friendly host · Reliable attendee record",
+    gmTrust: "Building History · 3 verified sessions · no public aggregate yet",
     accessibility: "Community venue · Quiet gaming area",
-    tags: ["New Players Welcome", "Characters Provided"]
+    tags: ["New Players Welcome", "Building History", "Characters Provided"]
   }
 ];
