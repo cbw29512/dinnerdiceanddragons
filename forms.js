@@ -24,10 +24,33 @@
     }
   }
 
+  function serializeForm(form) {
+    try {
+      const output = {};
+      const formData = new FormData(form);
+      for (const [rawKey, value] of formData.entries()) {
+        const isArray = rawKey.endsWith("[]");
+        const key = isArray ? rawKey.slice(0, -2) : rawKey;
+        if (isArray) {
+          if (!Array.isArray(output[key])) output[key] = [];
+          output[key].push(value);
+        } else if (Object.prototype.hasOwnProperty.call(output, key)) {
+          output[key] = Array.isArray(output[key]) ? [...output[key], value] : [output[key], value];
+        } else {
+          output[key] = value;
+        }
+      }
+      return output;
+    } catch (error) {
+      logError("Unable to serialize form", error);
+      throw error;
+    }
+  }
+
   function savePrototype(form) {
     try {
       const type = form.dataset.profileType || "Profile";
-      const values = Object.fromEntries(new FormData(form).entries());
+      const values = serializeForm(form);
       localStorage.setItem(`ddd-preview-${type.toLowerCase().replaceAll(" ", "-")}`, JSON.stringify(values));
       const status = getStatusNode(form);
       if (status) {
