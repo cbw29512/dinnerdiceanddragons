@@ -2,30 +2,37 @@
 
 ## Purpose
 
-This schema supports the Table Match product model and keeps the pilot migratable to a relational production backend later.
+This schema supports Table Match, identity, and an earned reputation system that does not penalize newcomers.
 
 ## Core product rule
 
-A successful table forms from the overlap of three structured signals:
+A successful table forms from Player demand + GM availability/capability + Venue capacity.
 
-- Player demand
-- GM availability/capability
-- Venue capacity
+Experience is system-specific and self-described. Reputation is derived from verified platform activity. **No reputation history is neutral, never negative.**
 
-The Game is created from a viable Table Match rather than being the only source of discovery.
-
-Experience is system-specific and self-described. Community reputation is earned separately from completed platform activity.
-
-## Users and role profiles
+## Identity
 
 ### User
-`id`, `email`, `display_name`, `status`, `created_at`, `updated_at`, `last_login_at`
+`id`, `auth_provider_user_id`, `email`, `email_verified_at`, `display_name`, `display_name_normalized`, `status`, `created_at`, `updated_at`, `last_login_at`
+
+Unique: `auth_provider_user_id`, `email`, `display_name_normalized`
+
+Normalize display names for uniqueness by trimming whitespace and applying a consistent case-folding rule. Reserve platform/system names such as admin, moderator, support, staff, and brand names.
+
+Status: `pending_verification`, `active`, `restricted`, `suspended`, `banned`
+
+### UserRole
+`user_id`, `role`, `verified_at` nullable
+
+Roles: `player`, `gm`, `venue_manager`, `moderator`, `admin`
+
+A single User may hold multiple roles. Do not create separate identities for Player and GM participation.
 
 ### PlayerProfile
-`id`, `user_id`, `bio`, `postal_code`, `travel_radius_miles`, `preferred_format`, `willing_to_learn_new_system`, `environment_preferences`, `accessibility_notes_private`, derived `games_attended_count`, derived `attendance_rate`
+`id`, `user_id`, `bio`, `postal_code`, `travel_radius_miles`, `preferred_format`, `willing_to_learn_new_system`, `environment_preferences`, `accessibility_notes_private`
 
 ### GMProfile
-`id`, `user_id`, `bio`, `postal_code`, `travel_radius_miles`, `beginner_friendly`, `gm_style`, derived `games_hosted_count`, derived `player_seats_hosted_count`, derived `would_play_again_percent`, derived `reliability_score`
+`id`, `user_id`, `bio`, `postal_code`, `travel_radius_miles`, `beginner_friendly`, `gm_style`
 
 ### GameSystem
 `id`, `name`, `edition`, `slug`, `publisher_name`, `active`
@@ -54,17 +61,11 @@ Formats: `learn_to_play`, `one_shot`, `short_campaign`, `long_campaign`, `organi
 `id`, `gm_profile_id`, `day_of_week`, `start_time`, `end_time`, `recurrence`, `timezone`, `active`
 
 ### PlayerDemandSignal
-A structured expression that a Player wants a kind of local game.
-
 `id`, `player_profile_id`, `game_system_id`, `preferred_format`, `preferred_cadence`, `minimum_age_preference`, `table_style_preferences`, `environment_preferences`, `status`, `created_at`, `updated_at`
 
 Status: `active`, `paused`, `matched`, `expired`
 
-A demand signal references the Player's current location radius and availability windows rather than duplicating private location data.
-
 ### GMSupplySignal
-A structured expression that a GM is willing to form/run a kind of table.
-
 `id`, `gm_profile_id`, `game_system_id`, `preferred_format`, `preferred_cadence`, `minimum_players`, `maximum_players`, `table_style`, `status`, `created_at`, `updated_at`
 
 Status: `active`, `paused`, `matched`, `expired`
@@ -83,27 +84,23 @@ Status: `active`, `paused`, `matched`, `expired`
 ## Table Match
 
 ### TableMatch
-Represents a potential viable overlap before a published game exists.
-
-`id`, `gm_supply_signal_id`, `venue_table_window_id`, `game_system_id`, `proposed_start`, `proposed_end`, `timezone`, `minimum_players`, `maximum_players`, `compatible_player_count`, `distance_summary`, `status`, `created_at`, `updated_at`
+`id`, `gm_supply_signal_id`, `venue_table_window_id`, `game_system_id`, `proposed_start`, `proposed_end`, `timezone`, `minimum_players`, `maximum_players`, `compatible_player_count`, `distance_summary`, `fit_score`, `status`, `created_at`, `updated_at`
 
 Status: `potential`, `invited`, `forming`, `rejected`, `expired`, `converted`
 
-### TableMatchPlayer
-Stores which Player demand signals are compatible with a Table Match without publicly exposing those Players as a list before they choose to commit.
+`fit_score` measures table compatibility. It must not be reduced merely because the GM or Players lack platform reputation history.
 
+### TableMatchPlayer
 `table_match_id`, `player_demand_signal_id`, `fit_flags`, `distance_miles`, `availability_overlap`, `status`
 
 Status: `eligible`, `notified`, `interested`, `declined`, `committed`
 
 ### MatchExplanation
-Optional normalized record for explainable criteria.
-
 `id`, `table_match_id`, `criterion`, `result`, `summary`, `weight` nullable
 
 Example criteria: system, schedule, distance, experience, format, play_style, environment, accessibility, venue_capacity.
 
-Do not expose an unexplained compatibility percentage without the underlying criteria.
+**Reputation is not a hard Table Match criterion.** Verified reliability may be used as a limited tie-breaker or caution signal after viable matches are established. Missing reputation history contributes zero positive and zero negative adjustment.
 
 ## Venue booking
 
@@ -115,20 +112,12 @@ Status: `requested`, `question`, `approved`, `declined`, `cancelled`
 ## Games and recurrence
 
 ### GameSeries
-Used for campaigns/recurring groups.
-
 `id`, `table_match_id` nullable, `title`, `gm_profile_id`, `game_system_id`, `venue_id`, `cadence`, `expected_sessions`, `starts_on`, `ends_on` nullable, `active`
 
-Cadence: `one_time`, `weekly`, `every_other_week`, `monthly`, `custom`
-
 ### Event
-One actual playable session.
-
 `id`, `game_series_id` nullable, `table_match_id` nullable, `slug`, `title`, `description`, `gm_profile_id`, `game_system_id`, `venue_id`, `event_type`, `join_mode`, `status`, `starts_at`, `ends_at`, `min_players`, `max_players`, `minimum_age`, `beginner_friendly`, timestamps
 
-Status progression: `draft`, `venue_requested`, `forming`, `confirmed`, `full`, `cancelled`, `completed`
-
-A `forming` event can accept commitments. A `confirmed` event has satisfied the venue and minimum-Player requirements defined for that table.
+Status: `draft`, `venue_requested`, `forming`, `confirmed`, `full`, `cancelled`, `completed`
 
 ### TableExpectations
 `id`, `event_id`, tone/age/style fields, PvP/homebrew/death policies, mature content, alcohol, new-player flag, breaks, safety framework, environment notes, accessibility notes, other notes
@@ -138,26 +127,14 @@ A `forming` event can accept commitments. A `confirmed` event has satisfied the 
 
 Status: `requested`, `confirmed`, `waitlisted`, `declined`, `cancelled`, `removed`
 
-### Headcount rule
-
 `expected_guests = GM count + confirmed registrations + explicitly registered assistants`
-
-Venue headcount should be derived, not manually maintained when registrations are available.
 
 ## Game Hub communication
 
 ### Message
 `id`, `event_id`, `sender_user_id`, `channel_type`, `recipient_user_id` nullable, `venue_id` nullable, `category` nullable, `body`, `created_at`, `read_at` nullable, `moderation_status`
 
-Channel types:
-- `table_announcement` — GM/Venue/System → relevant table participants
-- `table_discussion` — GM + confirmed Players
-- `gm_venue` — private GM ↔ Venue operations
-- `player_gm` — private Player ↔ GM
-- `player_venue_question` — structured Player ↔ Venue question
-- `system_notification`
-
-Player-to-venue categories: `accessibility`, `food_allergies`, `parking`, `seating`, `venue_policy`, `other`
+Channel types: `table_announcement`, `table_discussion`, `gm_venue`, `player_gm`, `player_venue_question`, `system_notification`
 
 Raw email addresses and home addresses are never exposed as messaging identifiers.
 
@@ -165,8 +142,6 @@ Raw email addresses and home addresses are never exposed as messaging identifier
 
 ### CalendarEventSync
 `id`, `event_id`, `provider`, `external_event_id`, `status`, `last_synced_at`, `sync_error`
-
-Confirmed events create/update the appropriate shared calendar record. Rescheduling updates the stored external event rather than creating duplicates.
 
 ## Attendance and reputation
 
@@ -178,31 +153,54 @@ Status: `attended`, `late_cancel`, `no_show`, `excused_absence`
 ### Feedback
 `id`, `event_id`, `author_user_id`, `subject_type`, `subject_id`, structured signals, `private_comment`, `created_at`
 
-Subject types: `event`, `gm`, `venue`, `table`
+Feedback eligibility requires a verified relationship to the completed Event. Drive-by ratings are prohibited.
 
-GM signals may include description accuracy, start reliability, boundaries respected, table respect, and would-play-again.
+### ReputationEvent
+Immutable evidence record from which reputation aggregates are derived.
 
-Venue signals may include table suitability, welcoming staff, noise suitability, accessibility accuracy, and would-return.
+`id`, `subject_user_id` nullable, `subject_venue_id` nullable, `event_id`, `event_type`, `source_record_type`, `source_record_id`, `occurred_at`, `created_at`
 
-Venue → table signals evaluate the group/event rather than publicly rating individual customers.
+Examples: `session_attended`, `session_hosted_completed`, `late_cancel`, `no_show`, `venue_hosted_completed`, `gm_description_accurate`, `gm_would_play_again`, `venue_would_return`.
 
-Public trust signals use aggregate structured data with minimum sample thresholds. Free-text feedback is private by default.
+A ReputationEvent is created only from an eligible verified platform interaction. Do not allow clients to directly submit arbitrary ReputationEvents.
+
+### ReputationSnapshot
+Derived/cacheable public-safe summary.
+
+`id`, `subject_type`, `subject_id`, `history_state`, `verified_sessions`, `attendance_rate` nullable, `completion_rate` nullable, `would_repeat_percent` nullable, `late_cancellations`, `no_shows`, `sample_size`, `calculated_at`
+
+Subject types: `player`, `gm`, `venue`
+
+History states:
+- `new` — insufficient verified history; public label **New to DDD**
+- `building` — some verified history; aggregates may remain hidden where sample size is too small
+- `established` — sufficient history for meaningful aggregates
+- `caution` — verified reliability thresholds have been crossed under published policy
+
+### Reputation invariants
+
+1. `history_state = new` is neutral.
+2. New users receive no negative match adjustment.
+3. Missing metrics display as **Not enough history yet**, never zero percent.
+4. Public aggregate feedback requires a minimum sample threshold.
+5. Self-reported years of experience never alter verified reputation metrics.
+6. Reports and allegations do not directly modify public reputation.
+7. Moderation actions and reputation calculations remain separate systems.
+8. Reputation is recalculated from immutable evidence; public counters are not authoritative source records.
+9. A single negative interaction must not automatically create a public caution label.
+10. Ranking logic must be auditable for newcomer disadvantage.
+
+### FairDiscoveryAudit
+Optional analytics record used to detect whether ranking systematically disadvantages newcomers.
+
+`id`, `subject_user_id`, `history_state_at_time`, `surface`, `eligible_match_count`, `impressions`, `join_requests_or_invites`, `successful_matches`, `period_start`, `period_end`
+
+This is product fairness telemetry, not a public score.
 
 ## Venue analytics
 
 ### VenueEventMetrics
 `id`, `event_id`, `venue_id`, `expected_guests`, `actual_guests`, `reserved_minutes`, `tables_used`, optional `venue_reported_sales`, `created_at`
-
-Derived venue metrics:
-- games hosted
-- expected guest visits
-- actual guest visits
-- average party size
-- average table duration
-- repeat groups/campaigns
-- cancellation/no-show rate
-
-Sales are optional and only stored when voluntarily provided by the venue.
 
 ## Safety
 
@@ -214,55 +212,20 @@ Private administrative case with status, priority, moderator, subject, notes, ti
 
 Reports are never automatic public penalties.
 
-## Relationship summary
-
-```text
-User
- ├── PlayerProfile
- │     ├──< PlayerAvailabilityWindow
- │     ├──< PlayerSystemExperience >── GameSystem
- │     └──< PlayerDemandSignal
- │
- ├── GMProfile
- │     ├──< GMAvailabilityWindow
- │     ├──< GMSystemExperience >── GameSystem
- │     └──< GMSupplySignal
- │
- └── VenueManager ──> Venue ──< VenueTableWindow
-
-PlayerDemandSignal ──< TableMatchPlayer >── TableMatch
-GMSupplySignal ──────────────────────────────┘
-VenueTableWindow ────────────────────────────┘
-
-TableMatch ──> GameSeries ──< Event
-                              ├── Registration ──> PlayerProfile
-                              ├── Message
-                              ├── CalendarEventSync
-                              ├── Attendance
-                              ├── Feedback
-                              └── VenueEventMetrics
-```
-
-## Controlled-pilot tab concept
-
-If Sheets is used temporarily, the minimum logical collections become:
-
-`Users`, `Players`, `PlayerAvailability`, `PlayerSystems`, `PlayerDemand`, `GMs`, `GMAvailability`, `GMSystems`, `GMSupply`, `Venues`, `VenueWindows`, `TableMatches`, `TableMatchPlayers`, `VenueBookingRequests`, `GameSeries`, `Games`, `Registrations`, `Messages`, `CalendarEvents`, `Attendance`, `Feedback`, `VenueMetrics`, `Reports`.
-
-This tab list is conceptual until the controlled-pilot implementation is deliberately resumed.
-
 ## Integrity rules
 
-1. A Table Match must reference a GM supply signal, venue window, system, proposed time, and explainable compatibility information.
-2. Player compatibility must be evaluated against Player availability and travel radius without exposing private home locations to other users.
-3. An Event cannot become Forming without a GM, system, proposed/approved public venue, valid schedule, seat range, and table expectations.
-4. An Event cannot become Confirmed until venue approval requirements and minimum Player commitment are satisfied.
-5. Venue capacity cannot be double-booked.
-6. Expected headcount updates when registrations change.
-7. Players cannot see private GM/Venue operational messages.
-8. Venues cannot see private Player/GM table discussion or unnecessary Player profile data.
-9. Private email/home-address data is never exposed as a messaging identifier.
-10. Public reputation is aggregate structured feedback; moderation reports remain private.
-11. Self-described experience is never presented as platform-verified expertise.
-12. Store timestamps timezone-aware and preserve venue timezone for display/scheduling.
-13. Stable IDs should survive migration between pilot and production storage.
+1. Display names are unique after normalization; internal User IDs remain the durable identity.
+2. A Table Match must reference a GM supply signal, venue window, system, proposed time, and explainable compatibility information.
+3. Player compatibility must respect availability and travel radius without exposing private home locations.
+4. Missing reputation history never reduces Table Match eligibility or fit score.
+5. Reputation may not be used as a hard requirement for ordinary table discovery unless a narrowly defined safety/moderation restriction applies.
+6. Event feedback requires eligible participation in that Event.
+7. Public reputation is derived from verified ReputationEvents and minimum sample thresholds.
+8. Reports remain private and separate from reputation.
+9. An Event cannot become Confirmed until venue approval requirements and minimum Player commitment are satisfied.
+10. Venue capacity cannot be double-booked.
+11. Expected headcount updates when registrations change.
+12. Private email/home-address data is never exposed as a messaging identifier.
+13. Self-described experience is never presented as platform-verified expertise.
+14. Store timestamps timezone-aware and preserve venue timezone for display/scheduling.
+15. Stable IDs survive migration between pilot and production storage.
