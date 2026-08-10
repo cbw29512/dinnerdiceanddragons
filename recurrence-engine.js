@@ -29,6 +29,10 @@
     }
   }
 
+  function monthDiff(a, b) {
+    return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+  }
+
   function weeklyDates(rule, fromDate, count) {
     const dayIndex = DAY_INDEX[rule.day];
     if (dayIndex === undefined) return [];
@@ -72,13 +76,19 @@
     const intervalMonths = Math.max(1, Number(rule.monthInterval) || 1);
     if (dayIndex === undefined) return [];
     const from = atNoon(fromDate);
+    const anchor = intervalMonths > 1 ? parseLocalDate(rule.anchorDate) : null;
+    if (intervalMonths > 1 && !anchor) return [];
+
     const results = [];
     let offset = 0;
-    while (results.length < count && offset < 60) {
+    while (results.length < count && offset < 72) {
       const probe = new Date(from.getFullYear(), from.getMonth() + offset, 1, 12, 0, 0, 0);
-      const candidate = nthWeekday(probe.getFullYear(), probe.getMonth(), dayIndex, ordinal);
-      if (candidate >= from) results.push(candidate);
-      offset += intervalMonths;
+      const aligned = !anchor || ((monthDiff(anchor, probe) % intervalMonths) + intervalMonths) % intervalMonths === 0;
+      if (aligned) {
+        const candidate = nthWeekday(probe.getFullYear(), probe.getMonth(), dayIndex, ordinal);
+        if (candidate >= from) results.push(candidate);
+      }
+      offset += 1;
     }
     return results;
   }
