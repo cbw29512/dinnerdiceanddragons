@@ -14,14 +14,14 @@ The platform finds the overlap and helps move it through a real-world lifecycle:
 
 **Demand signals → Table Match → Forming → Confirmed → Game Hub → Played → Trust + repeat**
 
-The primary success metric is not signups, posts, or swipes. It is **successful in-person tabletop sessions**.
+The primary success metric is not signups, posts, swipes, or reputation points. It is **successful in-person tabletop sessions**.
 
 ---
 
 ## Core Product Actions
 
 ### 🎲 Find My Table
-A Player creates a structured demand signal. The platform should surface confirmed games and forming tables that fit, and eventually surface aggregate Player demand to suitable GMs without exposing private Player data.
+A Player creates a structured demand signal. The platform surfaces confirmed games, forming tables, and useful demand opportunities without exposing private Player data.
 
 ### 🧙 Form a Table
 A GM creates a supply signal. The platform compares the GM's availability and game systems with nearby Player demand and willing venue capacity.
@@ -35,23 +35,17 @@ A venue offers specific table inventory. The platform helps turn selected window
 
 A Table Match is the central differentiator.
 
-A viable match considers:
+A viable match considers RPG system/edition, day/time, session duration, travel radius, venue availability/capacity, Player count, experience preference, format/cadence, table style, age/environment fit, accessibility, and venue policies.
 
-- RPG system / edition
-- day and time
-- session duration
-- travel radius / distance
-- venue availability
-- venue capacity
-- minimum and maximum Players
-- Player experience preference
-- game format and cadence
-- table/play style
-- age/environment fit
-- accessibility and seating needs
-- venue policies
+### Matching order
+
+1. **Hard fit first** — system, schedule, distance, venue availability, capacity, and other required constraints determine whether a table is viable.
+2. **Table Fit second** — compatible preferences explain and rank viable opportunities.
+3. **Reputation last and lightly** — verified reliability may break close ties or surface meaningful caution, but lack of platform history never lowers Table Fit.
 
 Matching must be explainable. Do not present a mysterious compatibility percentage without showing the criteria behind it.
+
+**A new Player or GM with zero Dinner, Dice & Dragons history is neutral, not low-reputation.** New users must remain eligible for excellent matches when their logistics and preferences fit.
 
 Users do not swipe on people. They discover games, forming tables, and useful demand opportunities.
 
@@ -115,41 +109,62 @@ Need private reporting, evidence-based moderation, and tools for severe or repea
 5. **Matching must be explainable.**
 6. **Distance is a user-controlled constraint.**
 7. **Experience is system-specific and self-described.**
-8. **Reputation is earned from completed platform activity and remains separate from self-description.**
-9. **Safety and table expectations are matching inputs, not afterthoughts.**
-10. **Venues receive operational information, not unnecessary private Player data.**
-11. **Players should browse before account creation.**
-12. **Do not build generic social features unless they help a table form or happen.**
-13. **Infrastructure follows the validated workflow; it does not define it.**
+8. **Reputation is earned from verified platform activity and remains separate from self-description.**
+9. **No history is neutral. New users are never penalized for being new.**
+10. **Reputation reduces uncertainty; it does not determine who deserves a table.**
+11. **Safety and table expectations are matching inputs, not afterthoughts.**
+12. **Venues receive operational information, not unnecessary private Player data.**
+13. **Players should browse before account creation.**
+14. **Do not build generic social features unless they help a table form or happen.**
+15. **Infrastructure follows the validated workflow; it does not define it.**
 
 ---
 
-## Trust Model
+## Trust and Reputation Model
 
-Avoid a simplistic public five-star popularity score as the primary trust signal.
+Avoid a simplistic public five-star popularity score. Reputation is an evidence layer built from verified interactions.
 
-Useful structured signals include:
+### Reputation states
 
-### GM
-- games hosted
-- completed as scheduled
+- **New to DDD** — no or insufficient verified history. This is a neutral state.
+- **Building History** — some completed platform activity, but not enough evidence for strong aggregate claims.
+- **Established** — enough verified activity to show aggregate reliability signals.
+- **Caution** — meaningful verified reliability problems may be shown when policy thresholds are met.
+- **Restricted/Suspended** — moderation state; not a popularity score.
+
+A user never starts below neutral merely because they are new.
+
+### GM signals
+- verified games hosted/completed
+- completion reliability
 - description accuracy
 - boundaries respected
 - would-play-again aggregate
+- repeat Players
 
-### Player
-- sessions joined
-- attendance rate
-- late cancellations / no-shows
+### Player signals
+- verified sessions joined/attended
+- attendance reliability
+- late cancellations/no-shows
 - structured table-respect feedback
+- repeat tables
 
-### Venue
-- sessions hosted
+### Venue signals
+- verified sessions hosted
 - accessibility/environment information accuracy
 - table suitability
+- venue cancellations
 - would-return aggregate
 
-Moderation reports remain private and are not automatic public penalties.
+### Fair-start rules
+
+- Table Match does not subtract points for missing reputation history.
+- New users receive normal discovery eligibility and must not be sorted permanently beneath established users.
+- Reputation can only be generated from eligible verified platform interactions.
+- Individual negative feedback does not automatically create a public warning.
+- Public aggregates require minimum sample thresholds.
+- Moderation reports remain private and are evaluated separately from public reputation.
+- Self-reported experience is labeled as such and never substituted for verified platform history.
 
 ---
 
@@ -172,11 +187,7 @@ The venue does not need access to private RPG discussion, Player home addresses,
 
 **Dinner, Dice & Dragons**
 
-Primary product statement:
-
 > Dinner, Dice & Dragons turns local tabletop interest into actual game nights.
-
-Supporting explanation:
 
 > Players tell us what they want to play. GMs tell us what they can run. Local venues tell us when they have tables. We find the overlap.
 
@@ -188,17 +199,9 @@ Brand remains welcoming to the broader TTRPG community even if Dungeons & Dragon
 
 In one local market, enough structured Player demand, GM availability, and willing venue capacity can be coordinated to create recurring in-person RPG sessions more reliably than unstructured social posts.
 
-The pilot should test:
+The pilot should test demand signals, potential Table Matches, forming/confirmed tables, sessions actually played, cancellations/no-shows, repeat groups, expected/actual venue visits, and willingness to repeat.
 
-- number of useful demand signals
-- potential Table Matches detected
-- forming tables created
-- confirmed tables
-- sessions actually played
-- cancellation/no-show rate
-- repeat sessions/groups
-- expected vs actual venue visits
-- participant and venue willingness to repeat
+The pilot must also verify that new users can obtain matches at a reasonable rate compared with established users.
 
 ---
 
