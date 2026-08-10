@@ -15,14 +15,15 @@
   function updateRuleFields(entry) {
     try {
       const pattern = entry.querySelector('[name="availability_pattern[]"]')?.value;
-      const interval = entry.querySelector('[name="availability_week_interval[]"]')?.value || "1";
+      const weekInterval = entry.querySelector('[name="availability_week_interval[]"]')?.value || "1";
+      const monthInterval = entry.querySelector('[name="availability_month_interval[]"]')?.value || "1";
       const weekly = entry.querySelector(".weekly-rule");
       const monthly = entry.querySelectorAll(".monthly-rule");
       const anchor = entry.querySelector(".anchor-rule");
       const anchorInput = entry.querySelector('[name="availability_anchor_date[]"]');
       if (weekly) weekly.hidden = pattern !== "weekly";
       monthly.forEach((field) => { field.hidden = pattern !== "monthly"; });
-      const needsAnchor = pattern === "weekly" && interval !== "1";
+      const needsAnchor = (pattern === "weekly" && weekInterval !== "1") || (pattern === "monthly" && monthInterval !== "1");
       if (anchor) anchor.hidden = !needsAnchor;
       if (anchorInput) anchorInput.required = needsAnchor;
       updateSummary(entry);
@@ -64,7 +65,7 @@
         <label>End time<input name="availability_end[]" type="time" value="22:00" required></label>
         <label>Pattern<select name="availability_pattern[]" required><option value="weekly">Weekly / every N weeks</option><option value="monthly">Monthly weekday pattern</option></select></label>
         <label class="weekly-rule">Repeat every<select name="availability_week_interval[]"><option value="1">1 week</option><option value="2">2 weeks</option><option value="3">3 weeks</option><option value="4">4 weeks</option></select></label>
-        <label class="anchor-rule" hidden>Anchor date<input name="availability_anchor_date[]" type="date"><span class="microcopy">Choose one real occurrence so alternating/multi-week schedules stay aligned.</span></label>
+        <label class="anchor-rule" hidden>Anchor occurrence<input name="availability_anchor_date[]" type="date"><span class="microcopy">Choose one date in the intended cycle so every-other-week or multi-month patterns stay aligned.</span></label>
         <label class="monthly-rule" hidden>Which occurrence?<select name="availability_monthly_ordinal[]">${options(ORDINALS)}</select></label>
         <label class="monthly-rule" hidden>Repeat every<select name="availability_month_interval[]"><option value="1">1 month</option><option value="2">2 months</option><option value="3">3 months</option></select></label>
         <p class="recurrence-summary microcopy" aria-live="polite"></p>
