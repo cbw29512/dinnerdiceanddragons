@@ -121,8 +121,30 @@
     }
   }
 
+  function loadPreviewAssets() {
+    try {
+      if (!document.querySelector('link[href="recurrence-preview.css"]')) {
+        const style = document.createElement("link");
+        style.rel = "stylesheet";
+        style.href = "recurrence-preview.css";
+        document.head.appendChild(style);
+      }
+      const engine = document.createElement("script");
+      engine.src = "recurrence-engine.js";
+      engine.addEventListener("load", () => {
+        const preview = document.createElement("script");
+        preview.src = "recurrence-preview.js";
+        document.body.appendChild(preview);
+      });
+      document.body.appendChild(engine);
+    } catch (error) {
+      logError("Unable to load recurrence preview assets", error);
+    }
+  }
+
   try {
     document.querySelectorAll(".availability-builder").forEach(bindBuilder);
+    loadPreviewAssets();
   } catch (error) {
     logError("Unable to initialize structured availability", error);
   }
