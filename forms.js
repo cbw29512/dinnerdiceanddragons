@@ -27,8 +27,7 @@
   function serializeForm(form) {
     try {
       const output = {};
-      const formData = new FormData(form);
-      for (const [rawKey, value] of formData.entries()) {
+      for (const [rawKey, value] of new FormData(form).entries()) {
         const isArray = rawKey.endsWith("[]");
         const key = isArray ? rawKey.slice(0, -2) : rawKey;
         if (isArray) {
@@ -47,22 +46,59 @@
     }
   }
 
-  function savePrototype(form) {
+  function localKey_(type) {
+    return `ddd-preview-${type.toLowerCase().replaceAll(" ", "-")}`;
+  }
+
+  function apiAction_(type) {
+    if (type === "Player") return "player.save";
+    if (type === "Game Master") return "gm.save";
+    if (type === "Game") return "game.save";
+    return "";
+  }
+
+  function saveLocal_(type, values) {
+    try {
+      localStorage.setItem(localKey_(type), JSON.stringify(values));
+    } catch (error) {
+      logError("Unable to save local fallback", error);
+      throw error;
+    }
+  }
+
+  async function saveForm_(form) {
     try {
       const type = form.dataset.profileType || "Profile";
       const values = serializeForm(form);
-      localStorage.setItem(`ddd-preview-${type.toLowerCase().replaceAll(" ", "-")}`, JSON.stringify(values));
+      saveLocal_(type, values);
+      const action = apiAction_(type);
       const status = getStatusNode(form);
+
+      if (!action || !window.DDD_API?.isConfigured()) {
+        if (status) {
+          status.className = "form-status success-message";
+          status.textContent = `${type} preview saved on this device. Shared pilot storage is not connected yet.`;
+        }
+        return;
+      }
+
+      if (status) status.textContent = "Saving to the shared Dinner, Dice & Dragons pilot…";
+      const result = await window.DDD_API.post(action, values);
+      if (!result.ok) throw new Error(result.error || "Shared save failed");
+
+      const identity = result.player_id || result.gm_id || result.game_id || "";
+      if (identity) localStorage.setItem(`ddd-${type.toLowerCase().replaceAll(" ", "-")}-id`, identity);
+      if (result.user_id) localStorage.setItem("ddd-user-id", result.user_id);
       if (status) {
         status.className = "form-status success-message";
-        status.textContent = `${type} preview saved on this device. You can continue exploring the prototype.`;
+        status.textContent = `${type} saved to the shared pilot. This profile can now be used across devices.`;
       }
     } catch (error) {
-      logError("Unable to save prototype form", error);
+      logError("Unable to save form", error);
       const status = getStatusNode(form);
       if (status) {
         status.className = "form-status error-message";
-        status.textContent = "We could not save this preview on your device. Your information was not sent anywhere.";
+        status.textContent = "Shared save failed. A local copy was kept on this device so your work was not lost.";
       }
     }
   }
@@ -70,12 +106,9 @@
   function bindForm(form) {
     try {
       form.addEventListener("input", (event) => {
-        if (event.target && typeof event.target.setCustomValidity === "function") {
-          event.target.setCustomValidity("");
-        }
+        if (event.target && typeof event.target.setCustomValidity === "function") event.target.setCustomValidity("");
       });
-
-      form.addEventListener("submit", (event) => {
+      form.addEventListener("submit", async (event) => {
         try {
           event.preventDefault();
           if (!validatePostalCode(form)) return;
@@ -83,19 +116,19 @@
             form.reportValidity();
             return;
           }
-          savePrototype(form);
+          await saveForm_(form);
         } catch (error) {
-          logError("Unable to submit prototype form", error);
+          logError("Unable to submit form", error);
         }
       });
     } catch (error) {
-      logError("Unable to initialize prototype form", error);
+      logError("Unable to initialize form", error);
     }
   }
 
   try {
     document.querySelectorAll(".prototype-form").forEach(bindForm);
   } catch (error) {
-    logError("Unable to initialize signup forms", error);
+    logError("Unable to initialize forms", error);
   }
 })();
