@@ -32,3 +32,12 @@ jobs:
             echo "Checking $file"
             node --check "$file"
           done < <(find . -type f -name '*.js' -not -path './.git/*' -print0)
+
+      - name: Check Apps Script syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            echo "Checking $file"
+            node --check /dev/stdin < "$file"
+          done < <(find apps-script -type f -name '*.gs' -print0)
