@@ -11,6 +11,8 @@
 - [x] Location/travel-radius model
 - [x] Three-way Game Hub model
 - [x] Trust and safety baseline
+- [x] Reputation/fair-start model
+- [x] Identity/anti-troll architecture
 - [x] Accessibility baseline
 - [x] SEO page direction
 - [ ] Production moderation workflow
@@ -26,29 +28,48 @@
 - [x] Fill My Tables Venue onboarding
 - [x] System-specific experience model
 - [x] ZIP + travel-radius constraints
+- [x] Structured Player availability model
+- [x] Player-demand aggregation by system/time
 - [x] GM/venue schedule overlap
-- [ ] Structured Player availability model
-- [ ] Player-demand aggregation by system/time/radius
 
 ### Matching
 - [x] Homepage explains Table Match premise
 - [x] Venue-window matching prototype
-- [ ] Combine Player demand + GM availability + venue capacity
-- [ ] Explainable Table Fit criteria
-- [ ] Minimum viable Player commitment
-- [ ] Forming-table state
-- [ ] System/date/play-style filters
+- [x] Combine Player demand + GM availability + venue capacity
+- [x] Explainable Table Fit score/criteria
+- [x] Player-specific venue travel radius checks
+- [x] Minimum viable Player commitment
+- [x] Forming-table state
+- [ ] System/date/play-style discovery filters
 - [ ] Calendar-style discovery
 - [ ] Map-style discovery concept
 
-### Conversion
+### Conversion and lifecycle
 - [x] Forming game listing template
 - [x] Dedicated SEO game pages
 - [x] Recurrence/headcount fields
+- [x] Minimum Players separate from maximum seats
+- [x] Forming → Confirmed state demo
+- [x] Venue approval requirement demo
+- [x] Waitlist / cancellation recovery demo
+- [x] Confirmed → Completed demo
+- [x] Reputation eligibility gated behind completion
 - [x] Three-way Game Hub prototype
-- [ ] Forming → Confirmed state demo
-- [ ] Waitlist / cancellation recovery demo
+- [ ] Attendance recording UI
+- [ ] Structured post-session feedback demo
 - [ ] Schedule Next Session demo
+
+### Trust and identity
+- [x] Unique display-name architecture
+- [x] Durable one-user/multi-role identity model
+- [x] Verified-interaction Reputation Ledger design
+- [x] New-to-DDD neutral reputation state
+- [x] Fair-discovery audit concept
+- [x] Public Reputation & Trust explanation page
+- [x] Anti-troll implementation checklist
+- [ ] Production authentication integration
+- [ ] Production rate limiting / blocking
+- [ ] Venue claim verification implementation
 
 ### Quality
 - [x] Responsive mobile baseline
@@ -58,6 +79,7 @@
 - [x] GitHub Pages deployment
 - [x] Static automated checks
 - [ ] Browser accessibility smoke tests
+- [ ] Fragment-link automated validation
 
 ## Phase 2 — Florence Pilot Preparation
 
@@ -90,18 +112,17 @@ Track:
 - repeat groups
 - expected venue visits
 - actual venue visits
+- newcomer vs established successful-match rate
 - would-play/host/return-again signals
 
 ## Phase 3 — Controlled Shared Pilot
 
 **Goal:** Add only enough shared persistence to run the local experiment safely.
 
-Possible temporary implementation: Google Sheets + Apps Script behind a controlled pilot.
-
 Required before public writes:
-- [ ] identity/authentication decision
-- [ ] permission model
-- [ ] validation and abuse controls
+- [ ] production identity/authentication choice implemented
+- [ ] permission model implemented
+- [ ] validation and abuse controls implemented
 - [ ] privacy review
 
 Pilot capabilities:
@@ -109,15 +130,16 @@ Pilot capabilities:
 - [ ] shared GM availability records
 - [ ] shared venue windows
 - [ ] Table Match records
-- [ ] forming/confirmed table states
-- [ ] registrations
+- [ ] forming/confirmed/completed table states
+- [ ] registrations and waitlists
 - [ ] headcount
 - [ ] calendar sync
 - [ ] role-aware Game Hub messages
 - [ ] attendance
+- [ ] ReputationEvents / snapshots
 - [ ] structured feedback
 
-Do not treat the temporary persistence layer as permanent architecture.
+Do not treat any temporary persistence layer as permanent architecture.
 
 ## Phase 4 — Production MVP
 
@@ -135,11 +157,12 @@ Capabilities:
 - [ ] geographic matching
 - [ ] demand aggregation
 - [ ] explainable Table Match engine
-- [ ] forming/confirmed lifecycle
+- [ ] forming/confirmed/completed lifecycle
 - [ ] join/request/waitlist
 - [ ] calendar and reminders
 - [ ] Game Hub
 - [ ] attendance/reliability
+- [ ] Reputation Ledger
 - [ ] structured feedback
 - [ ] reporting/moderation
 - [ ] venue traffic analytics
