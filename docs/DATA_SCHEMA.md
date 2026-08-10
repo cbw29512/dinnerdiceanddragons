@@ -1,415 +1,199 @@
-# Dinner, Dice & Dragons — Initial Data Schema
+# Dinner, Dice & Dragons — MVP Data Schema
 
 ## Purpose
+This schema supports the Florence pilot and maps cleanly to Google Sheets + Apps Script first, then PostgreSQL later.
 
-This is the logical data model for the future production application. The GitHub Pages prototype may use static sample JSON, but sample data should mirror this schema so the prototype can migrate cleanly to FastAPI + PostgreSQL later.
+## Core product rule
 
-The central modeling rule is:
+> A Game connects a Game Master, Players, and a Venue. The GM's availability anchors scheduling; the venue provides a compatible table window; players then discover and join the published game.
 
-> Users discover Events. Events connect Players, Game Masters, and Venues.
+> Experience is system-specific and self-described. Community reputation is earned separately from completed platform activity.
 
-A second core rule is:
-
-> Experience is system-specific and self-described; community reputation is earned separately from completed platform activity.
-
----
-
-## Core Entities
+## User and profiles
 
 ### User
-- `id` UUID
-- `email` string, unique
-- `display_name` string
-- `status` enum: active, suspended, banned, deleted
-- `created_at` timestamp
-- `updated_at` timestamp
-- `last_login_at` timestamp nullable
-
-A user may have a PlayerProfile, GMProfile, VenueManager relationship, Moderator role, or several of these.
-
----
+`id`, `email`, `display_name`, `status`, `created_at`, `updated_at`, `last_login_at`
 
 ### PlayerProfile
-- `id` UUID
-- `user_id` FK -> User
-- `bio` text nullable
-- `travel_radius_miles` integer nullable
-- `availability_summary` text nullable
-- `preferred_format` enum nullable: any, learn_to_play, one_shot, short_campaign, long_campaign, organized_play
-- `willing_to_learn_new_system` enum: yes, maybe, no
-- `games_attended_count` integer derived/cache
-- `attendance_rate` decimal derived/cache
-- `created_at` timestamp
-- `updated_at` timestamp
-
-Do not store one global player skill level. System-specific experience belongs in PlayerSystemExperience.
-
----
+`id`, `user_id`, `bio`, `postal_code`, `travel_radius_miles`, `availability_summary`, `preferred_format`, `willing_to_learn_new_system`, derived `games_attended_count`, derived `attendance_rate`
 
 ### GMProfile
-- `id` UUID
-- `user_id` FK -> User
-- `bio` text nullable
-- `beginner_friendly` boolean
-- `games_hosted_count` integer derived/cache
-- `player_seats_hosted_count` integer derived/cache
-- `would_play_again_percent` decimal derived/cache nullable
-- `reliability_score` decimal derived/cache nullable
-- `communication_score` decimal derived/cache nullable
-- `created_at` timestamp
-- `updated_at` timestamp
-
-Do not store one global GM skill rating. System-specific experience belongs in GMSystemExperience.
-
----
+`id`, `user_id`, `bio`, `postal_code`, `travel_radius_miles`, `beginner_friendly`, derived `games_hosted_count`, derived `player_seats_hosted_count`, derived `would_play_again_percent`, derived `reliability_score`
 
 ### GameSystem
-- `id` UUID
-- `name` string
-- `edition` string nullable
-- `slug` string unique
-- `publisher_name` string nullable
-- `active` boolean
-
-Examples: D&D 5e 2014, D&D 5e 2024, Pathfinder 2e, Call of Cthulhu 7e, Cyberpunk RED, Shadowrun, Other.
-
----
+`id`, `name`, `edition`, `slug`, `publisher_name`, `active`
 
 ### PlayerSystemExperience
+`id`, `player_profile_id`, `game_system_id`, `years_playing`, `comfort_level`, `experience_notes`
 
-Self-described player experience for one system/edition.
-
-Fields:
-- `id` UUID
-- `player_profile_id` FK -> PlayerProfile
-- `game_system_id` FK -> GameSystem
-- `years_playing` decimal nullable
-- `comfort_level` enum: new, learning, comfortable, very_experienced
-- `experience_notes` text nullable
-- `created_at` timestamp
-- `updated_at` timestamp
-
-Unique constraint:
-- `(player_profile_id, game_system_id)`
-
-Rule:
-- This is self-reported profile information, not a community rating.
-
----
+Unique: `(player_profile_id, game_system_id)`
 
 ### GMSystemExperience
+`id`, `gm_profile_id`, `game_system_id`, `years_playing`, `years_gming`, `comfort_level`, `preferred_player_experience`, `experience_notes`
 
-Self-described GM experience for one system/edition.
-
-Fields:
-- `id` UUID
-- `gm_profile_id` FK -> GMProfile
-- `game_system_id` FK -> GameSystem
-- `years_playing` decimal nullable
-- `years_gming` decimal nullable
-- `comfort_level` enum: learning, comfortable, very_comfortable, expert
-- `preferred_player_experience` string nullable
-- `experience_notes` text nullable
-- `created_at` timestamp
-- `updated_at` timestamp
-
-Unique constraint:
-- `(gm_profile_id, game_system_id)`
-
----
+Unique: `(gm_profile_id, game_system_id)`
 
 ### GMSystemFormat
+`gm_system_experience_id`, `format`
 
-Many-to-many list of formats a GM is comfortable running for a specific system.
+Formats: `learn_to_play`, `one_shot`, `short_campaign`, `long_campaign`, `organized_play`
 
-Fields:
-- `gm_system_experience_id` FK -> GMSystemExperience
-- `format` enum: learn_to_play, one_shot, short_campaign, long_campaign, organized_play
+## Scheduling
 
-Composite primary key:
-- `(gm_system_experience_id, format)`
-
----
+### GMAvailabilityWindow
+`id`, `gm_profile_id`, `day_of_week`, `start_time`, `end_time`, `recurrence`, `active`
 
 ### Venue
-- `id` UUID
-- `name` string
-- `slug` string unique
-- `description` text nullable
-- `venue_type` enum: restaurant, brewery, cafe, game_store, library, community_center, other
-- `address_line_1` string
-- `address_line_2` string nullable
-- `city` string
-- `state_region` string
-- `postal_code` string
-- `country_code` string
-- `latitude` decimal nullable
-- `longitude` decimal nullable
-- `website_url` string nullable
-- `phone` string nullable
-- `verified` boolean
-- `active` boolean
-- `serves_food` boolean
-- `serves_alcohol` boolean
-- `wifi_available` boolean nullable
-- `power_available` boolean nullable
-- `parking_notes` text nullable
-- `noise_level` enum nullable: quiet, moderate, lively
-- `lighting_notes` text nullable
-- `accessibility_notes` text nullable
-- `created_at` timestamp
-- `updated_at` timestamp
-
----
+`id`, `name`, `slug`, `venue_type`, public address fields, `postal_code`, coordinates, website/phone, `verified`, amenities, accessibility/parking/noise/lighting notes, `active`
 
 ### VenueManager
-- `id` UUID
-- `venue_id` FK -> Venue
-- `user_id` FK -> User
-- `role` enum: owner, manager, staff
-- `verified_at` timestamp nullable
-- `created_at` timestamp
+`id`, `venue_id`, `user_id`, `role`, `verified_at`
 
-Unique constraint: `(venue_id, user_id)`
+### VenueTableWindow
+`id`, `venue_id`, `day_of_week`, `start_time`, `end_time`, `table_count`, `max_people_per_table`, `purchase_policy`, `approval_required`, `notes`, `active`
 
----
+### VenueBookingRequest
+`id`, `venue_table_window_id`, `gm_profile_id`, `game_series_id` nullable, `event_id` nullable, `requested_start`, `requested_end`, `tables_requested`, `expected_guests`, `status`, `venue_message`, `gm_message`, timestamps
 
-### VenueAvailability
-- `id` UUID
-- `venue_id` FK -> Venue
-- `day_of_week` integer 0-6
-- `start_time` time
-- `end_time` time
-- `table_count` integer
-- `max_people_per_table` integer nullable
-- `notes` text nullable
-- `active` boolean
+Status: `requested`, `question`, `approved`, `declined`, `cancelled`
 
----
+## Games and recurrence
+
+### GameSeries
+Used for campaigns/recurring groups.
+
+`id`, `title`, `gm_profile_id`, `game_system_id`, `venue_id`, `cadence`, `expected_sessions`, `starts_on`, `ends_on` nullable, `active`
+
+Cadence: `one_time`, `weekly`, `every_other_week`, `monthly`, `custom`
 
 ### Event
-- `id` UUID
-- `slug` string unique
-- `title` string
-- `description` text
-- `gm_profile_id` FK -> GMProfile
-- `game_system_id` FK -> GameSystem
-- `venue_id` FK -> Venue
-- `event_type` enum: one_shot, campaign_session, learn_to_play, organized_play, other
-- `join_mode` enum: instant, approval_required
-- `status` enum: draft, published, full, cancelled, completed
-- `starts_at` timestamp with timezone
-- `ends_at` timestamp with timezone nullable
-- `estimated_duration_minutes` integer nullable
-- `min_players` integer nullable
-- `max_players` integer
-- `minimum_age` integer nullable
-- `beginner_friendly` boolean
-- `created_at` timestamp
-- `updated_at` timestamp
-- `published_at` timestamp nullable
+One actual playable session.
 
-Discovery/swipe interactions target Event records, never User records.
+`id`, `game_series_id` nullable, `slug`, `title`, `description`, `gm_profile_id`, `game_system_id`, `venue_id`, `event_type`, `join_mode`, `status`, `starts_at`, `ends_at`, `min_players`, `max_players`, `minimum_age`, `beginner_friendly`, timestamps
 
----
+Status progression: `draft`, `venue_requested`, `venue_approved`, `published`, `forming`, `confirmed`, `full`, `cancelled`, `completed`
 
 ### TableExpectations
-- `id` UUID
-- `event_id` FK -> Event, unique
-- `tone` string nullable
-- `age_guidance` string nullable
-- `roleplay_level` integer 1-5 nullable
-- `combat_level` integer 1-5 nullable
-- `puzzle_level` integer 1-5 nullable
-- `pvp_policy` enum: no, limited, allowed
-- `homebrew_policy` string nullable
-- `character_death_policy` string nullable
-- `mature_content` boolean
-- `alcohol_at_venue` boolean
-- `new_players_welcome` boolean
-- `break_expectations` string nullable
-- `safety_framework` text nullable
-- `additional_notes` text nullable
-- `updated_at` timestamp
-
----
-
-### EventInterest
-- `id` UUID
-- `event_id` FK -> Event
-- `user_id` FK -> User
-- `reaction` enum: interested, passed, saved
-- `created_at` timestamp
-
-Unique constraint: `(event_id, user_id)`
-
----
+`id`, `event_id`, tone/age/style fields, PvP/homebrew/death policies, mature content, alcohol, new-player flag, breaks, safety framework, notes
 
 ### Registration
-- `id` UUID
-- `event_id` FK -> Event
-- `player_profile_id` FK -> PlayerProfile
-- `status` enum: requested, confirmed, waitlisted, declined, cancelled, removed
-- `table_expectations_acknowledged_at` timestamp nullable
-- `requested_at` timestamp
-- `responded_at` timestamp nullable
-- `cancelled_at` timestamp nullable
+`id`, `event_id`, `player_profile_id`, `status`, expectations acknowledgement, requested/responded/cancelled timestamps
 
-Unique constraint: `(event_id, player_profile_id)`
+Status: `requested`, `confirmed`, `waitlisted`, `declined`, `cancelled`, `removed`
 
----
+### Headcount rule
+`expected_guests = GM count + confirmed registrations + explicitly registered assistants`
+
+Never require manual venue headcount entry when it can be derived from registrations.
+
+## Game Hub communication
+
+### Message
+`id`, `event_id`, `sender_user_id`, `channel_type`, `recipient_user_id` nullable, `venue_id` nullable, `category` nullable, `body`, `created_at`, `read_at` nullable, `moderation_status`
+
+Channel types:
+- `table_announcement` — GM/Venue/System → GM + confirmed Players + Venue
+- `table_discussion` — GM + confirmed Players
+- `gm_venue` — private GM ↔ Venue operations
+- `player_gm` — private Player ↔ GM
+- `player_venue_question` — structured Player ↔ Venue customer question
+- `system_notification`
+
+Player-to-venue categories: `accessibility`, `food_allergies`, `parking`, `seating`, `venue_policy`, `other`
+
+Raw email addresses/home addresses are never exposed through messaging.
+
+## Calendar
+
+### CalendarEventSync
+`id`, `event_id`, `provider`, `external_event_id`, `status`, `last_synced_at`, `sync_error`
+
+Provider initially: `google_calendar`.
+
+Confirmed events create/update the shared Dinner, Dice & Dragons calendar event. Cancellation/rescheduling must synchronize rather than create duplicates.
+
+## Attendance and reputation
 
 ### Attendance
-- `id` UUID
-- `event_id` FK -> Event
-- `player_profile_id` FK -> PlayerProfile
-- `registration_id` FK -> Registration nullable
-- `status` enum: attended, late_cancel, no_show, excused_absence
-- `recorded_by_user_id` FK -> User
-- `recorded_at` timestamp
-- `notes` text nullable
+`id`, `event_id`, `player_profile_id`, `registration_id`, `status`, `recorded_by_user_id`, `recorded_at`, `notes`
 
-Unique constraint: `(event_id, player_profile_id)`
-
----
+Status: `attended`, `late_cancel`, `no_show`, `excused_absence`
 
 ### Feedback
+`id`, `event_id`, `author_user_id`, `subject_type`, `subject_id`, structured boolean/scale signals, `private_comment`, `created_at`
 
-Structured post-game feedback used to derive community reputation separately from self-described experience.
+Subject types: `event`, `gm`, `venue`, `table`
 
-Fields:
-- `id` UUID
-- `event_id` FK -> Event
-- `author_user_id` FK -> User
-- `subject_type` enum: event, gm, venue
-- `subject_id` UUID
-- `matched_description` boolean nullable
-- `started_reasonably_on_time` boolean nullable
-- `boundaries_respected` boolean nullable
-- `table_respectful` boolean nullable
-- `would_play_again` boolean nullable
-- `venue_suitable` boolean nullable
-- `private_comment` text nullable
-- `created_at` timestamp
+GM signals may include description accuracy, start reliability, boundaries respected, table respectful, would play again.
 
-Free-text comments should not be published automatically. Public trust signals should be derived from structured aggregate signals with minimum sample thresholds.
+Venue signals may include table suitability, welcoming staff, noise suitability, accessibility accuracy, would play here again.
 
----
+Venue → table signals evaluate the group/event, not individual customers: expected attendance reasonably matched, reserved time respected, issue/report, would host again.
+
+Public trust signals use aggregate structured data with minimum sample thresholds. Free-text feedback is private by default.
+
+## Venue analytics
+
+### VenueEventMetrics
+`id`, `event_id`, `venue_id`, `expected_guests`, `actual_guests`, `reserved_minutes`, `tables_used`, optional `venue_reported_sales`, `created_at`
+
+Derived venue dashboard metrics:
+- games hosted
+- expected guest visits
+- actual guest visits
+- average party size
+- average table duration
+- repeat groups/campaigns
+- cancellation/no-show rate
+
+Sales are optional and only recorded when a venue voluntarily provides them.
+
+## Safety
 
 ### Report
-- `id` UUID
-- `reporter_user_id` FK -> User
-- `event_id` FK -> Event nullable
-- `subject_user_id` FK -> User nullable
-- `venue_id` FK -> Venue nullable
-- `category` enum: harassment, discrimination, threat, unwanted_sexual_behavior, theft, disruptive_behavior, intoxication_disruption, repeated_no_show, boundary_violation, other
-- `description` text
-- `severity` enum: low, medium, high, critical
-- `status` enum: submitted, triaged, investigating, resolved, dismissed
-- `created_at` timestamp
-- `updated_at` timestamp
-
-A report is an allegation requiring review, not an automatic public penalty.
-
----
+Private allegation/report record with reporter, event/subject/venue references, category, description, severity, status, timestamps.
 
 ### ModerationCase
-- `id` UUID
-- `status` enum: open, investigating, action_taken, no_action, closed
-- `priority` enum: low, medium, high, urgent
-- `assigned_moderator_user_id` FK -> User nullable
-- `subject_user_id` FK -> User nullable
-- `opened_at` timestamp
-- `closed_at` timestamp nullable
-- `internal_notes` text nullable
+Private administrative case with status, priority, moderator, subject, notes, timestamps.
 
----
+Reports are never automatic public penalties.
 
-### Party
-- `id` UUID
-- `name` string
-- `slug` string unique
-- `created_by_user_id` FK -> User
-- `game_system_id` FK -> GameSystem nullable
-- `active` boolean
-- `created_at` timestamp
-
----
-
-### PartyMember
-- `id` UUID
-- `party_id` FK -> Party
-- `user_id` FK -> User
-- `role` enum: gm, player
-- `status` enum: invited, active, left, removed
-- `joined_at` timestamp nullable
-
-Unique constraint: `(party_id, user_id)`
-
----
-
-### VenueOffer
-- `id` UUID
-- `venue_id` FK -> Venue
-- `title` string
-- `description` text
-- `price_text` string nullable
-- `starts_at` timestamp nullable
-- `ends_at` timestamp nullable
-- `active` boolean
-
----
-
-## Relationship Summary
+## Relationship summary
 
 ```text
 User
  ├── PlayerProfile ──< PlayerSystemExperience >── GameSystem
  ├── GMProfile ──< GMSystemExperience >── GameSystem
- │                    └──< GMSystemFormat
- ├── VenueManager ──> Venue
- └── moderation roles
+ │       └──< GMAvailabilityWindow
+ └── VenueManager ──> Venue ──< VenueTableWindow
 
-GMProfile ──< Event >── Venue
-               │
-               ├── GameSystem
-               ├── TableExpectations
-               ├── EventInterest
-               ├── Registration ──> PlayerProfile
-               ├── Attendance ──> PlayerProfile
-               ├── Feedback
-               └── Report
-
-Party ──< PartyMember >── User
+GMProfile ──< GameSeries ──< Event >── Venue
+                         │
+                         ├── Registration ──> PlayerProfile
+                         ├── Message (role-aware Game Hub)
+                         ├── CalendarEventSync
+                         ├── Attendance
+                         ├── Feedback
+                         └── VenueEventMetrics
 ```
 
----
+## Google Sheets MVP tabs
 
-## Data Integrity Rules
+For the pilot, use stable IDs and these tabs:
 
-1. Events must reference a valid GM, Venue, and GameSystem before publication.
-2. `max_players` must be greater than zero.
-3. A player may have only one active registration per event.
-4. A user may express Discover interest without registering.
-5. Confirmation requires Table Expectations acknowledgement.
-6. Attendance must only be recorded for events that have started or completed, except authorized corrections.
-7. Public trust signals must be computed from structured data and minimum sample thresholds.
-8. Moderation records must never be exposed through public-profile APIs.
-9. Self-described Player/GM experience must never be presented as platform-verified expertise unless a separate verification mechanism is added.
-10. Player/GM experience is unique per profile + GameSystem and must not be collapsed into one global skill score.
-11. Deleting a user should not destroy audit-critical moderation or event records; production design should use appropriate anonymization/retention policies.
-12. Timestamps should be stored timezone-aware, preferably UTC, with venue/local timezone retained where needed for display.
+`Users`, `Players`, `PlayerSystems`, `GMs`, `GMSystems`, `GMAvailability`, `Venues`, `VenueWindows`, `VenueBookingRequests`, `GameSeries`, `Games`, `Registrations`, `Messages`, `CalendarEvents`, `Attendance`, `Feedback`, `VenueMetrics`, `Reports`.
 
----
+## Integrity rules
 
-## Prototype Sample Data
-
-The static GitHub Pages prototype should mirror these entities, especially GameSystem, PlayerSystemExperience, GMSystemExperience, Venue, GMProfile, Event, TableExpectations, and EventInterest-style interactions.
-
----
-
-## Future Schema Work
-
-Before production database implementation, define authentication/provider tables, permissions, notifications, messaging/privacy, venue reservation workflow, waitlist ordering, geographic indexing, audit logging, retention/deletion policy, verification records, venue analytics, and anti-abuse records.
-
-No production migration should be created until these decisions are reviewed against the MVP Definition of Done.
+1. An Event cannot publish without a GM, GameSystem, venue, approved/valid schedule, and table expectations.
+2. A venue must see recurrence, expected session count, expected headcount, and requested hours before approving a recurring booking.
+3. Venue capacity/table inventory cannot be double-booked.
+4. Expected headcount is derived from confirmed participants and updates when registrations change.
+5. Players cannot see private GM/Venue operational messages.
+6. Venues cannot see private Player/GM table discussion or private player profile data.
+7. Private email/home-address data is never exposed as a messaging identifier.
+8. Calendar sync must update an existing external event using its stored ID.
+9. Public reputation is aggregate structured feedback; moderation reports remain private.
+10. Self-described experience is never presented as platform-verified expertise.
+11. Store timestamps timezone-aware; preserve venue timezone for display/scheduling.
+12. The Sheets MVP must preserve stable IDs so migration to PostgreSQL does not require changing public identifiers.
