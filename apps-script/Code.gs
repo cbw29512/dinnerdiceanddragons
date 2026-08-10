@@ -13,6 +13,7 @@ function doGet(e) {
 function doPost(e) {
   const lock = LockService.getScriptLock();
   try {
+    assertWritesEnabled_();
     lock.waitLock(10000);
     const request = parseRequest_(e);
     const action = String(request.action || "");
