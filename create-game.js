@@ -15,6 +15,30 @@
     }
   }
 
+  function updateExpectedGuests() {
+    try {
+      const seats = document.querySelector("#player-seats");
+      const guests = document.querySelector("#expected-guests");
+      if (!seats || !guests) return;
+      const playerSeats = Number.parseInt(seats.value, 10);
+      guests.value = Number.isFinite(playerSeats) ? String(playerSeats + 1) : "";
+    } catch (error) {
+      logError("Unable to calculate expected guests", error);
+    }
+  }
+
+  function updateRecurrenceDefaults() {
+    try {
+      const recurrence = document.querySelector("#game-recurrence");
+      const sessions = document.querySelector("#expected-sessions");
+      if (!recurrence || !sessions) return;
+      if (recurrence.value === "one_time") sessions.value = "1";
+      else if (Number.parseInt(sessions.value, 10) <= 1) sessions.value = "8";
+    } catch (error) {
+      logError("Unable to update recurrence defaults", error);
+    }
+  }
+
   function bindSelection() {
     try {
       const raw = localStorage.getItem("ddd-selected-venue-slot");
@@ -50,5 +74,19 @@
     }
   }
 
+  function bindControls() {
+    try {
+      const seats = document.querySelector("#player-seats");
+      const recurrence = document.querySelector("#game-recurrence");
+      if (seats) seats.addEventListener("change", updateExpectedGuests);
+      if (recurrence) recurrence.addEventListener("change", updateRecurrenceDefaults);
+      updateExpectedGuests();
+      updateRecurrenceDefaults();
+    } catch (error) {
+      logError("Unable to initialize game creation controls", error);
+    }
+  }
+
   bindSelection();
+  bindControls();
 })();
