@@ -39,6 +39,20 @@
     }
   }
 
+  function setSystemFromMatch(form, system) {
+    try {
+      if (!form?.elements.system || !system) return;
+      if (system === "D&D 5e") {
+        form.elements.system.value = "";
+        form.elements.system.focus();
+        return;
+      }
+      form.elements.system.value = system;
+    } catch (error) {
+      logError("Unable to apply matched RPG system", error);
+    }
+  }
+
   function bindSelection() {
     try {
       const raw = localStorage.getItem("ddd-selected-venue-slot");
@@ -55,7 +69,7 @@
       if (start) start.value = slot.gmStart || "";
       if (duration) duration.value = formatDuration(slot.durationMinutes);
       if (venue) venue.value = slot.venueName || "";
-      if (form?.elements.system && slot.system) form.elements.system.value = slot.system;
+      setSystemFromMatch(form, slot.system);
 
       if (summary) {
         summary.replaceChildren();
@@ -69,7 +83,7 @@
         policy.textContent = `Venue policy: ${slot.policy || "See venue terms"}`;
         const approval = document.createElement("p");
         approval.className = "microcopy";
-        approval.textContent = slot.approvalRequired ? "This table is now Forming; venue approval and Player commitments are still required before confirmation." : "This table is now Forming; Player commitments are still required before confirmation.";
+        approval.textContent = slot.system === "D&D 5e" ? "Choose the D&D edition below. This table is Forming; venue approval and Player commitments are still required." : "This table is Forming; venue approval and Player commitments are still required before confirmation.";
         summary.append(title, time, fit, policy, approval);
       }
     } catch (error) {
