@@ -44,7 +44,7 @@
       const raw = localStorage.getItem("ddd-selected-venue-slot");
       if (!raw) return;
       const slot = JSON.parse(raw);
-
+      const form = document.querySelector("#game-form");
       const day = document.querySelector("#game-day");
       const start = document.querySelector("#game-start");
       const duration = document.querySelector("#game-duration");
@@ -55,22 +55,25 @@
       if (start) start.value = slot.gmStart || "";
       if (duration) duration.value = formatDuration(slot.durationMinutes);
       if (venue) venue.value = slot.venueName || "";
+      if (form?.elements.system && slot.system) form.elements.system.value = slot.system;
 
       if (summary) {
         summary.replaceChildren();
         const title = document.createElement("h2");
         title.textContent = slot.venueName || "Selected venue";
         const time = document.createElement("p");
-        time.textContent = `${slot.day || ""} · ${slot.gmStart || ""} · ${formatDuration(slot.durationMinutes)}`;
+        time.textContent = `${slot.system || "RPG"} · ${slot.day || ""} · ${slot.gmStart || ""} · ${formatDuration(slot.durationMinutes)}`;
+        const fit = document.createElement("p");
+        fit.innerHTML = `<strong>${slot.matchScore || "—"}% Table Match</strong> · ${slot.eligiblePlayers || 0} compatible Player signal${slot.eligiblePlayers === 1 ? "" : "s"}`;
         const policy = document.createElement("p");
         policy.textContent = `Venue policy: ${slot.policy || "See venue terms"}`;
         const approval = document.createElement("p");
         approval.className = "microcopy";
-        approval.textContent = slot.approvalRequired ? "Venue approval is required before publication." : "This slot does not require separate venue approval.";
-        summary.append(title, time, policy, approval);
+        approval.textContent = slot.approvalRequired ? "This table is now Forming; venue approval and Player commitments are still required before confirmation." : "This table is now Forming; Player commitments are still required before confirmation.";
+        summary.append(title, time, fit, policy, approval);
       }
     } catch (error) {
-      logError("Unable to load selected venue slot", error);
+      logError("Unable to load selected Table Match", error);
     }
   }
 
