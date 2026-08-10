@@ -2,123 +2,180 @@
 
 ## Phase 0 — Product Definition
 
-**Goal:** Turn the concept into a buildable specification before production coding begins.
+**Goal:** Define the product around successful physical-table formation before locking infrastructure.
 
-- [x] Create living project charter
-- [x] Create decision log
-- [x] Define Definition of Done
-- [x] Define initial data schema
-- [x] Define trust and safety requirements
-- [ ] Define moderation workflow in production detail
-- [x] Define accessibility acceptance criteria
-- [x] Define SEO page architecture direction
-- [x] Define prototype page map
-- [ ] Research working brand / naming risk
+- [x] Living project charter
+- [x] Product positioning / competitive premise
+- [x] Definition of Done
+- [x] Initial data schema
+- [x] Location/travel-radius model
+- [x] Three-way Game Hub model
+- [x] Trust and safety baseline
+- [x] Accessibility baseline
+- [x] SEO page direction
+- [ ] Production moderation workflow
+- [ ] Brand/name risk research
 
-## Phase 1 — GitHub Pages Prototype
+## Phase 1 — Table Match Prototype
 
-**Goal:** Demonstrate the complete concept cheaply with realistic sample data.
+**Goal:** Demonstrate the full three-sided product loop with realistic sample data.
 
-- [x] Homepage
-- [x] Find a Game / card discovery
-- [x] ZIP + travel-radius matching
-- [x] Dedicated game detail pages
-- [x] Table Expectations / table-culture presentation
-- [x] Player signup preview
-- [x] GM signup preview
-- [x] Venue signup preview
-- [x] GM nearby-partner-venue discovery
-- [x] Responsive mobile layout
-- [x] Keyboard-equivalent controls for swipe-style actions
-- [x] Semantic/accessible structure baseline
-- [x] SEO titles/descriptions and clean game routes
-- [x] GitHub Pages deployment workflow
+### Demand signals
+- [x] Find My Table Player onboarding
+- [x] Form a Table GM onboarding
+- [x] Fill My Tables Venue onboarding
+- [x] System-specific experience model
+- [x] ZIP + travel-radius constraints
+- [x] GM/venue schedule overlap
+- [ ] Structured Player availability model
+- [ ] Player-demand aggregation by system/time/radius
+
+### Matching
+- [x] Homepage explains Table Match premise
+- [x] Venue-window matching prototype
+- [ ] Combine Player demand + GM availability + venue capacity
+- [ ] Explainable Table Fit criteria
+- [ ] Minimum viable Player commitment
+- [ ] Forming-table state
 - [ ] System/date/play-style filters
+- [ ] Calendar-style discovery
 - [ ] Map-style discovery concept
-- [ ] Calendar-style discovery concept
-- [ ] Sample standalone GM profile
-- [ ] Sample standalone venue profile
-- [ ] Automated browser/accessibility smoke tests
 
-## Phase 2 — Local Pilot Preparation
+### Conversion
+- [x] Forming game listing template
+- [x] Dedicated SEO game pages
+- [x] Recurrence/headcount fields
+- [x] Three-way Game Hub prototype
+- [ ] Forming → Confirmed state demo
+- [ ] Waitlist / cancellation recovery demo
+- [ ] Schedule Next Session demo
 
-**Goal:** Prepare to test the concept with real players, GMs, and venues in one market.
+### Quality
+- [x] Responsive mobile baseline
+- [x] Keyboard-equivalent controls
+- [x] Semantic/accessibility baseline
+- [x] SEO titles/descriptions
+- [x] GitHub Pages deployment
+- [x] Static automated checks
+- [ ] Browser accessibility smoke tests
 
-- [ ] Recruit initial venue partners
-- [ ] Recruit initial GMs
-- [ ] Recruit initial players
-- [ ] Document venue onboarding process
-- [ ] Document GM onboarding process
-- [x] Create code of conduct baseline
+## Phase 2 — Florence Pilot Preparation
+
+**Goal:** Prove that structured matching creates actual local sessions.
+
+- [ ] Recruit 3–5 willing public venues
+- [ ] Recruit ~10 active GMs across multiple systems
+- [ ] Recruit 50–100 interested Players
+- [ ] Collect real Player demand signals
+- [ ] Collect real GM availability signals
+- [ ] Collect real venue table windows
+- [ ] Manually/semiautomatically identify first Table Matches
+- [ ] Create venue onboarding one-pager
+- [ ] Create GM onboarding one-pager
 - [ ] Create reporting policy
-- [ ] Create pilot feedback form
-- [ ] Define pilot success metrics
+- [ ] Create post-session feedback form
+- [ ] Define pilot dashboard
 
-Initial density target concept:
+### Pilot metrics
 
-- 3-5 venues
-- ~10 active GMs
-- 50-100 players
+Track:
+- demand signals collected
+- potential Table Matches
+- forming tables
+- confirmed tables
+- sessions actually played
+- time from signal to confirmed table
+- seat fill rate
+- cancellation/no-show rate
+- repeat groups
+- expected venue visits
+- actual venue visits
+- would-play/host/return-again signals
 
-## Phase 3 — Production MVP
+## Phase 3 — Controlled Shared Pilot
 
-**Goal:** Replace prototype interactions with real application workflows.
+**Goal:** Add only enough shared persistence to run the local experiment safely.
 
-Planned backend direction:
+Possible temporary implementation: Google Sheets + Apps Script behind a controlled pilot.
 
+Required before public writes:
+- [ ] identity/authentication decision
+- [ ] permission model
+- [ ] validation and abuse controls
+- [ ] privacy review
+
+Pilot capabilities:
+- [ ] shared Player demand records
+- [ ] shared GM availability records
+- [ ] shared venue windows
+- [ ] Table Match records
+- [ ] forming/confirmed table states
+- [ ] registrations
+- [ ] headcount
+- [ ] calendar sync
+- [ ] role-aware Game Hub messages
+- [ ] attendance
+- [ ] structured feedback
+
+Do not treat the temporary persistence layer as permanent architecture.
+
+## Phase 4 — Production MVP
+
+**Goal:** Replace validated pilot workflows with a secure application.
+
+Likely backend direction after validation:
 - FastAPI
 - PostgreSQL
 - Docker
 
-Planned MVP capabilities:
+Capabilities:
+- [ ] authentication
+- [ ] Player / GM / Venue profiles
+- [ ] structured availability
+- [ ] geographic matching
+- [ ] demand aggregation
+- [ ] explainable Table Match engine
+- [ ] forming/confirmed lifecycle
+- [ ] join/request/waitlist
+- [ ] calendar and reminders
+- [ ] Game Hub
+- [ ] attendance/reliability
+- [ ] structured feedback
+- [ ] reporting/moderation
+- [ ] venue traffic analytics
+- [ ] admin tools
 
-- [ ] Authentication
-- [ ] Player profiles
-- [ ] GM profiles
-- [ ] Venue profiles
-- [ ] Event creation wizard
-- [ ] Event discovery
-- [ ] Search/filter
-- [ ] Join/request seat
-- [ ] Table Expectations acknowledgement
-- [ ] Attendance tracking
-- [ ] Structured post-game feedback
-- [ ] Reporting and moderation cases
-- [ ] Basic notifications
-- [ ] Admin/moderator tools
-- [ ] Production geographic matching with cached coordinates/spatial indexing
+## Phase 5 — Retention and Density
 
-## Phase 4 — Retention and Community
-
-- [ ] Parties/groups
 - [ ] Schedule Next Session
-- [ ] Improved compatibility recommendations
+- [ ] recurring groups/campaigns
+- [ ] cancellation recovery / replacement Players
+- [ ] demand alerts to GMs
+- [ ] open-table alerts to Players
+- [ ] venue opportunity alerts
+- [ ] improved Table Fit recommendations
 - [ ] GM recognition
-- [ ] Venue recurring-game scheduling
-- [ ] Venue promotions / tabletop specials
-- [ ] Improved trust signals
+- [ ] venue promotions/tabletop specials
 
-## Phase 5 — Business Validation
+## Phase 6 — Business Validation
 
-Possible experiments only after local table density exists:
+Only after local table density exists:
 
-- [ ] Premium venue features
-- [ ] Venue analytics
-- [ ] Promoted events
-- [ ] Premium GM tools
-- [ ] Ticketed events
-- [ ] Marketplace
+- [ ] premium venue analytics/tools
+- [ ] promoted table windows
+- [ ] premium GM tools
+- [ ] ticketed events
+- [ ] marketplace
 - [ ] DNDCards integration
-- [ ] Physical products / merchandise
+- [ ] merchandise / physical products
 - [ ] B2B event tools
 
 ## Explicitly Deferred
 
-These should not distract the MVP unless the roadmap is deliberately changed:
-
-- Native mobile apps
-- Private-home game discovery
+- native mobile apps
+- private-home game discovery
 - POS integration
-- Complex achievement systems
-- AI-first matching
-- National launch before proving one local market
+- generic social feed
+- complex achievements
+- AI-first opaque matching
+- national launch before proving one local market
