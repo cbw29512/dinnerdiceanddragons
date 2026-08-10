@@ -15,15 +15,37 @@
     }
   }
 
-  function updateExpectedGuests() {
+  function readInt(selector) {
+    try {
+      const node = document.querySelector(selector);
+      return node ? Number.parseInt(node.value, 10) : Number.NaN;
+    } catch (error) {
+      logError(`Unable to read integer from ${selector}`, error);
+      return Number.NaN;
+    }
+  }
+
+  function updateCommitmentSummary() {
     try {
       const seats = document.querySelector("#player-seats");
+      const minimum = document.querySelector("#min-players");
       const guests = document.querySelector("#expected-guests");
-      if (!seats || !guests) return;
-      const playerSeats = Number.parseInt(seats.value, 10);
-      guests.value = Number.isFinite(playerSeats) ? String(playerSeats + 1) : "";
+      const rule = document.querySelector("#confirmation-rule");
+      if (!seats || !minimum || !guests || !rule) return;
+
+      const maxPlayers = Number.parseInt(seats.value, 10);
+      let minPlayers = Number.parseInt(minimum.value, 10);
+      if (!Number.isFinite(maxPlayers) || !Number.isFinite(minPlayers)) return;
+
+      if (minPlayers > maxPlayers) {
+        minPlayers = maxPlayers;
+        minimum.value = String(maxPlayers);
+      }
+
+      guests.value = String(maxPlayers + 1);
+      rule.value = `Venue approval + ${minPlayers} confirmed Player${minPlayers === 1 ? "" : "s"}`;
     } catch (error) {
-      logError("Unable to calculate expected guests", error);
+      logError("Unable to update commitment summary", error);
     }
   }
 
@@ -83,7 +105,7 @@
         policy.textContent = `Venue policy: ${slot.policy || "See venue terms"}`;
         const approval = document.createElement("p");
         approval.className = "microcopy";
-        approval.textContent = slot.system === "D&D 5e" ? "Choose the D&D edition below. This table is Forming; venue approval and Player commitments are still required." : "This table is Forming; venue approval and Player commitments are still required before confirmation.";
+        approval.textContent = slot.system === "D&D 5e" ? "Choose the D&D edition below. This table remains Forming until the venue approves and the minimum Player commitment is met." : "This table remains Forming until the venue approves and the minimum Player commitment is met.";
         summary.append(title, time, fit, policy, approval);
       }
     } catch (error) {
@@ -91,13 +113,50 @@
     }
   }
 
+  function bindLifecycleSeed() {
+    try {
+      const form = document.querySelector("#game-form");
+      if (!form) return;
+      form.addEventListener("submit", () => {
+        try {
+          const minPlayers = readInt("#min-players");
+          const maxPlayers = readInt("#player-seats");
+          if (!Number.isFinite(minPlayers) || !Number.isFinite(maxPlayers) || minPlayers > maxPlayers) return;
+          const rawMatch = localStorage.getItem("ddd-selected-venue-slot");
+          const match = rawMatch ? JSON.parse(rawMatch) : {};
+          const lifecycle = {
+            title: form.elements.title?.value || "Forming Table",
+            system: form.elements.system?.value || match.system || "RPG",
+            venue: form.elements.venue?.value || match.venueName || "Partner Venue",
+            day: form.elements.day?.value || match.day || "",
+            start: form.elements.start_time?.value || match.gmStart || "",
+            minPlayers,
+            maxPlayers,
+            confirmedPlayers: 0,
+            waitlistedPlayers: 0,
+            venueApproved: false,
+            status: "forming",
+            completed: false
+          };
+          localStorage.setItem("ddd-lifecycle-demo", JSON.stringify(lifecycle));
+        } catch (error) {
+          logError("Unable to seed table lifecycle demo", error);
+        }
+      });
+    } catch (error) {
+      logError("Unable to bind lifecycle seed", error);
+    }
+  }
+
   function bindControls() {
     try {
       const seats = document.querySelector("#player-seats");
+      const minimum = document.querySelector("#min-players");
       const recurrence = document.querySelector("#game-recurrence");
-      if (seats) seats.addEventListener("change", updateExpectedGuests);
+      if (seats) seats.addEventListener("change", updateCommitmentSummary);
+      if (minimum) minimum.addEventListener("change", updateCommitmentSummary);
       if (recurrence) recurrence.addEventListener("change", updateRecurrenceDefaults);
-      updateExpectedGuests();
+      updateCommitmentSummary();
       updateRecurrenceDefaults();
     } catch (error) {
       logError("Unable to initialize game creation controls", error);
@@ -106,4 +165,5 @@
 
   bindSelection();
   bindControls();
+  bindLifecycleSeed();
 })();
