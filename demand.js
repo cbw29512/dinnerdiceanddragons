@@ -1,27 +1,18 @@
 (() => {
   "use strict";
 
-  const SAMPLE_SIGNALS = [
-    { system: "D&D 5e", day: "Tuesday", start: "18:00", end: "22:00", zip: "29501", radius: 25 },
-    { system: "D&D 5e", day: "Tuesday", start: "18:00", end: "22:00", zip: "29501", radius: 10 },
-    { system: "D&D 5e", day: "Tuesday", start: "18:00", end: "22:00", zip: "29505", radius: 25 },
-    { system: "D&D 5e", day: "Tuesday", start: "18:00", end: "22:00", zip: "29506", radius: 25 },
-    { system: "D&D 5e", day: "Tuesday", start: "18:00", end: "22:00", zip: "29501", radius: 50 },
-    { system: "Pathfinder 2e", day: "Saturday", start: "13:00", end: "18:00", zip: "29501", radius: 25 },
-    { system: "Pathfinder 2e", day: "Saturday", start: "13:00", end: "18:00", zip: "29505", radius: 25 },
-    { system: "Pathfinder 2e", day: "Saturday", start: "13:00", end: "18:00", zip: "29506", radius: 25 },
-    { system: "Call of Cthulhu", day: "Friday", start: "18:00", end: "23:00", zip: "29501", radius: 25 },
-    { system: "Call of Cthulhu", day: "Friday", start: "18:00", end: "23:00", zip: "29505", radius: 25 },
-    { system: "Call of Cthulhu", day: "Friday", start: "18:00", end: "23:00", zip: "29505", radius: 10 }
-  ];
-
   function logError(message, error) {
     console.error(`[Dinner Dice & Dragons] ${message}`, error);
   }
 
   function normalizeSystem(value) {
-    if (value.startsWith("D&D 5e")) return "D&D 5e";
-    return value;
+    try {
+      if (String(value).startsWith("D&D 5e")) return "D&D 5e";
+      return value;
+    } catch (error) {
+      logError("Unable to normalize system", error);
+      return value;
+    }
   }
 
   function localPlayerSignals() {
@@ -66,13 +57,14 @@
     try {
       const grid = document.querySelector("#demand-grid");
       if (!grid) return;
-      const groups = aggregate([...SAMPLE_SIGNALS, ...localPlayerSignals()]);
+      const sample = Array.isArray(window.DDD_PLAYER_DEMAND) ? window.DDD_PLAYER_DEMAND : [];
+      const groups = aggregate([...sample, ...localPlayerSignals()]);
       grid.replaceChildren();
       groups.forEach((group) => {
         const card = document.createElement("article");
         card.className = "demand-card";
         const opportunity = group.count >= 4 ? "Strong opportunity: enough visible demand to recruit a GM and venue." : "Emerging demand: more compatible Players would strengthen this match.";
-        card.innerHTML = `<p class="eyebrow">PLAYER DEMAND</p><div class="demand-count">${group.count}</div><h3>${group.system}</h3><p><strong>${group.day} · ${group.start}–${group.end}</strong></p><div class="demand-meta"><span>Florence-area pilot</span><span>Recurring window</span>${group.localCount ? "<span>Your signal included</span>" : ""}</div><p class="demand-opportunity">${opportunity}</p><a class="button secondary" href="join.html#gm">I Could GM This</a>`;
+        card.innerHTML = `<p class="eyebrow">PLAYER DEMAND</p><div class="demand-count">${group.count}</div><h3>${group.system}</h3><p><strong>${group.day} · ${group.start}–${group.end}</strong></p><div class="demand-meta"><span>Florence-area pilot</span><span>Recurring window</span>${group.localCount ? "<span>Your signal included</span>" : ""}</div><p class="demand-opportunity">${opportunity}</p><a class="button secondary" href="find-venue.html?system=${encodeURIComponent(group.system)}&day=${encodeURIComponent(group.day)}&start=${encodeURIComponent(group.start)}">Try to Form This Table</a>`;
         grid.appendChild(card);
       });
     } catch (error) {
