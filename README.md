@@ -1,40 +1,58 @@
 # Dinner, Dice & Dragons
 
-A local tabletop RPG community platform for connecting players, Game Masters, games, and public partner venues.
+Dinner, Dice & Dragons turns **local tabletop interest into actual game nights**.
 
-> Find your table. Meet your party. Roll for adventure.
+Players tell us what they want to play. Game Masters tell us what they can run. Restaurants and community venues tell us when they have tables. The product finds the overlap and helps move a table through:
 
-## Live Prototype
+**Demand Signals → Table Match → Forming → Confirmed → Game Hub → Played**
+
+## Core actions
+
+- **Find My Table** — Player demand: systems, availability, travel radius, experience, and table preferences.
+- **Form a Table** — GM supply: systems, availability, travel radius, GM style, and cadence.
+- **Fill My Tables** — Venue capacity: table windows, capacity, policies, environment, and recurrence.
+
+The differentiator is **physical-table formation**, not generic social networking.
+
+## Live prototype
 
 https://cbw29512.github.io/dinnerdiceanddragons/
 
-## Current Stage
+## Current stage
 
-This repository contains the live static validation prototype plus the product documentation that governs future development.
+GitHub Pages validation prototype. Shared persistence and the earlier Google Sheets + Apps Script scaffold are paused until the new three-sided Table Match workflow is validated.
 
-## Prototype Surfaces
+## Main prototype surfaces
 
-- `index.html` — homepage and ZIP/radius game discovery
-- `join.html` — Player and Game Master onboarding previews
-- `find-venue.html` — GM partner-venue discovery by ZIP/radius
-- `venues.html` — partner venue pitch and listing preview
-- `conduct.html` — community Code of Conduct
-- `games/<slug>/` — dedicated SEO-friendly game detail pages
+- `index.html` — premise, role actions, Table Match explanation, table discovery
+- `join.html` — Find My Table and Form a Table signals
+- `find-venue.html` — current GM/venue overlap and future Player-demand matching
+- `venues.html` — Fill My Tables venue onboarding/business case
+- `create-game.html` — convert a viable match into a Forming table
+- `game-hub.html` — Confirmed-table coordination
+- `conduct.html` — safety, reliability, and trust model
+- `games/<slug>/` — sample Forming table detail pages
 
-## JavaScript Modules
+## Product source of truth
 
-- `data.js` — sample events
-- `discovery.js` — event-card rendering and interactions
-- `geo.js` — shared ZIP lookup and distance calculation
-- `location.js` — Player/event geographic filtering
-- `game-detail.js` — saved-distance display on game pages
-- `venues-data.js` — sample willing partner venues
-- `venue-discovery.js` — GM/venue geographic matching
-- `forms.js` — local prototype signup persistence and validation
+Read these before implementing features:
 
-## Run Locally
+- `PROJECT.md`
+- `docs/PRODUCT_POSITIONING.md`
+- `docs/DEFINITION_OF_DONE.md`
+- `docs/DATA_SCHEMA.md`
+- `docs/ROADMAP.md`
+- `docs/UX_AUDIT.md`
+- `docs/LOCATION_MATCHING.md`
+- `docs/GAME_HUB.md`
 
-Serve the repository with a basic static HTTP server so browser fetch behavior matches GitHub Pages:
+A feature should primarily help discover useful demand, improve Table Match quality, form a viable table, reduce cancellations, help the session happen, improve safety/trust, or demonstrate venue value.
+
+## Development rule
+
+Do not let infrastructure determine the product. The next product-risk milestone is **realistic Player-demand aggregation combined with GM availability and Venue capacity**. Backend implementation resumes after that workflow is proven.
+
+## Local run
 
 ```bash
 python -m http.server 8000
@@ -42,24 +60,6 @@ python -m http.server 8000
 
 Then open `http://localhost:8000`.
 
-## Automated Checks
+## Automated checks
 
-`.github/workflows/site-checks.yml` runs on pushes and pull requests. It checks required HTML metadata/landmarks, local links and script references, and JavaScript syntax. The checker uses only Python's standard library plus the Node runtime provided by the GitHub-hosted runner.
-
-## Project Source of Truth
-
-Read these before implementing product features:
-
-- `PROJECT.md`
-- `docs/DEFINITION_OF_DONE.md`
-- `docs/DATA_SCHEMA.md`
-- `docs/DECISIONS.md`
-- `docs/ROADMAP.md`
-- `docs/LOCATION_MATCHING.md`
-- `docs/UX_AUDIT.md`
-
-GitHub Issues contain the actionable implementation backlog.
-
-## Architecture Direction
-
-The prototype is static. Production direction remains FastAPI + PostgreSQL + Docker after the local-market concept is validated. The production frontend remains an explicit future decision.
+`.github/workflows/site-checks.yml` validates page metadata/internal file links, browser JavaScript syntax, and Apps Script syntax. Fragment-link validation and browser accessibility smoke tests remain roadmap items.
