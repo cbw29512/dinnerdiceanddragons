@@ -37,7 +37,7 @@
 
   function venueWindow(venue, day, start, end) {
     try {
-      return venue.windows.find((window) => window.day === day && minutes(window.start) <= start && minutes(window.end) >= end) || null;
+      return venue.windows.find((slot) => slot.day === day && minutes(slot.start) <= start && minutes(slot.end) >= end) || null;
     } catch (error) {
       logError(`Unable to check venue ${venue.name}`, error);
       return null;
@@ -66,21 +66,66 @@
     }
   }
 
+  function patternSummary(input, rule) {
+    try {
+      if (input.pattern === "monthly") {
+        const interval = Number(rule.monthInterval) || 1;
+        return `${rule.monthlyOrdinal} ${input.day}${interval === 1 ? " each month" : ` every ${interval} months`}`;
+      }
+      const weeks = Number(rule.weekInterval) || 1;
+      return weeks === 1 ? `Every ${input.day}` : weeks === 2 ? `Every other ${input.day}` : `Every ${weeks} weeks on ${input.day}`;
+    } catch (error) {
+      logError("Unable to summarize recurrence", error);
+      return input.day;
+    }
+  }
+
   function occurrenceMarkup(item) {
     const label = item.viable ? "✓ Viable" : item.blackout ? "✕ Venue conflict" : "✕ Not enough Players";
     const action = item.viable ? "" : `<div class="game-actions"><button type="button" data-series-action="skip" data-date="${dateKey(item.date)}">Skip</button><button type="button" data-series-action="move" data-date="${dateKey(item.date)}">Move</button></div>`;
     return `<div class="venue-schedule-row"><strong>${humanDate(item.date)}</strong><span>${item.playerCount} Players</span><span>${label}</span><span>${action}</span></div>`;
   }
 
-  function renderResult(result, input) {
+  function selectSeries(result, input, rule) {
+    try {
+      const payload = {
+        system: input.system,
+        venue: result.venue.name,
+        venueId: result.venue.id,
+        gmZip: input.zip,
+        gmRadius: input.radius,
+        day: input.day,
+        startMinutes: input.start,
+        endMinutes: input.end,
+        pattern: input.pattern,
+        patternSummary: patternSummary(input, rule),
+        viableCount: result.viableCount,
+        compatiblePlayers: result.players.length,
+        sessions: result.occurrences.map((item) => ({
+          date: dateKey(item.date),
+          viable: item.viable,
+          blackout: item.blackout,
+          playerCount: item.playerCount
+        }))
+      };
+      sessionStorage.setItem("ddd-recurring-match-selected", JSON.stringify(payload));
+      window.location.href = "form-series.html";
+    } catch (error) {
+      logError("Unable to carry recurring match into series formation", error);
+      document.querySelector("#recurring-match-status").textContent = "Unable to open the series builder. Please try again.";
+    }
+  }
+
+  function renderResult(result, input, rule) {
     const percent = Math.round((result.viableCount / result.occurrences.length) * 100);
     const card = document.createElement("article");
     card.className = "panel";
-    card.innerHTML = `<p class="eyebrow">${result.viableCount === result.occurrences.length ? "STRONG RECURRING MATCH" : "RECOVERABLE SERIES"}</p><h3>${result.venue.name} · ${percent}% of next 6 dates viable</h3><p>${input.system} · ${input.day} · ${result.gmDistance.toFixed(1)} miles from GM · ${result.players.length} compatible Player signals</p><div>${result.occurrences.map(occurrenceMarkup).join("")}</div><div class="next-step"><strong>${result.viableCount}/6 viable →</strong><a class="button primary" href="create-game.html">Form This Series</a><a class="button secondary" href="venues.html">Try Another Venue</a></div>`;
+    card.innerHTML = `<p class="eyebrow">${result.viableCount === result.occurrences.length ? "STRONG RECURRING MATCH" : "RECOVERABLE SERIES"}</p><h3>${result.venue.name} · ${percent}% of next 6 dates viable</h3><p>${input.system} · ${patternSummary(input, rule)} · ${result.gmDistance.toFixed(1)} miles from GM · ${result.players.length} compatible Player signals</p><div>${result.occurrences.map(occurrenceMarkup).join("")}</div><div class="next-step"><strong>${result.viableCount}/6 viable →</strong><button class="button primary form-series-button" type="button">Form This Series</button><a class="button secondary" href="venues.html">Try Another Venue</a></div>`;
+    card.querySelector(".form-series-button")?.addEventListener("click", () => selectSeries(result, input, rule));
     return card;
   }
 
-  async function calculate(form) {
+  async function calculate() {
     try {
       const start = minutes(document.querySelector("#series-start").value);
       const duration = Number(document.querySelector("#series-duration").value);
@@ -111,7 +156,7 @@
       status.textContent = "Calculating recurring Player + GM + Venue overlap…";
       const evaluated = (await Promise.all((window.DDD_VENUES || []).map((venue) => evaluateVenue(venue, input, dates)))).filter(Boolean).sort((a, b) => b.viableCount - a.viableCount);
       results.replaceChildren();
-      evaluated.forEach((result) => results.appendChild(renderResult(result, input)));
+      evaluated.forEach((result) => results.appendChild(renderResult(result, input, rule)));
       if (!evaluated.length) results.innerHTML = '<div class="panel empty-state"><h3>No recurring venue match yet.</h3><p>Try another day, shorter session, or larger travel radius.</p></div>';
       status.textContent = `${evaluated.length} recurring venue option${evaluated.length === 1 ? "" : "s"} evaluated.`;
     } catch (error) {
@@ -132,7 +177,7 @@
         document.querySelector("#month-interval-label").hidden = !monthly;
       };
       pattern.addEventListener("change", toggle);
-      form.addEventListener("submit", (event) => { event.preventDefault(); calculate(form); });
+      form.addEventListener("submit", (event) => { event.preventDefault(); calculate(); });
       document.querySelector("#recurring-match-results")?.addEventListener("click", (event) => {
         const button = event.target.closest("[data-series-action]");
         if (!button) return;
