@@ -106,7 +106,7 @@
       const box = document.querySelector("#series-preview");
       if (!box) return;
       box.hidden = false;
-      box.innerHTML = `<p class="eyebrow">FORMING SERIES CREATED</p><h2>${series.title}</h2><p>${series.system} · ${series.venue} · ${series.sessions.length} planned sessions</p><p><strong>Commitment model:</strong> ${series.commitmentModel}</p><p><strong>Confirmation rule per session:</strong> venue approved + ${series.minPlayers} confirmed Players.</p><div>${series.sessions.map((session) => `<div class="venue-schedule-row"><strong>${humanDate(session.date)}</strong><span>${session.status}</span><span>0/${series.minPlayers} Players</span><span>${session.exception ? "Recovery needed" : "Ready to form"}</span></div>`).join("")}</div><div class="next-step"><a class="button primary" href="table-lifecycle.html">Manage Session Lifecycle</a><a class="button secondary" href="game-hub.html">Preview Game Hub</a></div>`;
+      box.innerHTML = `<p class="eyebrow">FORMING SERIES CREATED</p><h2>${series.title}</h2><p>${series.system} · ${series.venue} · ${series.sessions.length} planned sessions</p><p><strong>Commitment model:</strong> ${series.commitmentModel}</p><p><strong>Confirmation rule per session:</strong> venue approved + ${series.minPlayers} confirmed Players.</p><div>${series.sessions.map((session) => `<div class="venue-schedule-row"><strong>${humanDate(session.date)}</strong><span>${session.status}</span><span>0/${series.minPlayers} Players</span><span>${session.exception ? "Recovery needed" : "Ready to form"}</span></div>`).join("")}</div><div class="next-step"><a class="button primary" href="series-commitments.html">Manage Player Commitments</a><a class="button secondary" href="table-lifecycle.html">Manage Session Lifecycle</a><a class="button secondary" href="game-hub.html">Preview Game Hub</a></div>`;
     } catch (error) {
       logError("Unable to render series preview", error);
     }
@@ -131,6 +131,7 @@
           if (!series.title) throw new Error("Series title is required.");
           if (!series.sessions.length) throw new Error("Include at least one session.");
           localStorage.setItem(STORAGE_KEY, JSON.stringify(series));
+          localStorage.removeItem("ddd-series-commitments");
           renderPreview(series);
           if (status) status.textContent = `Forming series created with ${series.sessions.length} session${series.sessions.length === 1 ? "" : "s"}.`;
         } catch (error) {
