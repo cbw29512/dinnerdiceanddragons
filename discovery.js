@@ -65,7 +65,7 @@
 
       const viewLink = document.createElement("a");
       viewLink.href = `games/${game.slug}/`;
-      viewLink.textContent = "View Table";
+      viewLink.textContent = "View Game";
 
       const detailsButton = document.createElement("button");
       detailsButton.type = "button";
@@ -85,15 +85,15 @@
       const fitButton = document.createElement("button");
       fitButton.type = "button";
       fitButton.className = "interested";
-      fitButton.textContent = "This Could Fit Me";
+      fitButton.textContent = "Request This Game";
       fitButton.setAttribute("aria-pressed", "false");
       fitButton.addEventListener("click", () => {
         try {
           const pressed = fitButton.getAttribute("aria-pressed") === "true";
           fitButton.setAttribute("aria-pressed", String(!pressed));
-          fitButton.textContent = pressed ? "This Could Fit Me" : "✓ Added to My Fits";
+          fitButton.textContent = pressed ? "Request This Game" : "✓ Added to My Games";
         } catch (error) {
-          logError("Unable to update Table Fit interest", error);
+          logError("Unable to update game interest", error);
         }
       });
 
@@ -101,7 +101,7 @@
       article.append(actions, details);
       return article;
     } catch (error) {
-      logError("Unable to build table card", error);
+      logError("Unable to build game card", error);
       return null;
     }
   }
@@ -114,7 +114,18 @@
       if (!results.length) {
         const empty = document.createElement("div");
         empty.className = "panel empty-state";
-        empty.innerHTML = "<h3>No tables inside that travel radius yet.</h3><p>Try a larger radius or choose Show All. Your demand signal can still help reveal where another table should form.</p>";
+        empty.innerHTML = `
+          <p class="eyebrow">NO GAME YET? THAT'S USEFUL.</p>
+          <h3>No games match that travel range right now.</h3>
+          <p>Tell us what you want to play and when you're free. Your availability can combine with nearby Players, a GM, and a willing venue to create the next game night.</p>
+          <div class="cta-row">
+            <a class="button primary" href="join.html#player">Add My Availability</a>
+            <button class="button secondary" type="button" data-show-all-games>Show All Games</button>
+          </div>`;
+        const showAll = empty.querySelector("[data-show-all-games]");
+        if (showAll) {
+          showAll.addEventListener("click", () => renderGames());
+        }
         grid.appendChild(empty);
         return;
       }
@@ -124,8 +135,8 @@
         if (card) grid.appendChild(card);
       });
     } catch (error) {
-      logError("Unable to render tables", error);
-      if (grid) grid.textContent = "Table previews are temporarily unavailable.";
+      logError("Unable to render games", error);
+      if (grid) grid.textContent = "Game previews are temporarily unavailable.";
     }
   }
 
