@@ -77,28 +77,28 @@
       if (!action || !window.DDD_API?.isConfigured()) {
         if (status) {
           status.className = "form-status success-message";
-          status.textContent = `${type} preview saved on this device. Shared pilot storage is not connected yet.`;
+          status.textContent = "Saved. We’ll use this information in your current browser experience.";
         }
         return;
       }
 
-      if (status) status.textContent = "Saving to the shared Dinner, Dice & Dragons pilot…";
+      if (status) status.textContent = "Saving…";
       const result = await window.DDD_API.post(action, values);
-      if (!result.ok) throw new Error(result.error || "Shared save failed");
+      if (!result.ok) throw new Error(result.error || "Save failed");
 
       const identity = result.player_id || result.gm_id || result.game_id || "";
       if (identity) localStorage.setItem(`ddd-${type.toLowerCase().replaceAll(" ", "-")}-id`, identity);
       if (result.user_id) localStorage.setItem("ddd-user-id", result.user_id);
       if (status) {
         status.className = "form-status success-message";
-        status.textContent = `${type} saved to the shared pilot. This profile can now be used across devices.`;
+        status.textContent = "Saved.";
       }
     } catch (error) {
       logError("Unable to save form", error);
       const status = getStatusNode(form);
       if (status) {
         status.className = "form-status error-message";
-        status.textContent = "Shared save failed. A local copy was kept on this device so your work was not lost.";
+        status.textContent = "We couldn’t save online, but your information is still saved on this device.";
       }
     }
   }
