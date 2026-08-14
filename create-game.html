@@ -3,57 +3,57 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Set Up Your Game | Dinner, Dice & Dragons</title>
-  <meta name="description" content="Game Masters can turn a matched time and venue into a clear game listing for local Players.">
+  <title>Create Your D&D Table | Dinner, Dice & Dragons</title>
+  <meta name="description" content="Dungeon Masters can turn a matched time and venue into a clear game listing that Players can understand and join.">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to main content</a>
-<header class="site-header"><div class="shell nav-wrap"><a class="brand" href="index.html"><span aria-hidden="true">🎲</span><span>Dinner, Dice &amp; Dragons</span></a><nav aria-label="Primary navigation"><a href="index.html#discover">Find a Game</a><a aria-current="page" href="join.html#gm">GM a Game</a><a href="venues.html">Venues</a><a href="game-hub.html?role=gm">Game Hub</a></nav></div></header>
+<header class="site-header"><div class="shell nav-wrap"><a class="brand" href="index.html"><span aria-hidden="true">🎲</span><span>Dinner, Dice &amp; Dragons</span></a><nav aria-label="Primary navigation"><a href="index.html">Home</a><a href="join.html#player">Players</a><a aria-current="page" href="join.html#gm">DMs</a><a href="venues.html">Venues</a><a href="conduct.html">Safety</a></nav></div></header>
 <main id="main">
-<section class="hero"><div class="shell hero-grid"><div><p class="eyebrow">FORM A TABLE</p><h1>You found a viable match. Now turn it into a table Players and the venue can confirm.</h1><p class="lede">Describe the game, choose your Player limits, and save the Forming table. It becomes Confirmed only after venue approval and minimum Player commitment.</p></div><aside class="hero-card"><p class="eyebrow">YOUR MATCHED TIME</p><div id="selected-slot"><p>No time and venue selected yet.</p><a class="button secondary" href="find-venue.html">Find Players + Venue</a></div></aside></div></section>
-<section class="section"><div class="shell"><div class="template-intro"><div><p class="eyebrow">GAME DETAILS</p><h2>Give Players what they need to decide.</h2><p>A clear title, short pitch, schedule, Player count, and table expectations are enough.</p></div></div>
+<section class="hero"><div class="shell hero-grid"><div><p class="eyebrow">FOR DUNGEON MASTERS · STEP 2</p><h1>You found the people, place, and time. Now tell Players what you want to run.</h1><p class="lede">Turn the match into a clear Forming table. Players can see the game, schedule, venue, table expectations, and how to join before they commit.</p><div class="cta-row"><a class="button secondary" href="find-venue.html">← Back to Matches</a></div></div><aside class="hero-card"><p class="eyebrow">YOUR SELECTED GAME NIGHT</p><div id="selected-slot"><h2>Start with a match</h2><p>Choose a compatible Player + venue option first so the time, place, and capacity carry into this form automatically.</p><a class="button primary" href="find-venue.html">Find Players + a Place</a></div></aside></div></section>
+<section class="section"><div class="shell"><div class="template-intro"><div><p class="eyebrow">CREATE YOUR FORMING TABLE</p><h2>Give Players what they need to say yes.</h2><p>Keep it simple: what you are running, when and where, how many seats you have, and what kind of table experience to expect.</p></div><div class="template-summary"><strong>What happens after you save?</strong><span>Your table starts as Forming. Players can commit, the venue can approve the booking when required, and the table becomes Confirmed when your minimum is met.</span></div></div>
 <form class="panel form-grid prototype-form" id="game-form" data-profile-type="Game" novalidate>
 <h3 class="form-section-title">1. What are you running?</h3>
 <label>Game title<input name="title" placeholder="Shadows Over Florence" required></label>
-<label>RPG system<select name="system" required><option value="">Choose system</option><option>D&D 5e 2014</option><option>D&D 5e 2024</option><option>Pathfinder 2e</option><option>Call of Cthulhu 7e</option><option>Cyberpunk RED</option><option>Other</option></select></label>
+<label>D&D / RPG system<select name="system" required><option value="">Choose system</option><option>D&D 5e 2014</option><option>D&D 5e 2024</option><option>Pathfinder 2e</option><option>Call of Cthulhu 7e</option><option>Cyberpunk RED</option><option>Other</option></select></label>
 <label>Game type<select name="game_type"><option>One-shot</option><option>Campaign session</option><option>New campaign</option><option>Learn-to-play</option><option>Organized play</option></select></label>
 <label>Level / character guidance<input name="level" placeholder="Level 3; pregens provided"></label>
-<label>Short pitch<textarea name="description" rows="4" placeholder="What is the adventure and what kind of experience should Players expect?" required></textarea></label>
+<label>What is the game about?<textarea name="description" rows="4" placeholder="Give Players a short pitch for the adventure and the kind of experience they can expect." required></textarea></label>
 
-<h3 class="form-section-title">2. When and where?</h3>
+<h3 class="form-section-title">2. Confirm when and where</h3>
 <label>Day<input id="game-day" name="day" readonly required></label>
 <label>Start time<input id="game-start" name="start_time" type="time" readonly required></label>
 <label>Session length<input id="game-duration" name="duration" readonly required></label>
 <label>Venue<input id="game-venue" name="venue" readonly required></label>
-<p class="microcopy">Need a different time or venue? <a href="find-venue.html">Go back to matching.</a></p>
+<p class="microcopy">Need a different time or venue? <a href="find-venue.html">Choose another match.</a></p>
 
-<h3 class="form-section-title">3. One night or recurring?</h3>
+<h3 class="form-section-title">3. Is this one night or a recurring game?</h3>
 <label>Schedule<select name="recurrence" id="game-recurrence" required><option value="one_time">One time</option><option value="weekly">Weekly</option><option value="every_other_week">Every other week</option><option value="monthly">Monthly</option><option value="custom">Custom / varies</option></select></label>
 <label>How many sessions?<input type="number" min="1" max="52" name="expected_sessions" id="expected-sessions" value="1" required></label>
-<label>Schedule notes<textarea name="recurrence_notes" rows="3" placeholder="Every other Tuesday for 8 sessions"></textarea></label>
+<label>Schedule notes<textarea name="recurrence_notes" rows="3" placeholder="Example: Every other Tuesday for 8 sessions"></textarea></label>
 
-<h3 class="form-section-title">4. How many Players?</h3>
+<h3 class="form-section-title">4. How many Players do you need?</h3>
 <label>Minimum Players needed<select name="min_players" id="min-players" required><option value="2">2 Players</option><option value="3" selected>3 Players</option><option value="4">4 Players</option><option value="5">5 Players</option><option value="6">6 Players</option></select></label>
 <label>Maximum Player seats<select name="seats" id="player-seats" required><option value="3">3</option><option value="4" selected>4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option></select></label>
-<label>Expected guests<input id="expected-guests" name="expected_guests" readonly value="5"></label>
-<label>Ready when<input id="confirmation-rule" readonly value="Venue approval + 3 confirmed Players"></label>
-<label>How do Players join?<select name="join_mode"><option>Request to join — GM approves</option><option>Instant join while seats remain</option></select></label>
+<label>Expected people at the venue<input id="expected-guests" name="expected_guests" readonly value="5"></label>
+<label>Table confirms when<input id="confirmation-rule" readonly value="Venue approval + 3 confirmed Players"></label>
+<label>How do Players join?<select name="join_mode"><option>Request to join — DM approves</option><option>Instant join while seats remain</option></select></label>
 <label>Experience level<select name="experience"><option>Brand new Players welcome</option><option>Some experience helpful</option><option>Experienced Players preferred</option><option>Any experience level</option></select></label>
 <label>Age / environment<select name="age"><option>All ages / family appropriate</option><option>Teen friendly</option><option>18+ adult table</option></select></label>
 
-<h3 class="form-section-title">5. What should Players know?</h3>
+<h3 class="form-section-title">5. What should Players know before joining?</h3>
 <label>Play style<textarea name="play_style" rows="3" placeholder="High roleplay, medium combat, light puzzles" required></textarea></label>
 <label>Table rules / boundaries<textarea name="boundaries" rows="4" placeholder="No PvP, respectful table, breaks every 90 minutes" required></textarea></label>
 <label>Homebrew / rules notes<textarea name="rules_notes" rows="3" placeholder="Optional house rules or character creation notes"></textarea></label>
-<label class="check-label"><input type="checkbox" required><span>I confirm this accurately describes my game.</span></label>
-<button class="button primary" type="submit">Save Forming Table</button>
+<label class="check-label"><input type="checkbox" required><span>I confirm this accurately describes the game I intend to run.</span></label>
+<button class="button primary" type="submit">Create My Forming Table</button>
 <p class="form-status" role="status" aria-live="polite"></p>
 </form>
-<div class="next-step"><strong>Next →</strong><a class="button primary" href="table-lifecycle.html?role=gm">Manage Commitments & Confirm</a><a class="button secondary" href="find-venue.html">Back to Table Match</a></div>
+<div class="next-step" id="game-next-step" hidden><strong>Table created. Next:</strong><a class="button primary" href="table-lifecycle.html?role=gm">Review Players & Confirm the Table</a><a class="button secondary" href="find-venue.html">Choose a Different Match</a></div>
 </div></section>
 </main>
-<footer class="site-footer"><div class="shell footer-grid"><div><strong>Dinner, Dice &amp; Dragons</strong><p>Find the time. Form the table. Confirm it. Play.</p></div><div><a href="index.html">Home</a> · <a href="index.html#discover">Find a Game</a> · <a href="venues.html">Venues</a> · <a href="conduct.html">Safety</a></div></div></footer>
+<footer class="site-footer"><div class="shell footer-grid"><div><strong>Dinner, Dice &amp; Dragons</strong><p>Find the fit. Form the table. Confirm the group. Play.</p></div><div><a href="index.html">Home</a> · <a href="join.html#player">Players</a> · <a href="join.html#gm">DMs</a> · <a href="venues.html">Venues</a> · <a href="conduct.html">Safety</a></div></div></footer>
 <script src="api-config.js"></script><script src="api-client.js"></script><script src="form-pilot.js"></script><script src="forms.js"></script><script src="create-game.js"></script>
 </body>
 </html>
