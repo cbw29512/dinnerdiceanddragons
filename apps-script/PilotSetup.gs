@@ -2,7 +2,8 @@ function setupSharedPilot() {
   try {
     const database = setupDatabase();
     const venues = seedPilotVenues();
-    return { ok:true, database, venues, writes_enabled:false };
+    const writeGate = disablePilotWrites();
+    return { ok:true, database, venues, writes_enabled:writeGate.writes_enabled };
   } catch (error) {
     console.error("[DDD] setupSharedPilot failed", error);
     throw error;
