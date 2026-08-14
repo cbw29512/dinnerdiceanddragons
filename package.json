@@ -2,11 +2,12 @@
   "name": "dinner-dice-and-dragons-site-tests",
   "version": "1.0.0",
   "private": true,
-  "description": "Browser-level regression tests for the Dinner, Dice & Dragons static site.",
+  "description": "Browser-level regression and accessibility tests for the Dinner, Dice & Dragons static site.",
   "scripts": {
     "test:e2e": "playwright test"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@playwright/test": "1.62.0"
   }
 }
