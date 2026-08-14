@@ -95,31 +95,46 @@ function dddUpsert_(sheetName, keyField, keyValue, rowObject) {
   }
 }
 
-function dddDeactivateBy_(sheetName, filters, updatedAt) {
+function dddPatchBy_(sheetName, filters, patch) {
   try {
     const headers = DDD_SCHEMA[sheetName];
     if (!headers) throw new Error(`Unknown schema: ${sheetName}`);
-    const activeIndex = headers.indexOf("active");
-    if (activeIndex < 0) throw new Error(`${sheetName} has no active field`);
-    const updatedIndex = headers.indexOf("updated_at");
     const filterIndexes = Object.entries(filters || {}).map(([field, value]) => {
       const index = headers.indexOf(field);
       if (index < 0) throw new Error(`Unknown filter ${field} for ${sheetName}`);
       return { index, value };
     });
+    const patchEntries = Object.entries(patch || {}).map(([field, value]) => {
+      const index = headers.indexOf(field);
+      if (index < 0) throw new Error(`Unknown patch field ${field} for ${sheetName}`);
+      return { index, value };
+    });
 
     const sheet = dddSheet_(sheetName);
     const values = sheet.getDataRange().getValues();
+    if (values.length < 2) return 0;
     let changed = 0;
     for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
       const matches = filterIndexes.every((filter) => String(values[rowIndex][filter.index]) === String(filter.value));
       if (!matches) continue;
-      values[rowIndex][activeIndex] = false;
-      if (updatedIndex >= 0) values[rowIndex][updatedIndex] = updatedAt || dddNow_();
+      patchEntries.forEach((entry) => { values[rowIndex][entry.index] = entry.value; });
       changed += 1;
     }
     if (changed > 0) sheet.getRange(1, 1, values.length, headers.length).setValues(values);
     return changed;
+  } catch (error) {
+    console.error(`[DDD] Unable to patch rows in ${sheetName}`, error);
+    throw error;
+  }
+}
+
+function dddDeactivateBy_(sheetName, filters, updatedAt) {
+  try {
+    const headers = DDD_SCHEMA[sheetName];
+    if (!headers || !headers.includes("active")) throw new Error(`${sheetName} has no active field`);
+    const patch = { active: false };
+    if (headers.includes("updated_at")) patch.updated_at = updatedAt || dddNow_();
+    return dddPatchBy_(sheetName, filters, patch);
   } catch (error) {
     console.error(`[DDD] Unable to deactivate rows in ${sheetName}`, error);
     throw error;
