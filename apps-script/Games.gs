@@ -1,5 +1,6 @@
 function saveGame_(payload) {
   try {
+    const validated = validatePilotGamePayload_(payload);
     const now = dddNow_();
     const gameId = payload.game_id || dddId_("game");
     const recurrence = String(payload.recurrence || "one_time");
@@ -10,9 +11,9 @@ function saveGame_(payload) {
       dddUpsert_("GameSeries", "series_id", seriesId, {
         series_id:seriesId,
         title:payload.title || "",
-        gm_id:payload.gm_id || "",
+        gm_id:validated.gmId,
         system:payload.system || "",
-        venue_id:payload.venue_id || "",
+        venue_id:validated.venueId,
         cadence:recurrence,
         expected_sessions:payload.expected_sessions || "",
         starts_on:payload.starts_on || "",
@@ -28,21 +29,21 @@ function saveGame_(payload) {
       series_id:seriesId,
       title:payload.title || "",
       description:payload.description || "",
-      gm_id:payload.gm_id || "",
+      gm_id:validated.gmId,
       system:payload.system || "",
-      venue_id:payload.venue_id || "",
+      venue_id:validated.venueId,
       status:"forming",
       starts_at:payload.starts_at || `${payload.day || ""} ${payload.start_time || ""}`.trim(),
       ends_at:payload.ends_at || "",
-      min_players:payload.min_players || "",
-      max_players:payload.seats || payload.max_players || "",
+      min_players:validated.minimumPlayers,
+      max_players:validated.maximumPlayers,
       minimum_age:payload.age || "",
       beginner_friendly:payload.experience || "",
       join_mode:payload.join_mode || "",
       created_at:now,
       updated_at:now
     });
-    const booking = saveBookingForGame_(gameId, payload, seriesId, now);
+    const booking = saveBookingForGame_(gameId, { ...payload, gm_id:validated.gmId, venue_id:validated.venueId, venue_window_id:validated.venueWindowId }, seriesId, now);
     const gameState = refreshSharedGameStatus_(gameId);
     return { ok:true, game_id:gameId, series_id:seriesId, booking_id:booking.booking_id, booking_status:booking.status, game_state:gameState };
   } catch (error) {
