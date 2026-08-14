@@ -74,7 +74,7 @@ See `docs/DECISIONS.md`, Decision 016.
 - [x] Record auth/provider decision and consequences.
 - [x] Establish this production-MVP master checklist.
 - [x] Create FastAPI production backend skeleton.
-- [ ] Add environment/settings model with safe secret handling.
+- [x] Add environment/settings model with safe secret handling.
 - [ ] Add PostgreSQL connection/session layer.
 - [ ] Add Alembic migrations.
 - [ ] Add Docker development runtime and health check.
