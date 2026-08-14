@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Dashboard Prototype | Dinner, Dice & Dragons</title>
+  <style>
+    :root{
+      --bg:#0e1117;--panel:#171b23;--panel2:#202632;--text:#f5f2ea;--muted:#b8b7b2;
+      --line:#343c4a;--accent:#d9aa45;--good:#4fbd84;--warn:#e4b74e;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+    a{color:inherit}
+    button,a.button{min-height:44px}
+    .skip{position:absolute;left:-9999px}.skip:focus{left:1rem;top:1rem;background:#fff;color:#000;padding:.6rem;z-index:5}
+    header{border-bottom:1px solid var(--line);background:#11151c;position:sticky;top:0}
+    .shell{width:min(1180px,92%);margin:auto}
+    .nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 0;gap:1rem;flex-wrap:wrap}
+    .brand{font-weight:800;text-decoration:none}
+    .nav-right{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+    main{padding:2rem 0 4rem}
+    .hero{display:grid;grid-template-columns:1.2fr .8fr;gap:1.2rem;align-items:start}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:1.2rem}
+    .eyebrow{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:800}
+    h1,h2,h3{line-height:1.15;margin:.3rem 0 .7rem}
+    h1{font-size:clamp(2rem,5vw,3.6rem)}
+    p{margin:.4rem 0 1rem}
+    .muted{color:var(--muted)}
+    .roles{display:flex;flex-wrap:wrap;gap:.6rem;margin:1rem 0}
+    button,.button{
+      border:1px solid var(--line);border-radius:10px;padding:.7rem 1rem;background:var(--panel2);
+      color:var(--text);font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center
+    }
+    button[aria-pressed="true"],.primary{background:var(--accent);color:#17120a;border-color:var(--accent)}
+    button:focus-visible,.button:focus-visible{outline:3px solid #fff;outline-offset:3px}
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;margin-top:1rem}
+    .status-card{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:1rem}
+    .status-row{display:flex;justify-content:space-between;gap:1rem;padding:.6rem 0;border-bottom:1px solid var(--line)}
+    .status-row:last-child{border-bottom:0}
+    .good{color:var(--good);font-weight:800}
+    .warn{color:var(--warn);font-weight:800}
+    .ready{border:2px solid var(--good)}
+    .section{margin-top:1.2rem}
+    .calendar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+    .date-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1rem}
+    .date-card.ready{border-color:var(--good)}
+    .actions{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:.8rem}
+    .hidden{display:none!important}
+    @media(max-width:800px){
+      .hero,.grid,.calendar{grid-template-columns:1fr}
+      header{position:static}
+    }
+  </style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<header>
+  <div class="shell nav">
+    <a class="brand" href="#">🎲 Dinner, Dice &amp; Dragons</a>
+    <div class="nav-right">
+      <span class="muted">Viewing as:</span>
+      <button id="role-menu" aria-haspopup="true" aria-expanded="false">Player ▾</button>
+    </div>
+  </div>
+</header>
+
+<main id="main" class="shell">
+  <section class="hero">
+    <div>
+      <p class="eyebrow">YOUR DASHBOARD</p>
+      <h1 id="hero-title">Find your next game.</h1>
+      <p id="hero-copy" class="muted">Tell local GMs what you want to play, browse matching games, and see when your game night is ready.</p>
+      <div class="roles" role="group" aria-label="Switch role">
+        <button class="role-btn" data-role="player" aria-pressed="true">🎲 Player</button>
+        <button class="role-btn" data-role="gm" aria-pressed="false">🧙 GM</button>
+        <button class="role-btn" data-role="venue" aria-pressed="false">🍽️ Venue</button>
+      </div>
+      <p class="muted">One account can have more than one role. Switch views anytime.</p>
+    </div>
+
+    <aside class="panel ready">
+      <p class="eyebrow">NEXT GAME</p>
+      <h2>🎉 Game Night Ready</h2>
+      <p><strong>Shadows Over Florence</strong><br>Wednesday · 6–10 PM</p>
+      <div class="status-row"><span>🧙 GM</span><strong class="good">Confirmed ✓</strong></div>
+      <div class="status-row"><span>🎲 Players</span><strong class="good">5/5 ✓</strong></div>
+      <div class="status-row"><span>🍽️ Venue</span><strong class="good">Confirmed ✓</strong></div>
+      <div class="actions"><a class="button primary" href="#">Open Game Hub</a></div>
+    </aside>
+  </section>
+
+  <section class="section">
+    <div class="grid">
+      <article class="status-card role-content player">
+        <p class="eyebrow">PLAYER</p>
+        <h3>Games you want</h3>
+        <p>Call of Cthulhu · Pathfinder 2e</p>
+        <a class="button" href="#">Update what I want to play</a>
+      </article>
+      <article class="status-card role-content player">
+        <p class="eyebrow">MATCHES</p>
+        <h3>3 games fit your schedule</h3>
+        <p class="muted">2 have open seats. 1 is still forming.</p>
+        <a class="button" href="#">Browse matching games</a>
+      </article>
+      <article class="status-card role-content player">
+        <p class="eyebrow">REQUESTS</p>
+        <h3>1 seat request pending</h3>
+        <p class="muted">The GM reviews Player requests.</p>
+        <a class="button" href="#">View request</a>
+      </article>
+
+      <article class="status-card role-content gm hidden">
+        <p class="eyebrow">GAME MASTER</p>
+        <h3>Players want games</h3>
+        <p>6 want Call of Cthulhu Saturday evenings.</p>
+        <a class="button" href="#">See Player interest</a>
+      </article>
+      <article class="status-card role-content gm hidden">
+        <p class="eyebrow">YOUR GAME</p>
+        <h3>Shadows Over Florence</h3>
+        <p class="muted">5 Players · Wednesday · 6–10 PM</p>
+        <a class="button" href="#">Manage Players</a>
+      </article>
+      <article class="status-card role-content gm hidden">
+        <p class="eyebrow">VENUE</p>
+        <h3>2 public venues match</h3>
+        <p class="muted">Both fit your time and group size.</p>
+        <a class="button" href="#">Review venues</a>
+      </article>
+
+      <article class="status-card role-content venue hidden">
+        <p class="eyebrow">VENUE</p>
+        <h3>2 open game-night windows</h3>
+        <p>Tuesday 6–10 PM · Saturday 1–6 PM</p>
+        <a class="button" href="#">Update table availability</a>
+      </article>
+      <article class="status-card role-content venue hidden">
+        <p class="eyebrow">INTEREST</p>
+        <h3>3 GMs match Tuesday</h3>
+        <p class="muted">Nearby Players are also available.</p>
+        <a class="button" href="#">Review opportunities</a>
+      </article>
+      <article class="status-card role-content venue hidden">
+        <p class="eyebrow">NEXT GROUP</p>
+        <h3>6 expected guests</h3>
+        <p class="muted">GM is your point of contact.</p>
+        <a class="button" href="#">View game-night details</a>
+      </article>
+    </div>
+  </section>
+
+  <section class="section">
+    <div>
+      <p class="eyebrow">GAME NIGHT CALENDAR</p>
+      <h2>See when all three sides line up.</h2>
+      <p class="muted">The calendar lives inside your dashboard instead of being another place you have to navigate to.</p>
+    </div>
+
+    <div class="calendar">
+      <article class="date-card ready">
+        <p class="eyebrow">SEP 10</p>
+        <h3>🎉 Ready</h3>
+        <div class="status-row"><span>GM</span><strong class="good">✓</strong></div>
+        <div class="status-row"><span>Players</span><strong class="good">5/5</strong></div>
+        <div class="status-row"><span>Venue</span><strong class="good">✓</strong></div>
+      </article>
+
+      <article class="date-card">
+        <p class="eyebrow">SEP 24</p>
+        <h3>Needs 2 Players</h3>
+        <div class="status-row"><span>GM</span><strong class="good">✓</strong></div>
+        <div class="status-row"><span>Players</span><strong class="warn">3/5</strong></div>
+        <div class="status-row"><span>Venue</span><strong class="good">✓</strong></div>
+      </article>
+
+      <article class="date-card">
+        <p class="eyebrow">OCT 8</p>
+        <h3>Needs a Venue</h3>
+        <div class="status-row"><span>GM</span><strong class="good">✓</strong></div>
+        <div class="status-row"><span>Players</span><strong class="good">5/5</strong></div>
+        <div class="status-row"><span>Venue</span><strong class="warn">Needed</strong></div>
+      </article>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  "use strict";
+  try {
+    const buttons=[...document.querySelectorAll(".role-btn")];
+    const content=[...document.querySelectorAll(".role-content")];
+    const title=document.querySelector("#hero-title");
+    const copy=document.querySelector("#hero-copy");
+    const menu=document.querySelector("#role-menu");
+    const text={
+      player:["Find your next game.","Tell local GMs what you want to play, browse matching games, and see when your game night is ready."],
+      gm:["Build your next table.","See what Players want, post what you can run, find a public venue, and know when the whole table is ready."],
+      venue:["Turn open tables into game nights.","Offer the times you want filled, connect with GMs, and see confirmed groups and expected headcount."]
+    };
+    function setRole(role){
+      try{
+        buttons.forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.role===role)));
+        content.forEach(c=>c.classList.toggle("hidden",!c.classList.contains(role)));
+        title.textContent=text[role][0];
+        copy.textContent=text[role][1];
+        menu.textContent=role==="player"?"Player ▾":role==="gm"?"Game Master ▾":"Venue ▾";
+      }catch(err){console.error("Unable to switch role",err)}
+    }
+    buttons.forEach(b=>b.addEventListener("click",()=>setRole(b.dataset.role)));
+  } catch(err) {
+    console.error("Dashboard prototype failed to initialize",err);
+  }
+})();
+</script>
+</body>
+</html>
