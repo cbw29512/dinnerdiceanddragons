@@ -73,7 +73,7 @@ See `docs/DECISIONS.md`, Decision 016.
 - [x] Select production authentication provider.
 - [x] Record auth/provider decision and consequences.
 - [x] Establish this production-MVP master checklist.
-- [ ] Create FastAPI production backend skeleton.
+- [x] Create FastAPI production backend skeleton.
 - [ ] Add environment/settings model with safe secret handling.
 - [ ] Add PostgreSQL connection/session layer.
 - [ ] Add Alembic migrations.
