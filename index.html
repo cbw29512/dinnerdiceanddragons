@@ -3,122 +3,185 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Local Tabletop RPG Game Nights | Dinner, Dice & Dragons</title>
-  <meta name="description" content="Dinner, Dice & Dragons helps Players, Game Masters, and local venues turn tabletop RPG interest, schedules, and open tables into real in-person game nights.">
+  <title>Play More D&D Locally | Dinner, Dice & Dragons</title>
+  <meta name="description" content="Dinner, Dice & Dragons helps Players find D&D games, Dungeon Masters find Players and places to run, and local venues turn open tables into recurring game nights.">
   <meta name="theme-color" content="#0e1117">
   <link rel="canonical" href="https://cbw29512.github.io/dinnerdiceanddragons/">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Local Tabletop RPG Game Nights | Dinner, Dice & Dragons">
-  <meta property="og:description" content="Players tell us what they want to play. GMs tell us what they can run. Venues tell us when they have tables. We find the overlap.">
+  <meta property="og:title" content="Play More D&D Locally | Dinner, Dice & Dragons">
+  <meta property="og:description" content="Players find games. DMs find Players and places to run. Venues fill open tables with organized groups. Dinner, Dice & Dragons brings all three together.">
   <meta property="og:url" content="https://cbw29512.github.io/dinnerdiceanddragons/">
   <link rel="stylesheet" href="dashboard.css">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Dinner, Dice & Dragons","url":"https://cbw29512.github.io/dinnerdiceanddragons/","description":"A local tabletop RPG matching platform connecting Players, Game Masters, and public venues around viable game-night schedules."}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Dinner, Dice & Dragons","url":"https://cbw29512.github.io/dinnerdiceanddragons/","description":"A local tabletop RPG platform helping Players, Dungeon Masters, and public venues turn compatible schedules and interests into real game nights."}</script>
 </head>
 <body data-homepage="true">
 <a class="skip-link" href="#main">Skip to main content</a>
 <header>
   <div class="shell nav">
     <a class="brand" href="index.html"><span aria-hidden="true">🎲</span><span>Dinner, Dice &amp; Dragons</span></a>
-    <div class="nav-right">
-      <label class="role-select-wrap" for="role-select"><span>Viewing as</span><select id="role-select"><option value="player">Player</option><option value="gm">Game Master</option><option value="venue">Venue</option></select></label>
+    <nav class="nav-right" aria-label="Primary navigation">
+      <a class="header-link" href="#players">Players</a>
+      <a class="header-link" href="#dms">DMs</a>
+      <a class="header-link" href="#venues">Venues</a>
+      <a class="header-link" href="#how-it-works">How It Works</a>
       <a class="header-link" href="conduct.html">Safety</a>
-    </div>
+    </nav>
   </div>
 </header>
 
 <main id="main" class="shell">
-  <section class="hero" aria-labelledby="hero-title">
-    <div>
-      <p class="eyebrow">LOCAL GAME-NIGHT DASHBOARD</p>
-      <h1 id="hero-title">Find your next game.</h1>
-      <p id="hero-copy" class="muted">Tell local GMs what you want to play, browse forming tables, and see when your game night is ready.</p>
-      <div class="actions workflow-actions">
-        <a id="role-primary" class="button primary" href="join.html#player">Find My Table</a>
-        <a id="role-secondary" class="button" href="games/shadows-over-florence/">Preview a Forming Table</a>
-      </div>
-      <div class="roles" role="group" aria-label="Switch dashboard role">
-        <button class="role-btn" type="button" data-role="player" aria-pressed="true"><span aria-hidden="true">🎲</span>&nbsp;Player</button>
-        <button class="role-btn" type="button" data-role="gm" aria-pressed="false"><span aria-hidden="true">🧙</span>&nbsp;Game Master</button>
-        <button class="role-btn" type="button" data-role="venue" aria-pressed="false"><span aria-hidden="true">🍽️</span>&nbsp;Venue</button>
-      </div>
-      <p class="muted">One account can have more than one role. Both role controls stay synchronized.</p>
-      <p id="role-status" class="sr-only" role="status" aria-live="polite"></p>
+  <section class="home-hero" aria-labelledby="hero-title">
+    <div class="hero-copy-block">
+      <p class="eyebrow">LOCAL D&amp;D GAME NIGHTS</p>
+      <h1 id="hero-title">Play more D&amp;D. Spend less time finding a table.</h1>
+      <p class="hero-lede">Players find games that fit. DMs find Players and places to run. Venues bring organized groups to open tables. <strong>Dinner, Dice &amp; Dragons brings all three together.</strong></p>
+      <p class="muted">Use one role or several. A DM can also look for a game as a Player, and a venue owner can play too.</p>
     </div>
 
-    <aside class="panel ready" aria-labelledby="next-game-title">
-      <p class="eyebrow">NEXT GAME · SAMPLE</p>
-      <h2 id="next-game-title">Game Night Ready</h2>
-      <p><strong>Shadows Over Florence</strong><br>Wednesday · 6–10 PM</p>
-      <div class="status-row"><span>Game Master</span><strong class="good">Confirmed</strong></div>
-      <div class="status-row"><span>Players</span><strong class="good">5 of 5</strong></div>
-      <div class="status-row"><span>Venue</span><strong class="good">Confirmed</strong></div>
-      <div class="actions"><a class="button primary" href="game-hub.html">Preview Game Hub</a></div>
-    </aside>
-  </section>
+    <div class="role-door-grid" aria-label="Choose how Dinner, Dice & Dragons can help you">
+      <article class="role-door player-door">
+        <div class="role-door-icon" aria-hidden="true">🎲</div>
+        <p class="eyebrow">I WANT TO PLAY</p>
+        <h2>Find a D&amp;D game that fits your life.</h2>
+        <p>Tell us what you want to play, when you are free, how far you will travel, and what kind of table you enjoy.</p>
+        <ul class="benefit-list">
+          <li>Stop hunting across scattered posts and chats.</li>
+          <li>See games that fit your schedule and location.</li>
+          <li>Know what the table is like before you commit.</li>
+        </ul>
+        <a class="button primary" href="join.html#player">Find My Table</a>
+      </article>
 
-  <section class="section" id="discover" aria-labelledby="next-steps-title">
-    <div class="section-heading">
-      <p class="eyebrow">YOUR NEXT STEPS</p>
-      <h2 id="next-steps-title">Move the table forward.</h2>
-      <p class="muted">The dashboard shows the shortest useful action for the role you are using right now.</p>
+      <article class="role-door dm-door">
+        <div class="role-door-icon" aria-hidden="true">🧙</div>
+        <p class="eyebrow">I WANT TO DM</p>
+        <h2>Run the game. We help build the table.</h2>
+        <p>Tell us what you can run and when. See compatible Player interest and public places that can host the group.</p>
+        <ul class="benefit-list">
+          <li>See demand before you prepare a campaign.</li>
+          <li>Find Players who can actually make the schedule.</li>
+          <li>Find a venue with the right time and capacity.</li>
+        </ul>
+        <a class="button primary" href="join.html#gm">Form My Table</a>
+      </article>
+
+      <article class="role-door venue-door">
+        <div class="role-door-icon" aria-hidden="true">🍽️</div>
+        <p class="eyebrow">I HAVE A VENUE</p>
+        <h2>Turn open tables into recurring game nights.</h2>
+        <p>Post the times and tables you want filled. We help connect those openings with organized DMs and Players.</p>
+        <ul class="benefit-list">
+          <li>Know the expected headcount and schedule.</li>
+          <li>Set purchase, age, and house policies up front.</li>
+          <li>Work through one DM point of contact.</li>
+        </ul>
+        <a class="button primary" href="venues.html#signup">Fill My Tables</a>
+      </article>
     </div>
-    <div class="grid">
-      <article class="status-card role-content player"><p class="eyebrow">PLAYER SIGNAL</p><h3>Tell GMs what you want</h3><p>Share systems, availability, travel distance, and table preferences.</p><a class="button" href="join.html#player">Update My Player Signal</a></article>
-      <article class="status-card role-content player"><p class="eyebrow">FORMING TABLE</p><h3>See what a match looks like</h3><p class="muted">Review game, schedule, venue, Table Fit, and what is still needed.</p><a class="button" href="#shared-games">Browse Forming Tables</a></article>
-      <article class="status-card role-content player"><p class="eyebrow">CONFIRMED TABLE</p><h3>Keep game night organized</h3><p class="muted">See announcements, your seat, venue logistics, and table discussion.</p><a class="button" href="game-hub.html">Preview Player Game Hub</a></article>
 
-      <article class="status-card role-content gm" hidden><p class="eyebrow">PLAYER DEMAND</p><h3>Find Players who fit</h3><p>Compare system, schedule, travel range, and venue availability.</p><a class="button" href="find-venue.html">Find Players + Venue</a></article>
-      <article class="status-card role-content gm" hidden><p class="eyebrow">FORMING TABLE</p><h3>Turn a match into a game</h3><p class="muted">Carry the selected time and venue into a table Players can join.</p><a class="button" href="create-game.html">Create a Forming Table</a></article>
-      <article class="status-card role-content gm" hidden><p class="eyebrow">CONFIRMED TABLE</p><h3>Coordinate one table</h3><p class="muted">Manage Players, venue operations, announcements, and session changes.</p><a class="button" href="game-hub.html">Preview GM Game Hub</a></article>
-
-      <article class="status-card role-content venue" hidden><p class="eyebrow">VENUE SIGNAL</p><h3>Post an open table window</h3><p>Set the time, capacity, recurrence, purchase policy, and venue notes.</p><a class="button" href="venues.html#signup">Post Venue Availability</a></article>
-      <article class="status-card role-content venue" hidden><p class="eyebrow">TABLE MATCH</p><h3>See how all three sides line up</h3><p class="muted">A viable game needs compatible GM supply, Player demand, and venue capacity.</p><a class="button" href="find-venue.html">Preview Table Matching</a></article>
-      <article class="status-card role-content venue" hidden><p class="eyebrow">NEXT GROUP</p><h3>Know the expected headcount</h3><p class="muted">The GM remains the venue’s point of contact for the organized group.</p><a class="button" href="game-hub.html">Preview Venue Game Hub</a></article>
+    <div class="match-equation" aria-label="What makes a game night possible">
+      <div><span aria-hidden="true">🎲</span><strong>Players want the game</strong></div>
+      <span class="equation-symbol" aria-hidden="true">+</span>
+      <div><span aria-hidden="true">🧙</span><strong>A DM can run it</strong></div>
+      <span class="equation-symbol" aria-hidden="true">+</span>
+      <div><span aria-hidden="true">🍽️</span><strong>A venue has space</strong></div>
+      <span class="equation-symbol" aria-hidden="true">+</span>
+      <div><span aria-hidden="true">🗓️</span><strong>The same night works</strong></div>
+      <span class="equation-symbol" aria-hidden="true">=</span>
+      <div class="equation-result"><span aria-hidden="true">⚔️</span><strong>A game that actually happens</strong></div>
     </div>
-  </section>
-
-  <section class="section role-content player" id="shared-games" aria-labelledby="shared-games-title">
-    <div class="section-heading">
-      <p class="eyebrow" id="shared-games-mode">SHARED PILOT · CHECKING CONNECTION</p>
-      <h2 id="shared-games-title">Forming tables you can join.</h2>
-      <p class="muted">When the pilot API is connected, this section lists shared Games and can create a real pilot seat request using the Player identity saved in this browser. The pilot does not yet provide production authentication.</p>
-    </div>
-    <div class="grid" id="shared-games-list" aria-live="polite"><article class="status-card"><h3>Checking shared pilot…</h3><p class="muted">Local prototype features remain available even if the pilot is disconnected.</p></article></div>
-    <p id="shared-games-status" class="muted" role="status" aria-live="polite"></p>
   </section>
 
   <section class="section" id="how-it-works" aria-labelledby="how-it-works-title">
     <div class="section-heading">
       <p class="eyebrow">HOW IT WORKS</p>
-      <h2 id="how-it-works-title">Three signals. One real game night.</h2>
-      <p class="muted">Any side can start. Dinner, Dice &amp; Dragons looks for the overlap instead of forcing everyone through the same entry point.</p>
+      <h2 id="how-it-works-title">The hard part is getting everyone to line up. That is what we solve.</h2>
+      <p class="muted">You should not have to understand a matching algorithm. Tell us what works for you and we show you where the overlap is.</p>
     </div>
-    <div class="grid">
-      <article class="status-card"><p class="eyebrow">1 · SIGNAL</p><h3>Say what works for you</h3><p>Players post demand. GMs post what they can run. Venues post table windows and capacity.</p></article>
-      <article class="status-card"><p class="eyebrow">2 · TABLE MATCH</p><h3>Check the hard fit first</h3><p>System, schedule, travel distance, venue availability, capacity, and required table needs determine whether a match is viable.</p></article>
-      <article class="status-card"><p class="eyebrow">3 · FORM → CONFIRM</p><h3>Commit, then coordinate</h3><p>A viable match becomes a Forming table. Once the venue and required Players commit, the confirmed group moves into the Game Hub.</p></article>
+    <div class="process-grid">
+      <article class="process-card"><span class="step-number">1</span><h3>Tell us what works</h3><p>Game, schedule, travel range, table needs, and venue availability.</p></article>
+      <article class="process-card"><span class="step-number">2</span><h3>We find the overlap</h3><p>Table Match checks whether the Players, DM, place, time, and capacity can work together.</p></article>
+      <article class="process-card"><span class="step-number">3</span><h3>Form the table</h3><p>The DM chooses the game and venue. Players request seats. The venue approves the booking when required.</p></article>
+      <article class="process-card"><span class="step-number">4</span><h3>Confirm and play</h3><p>Once the required people and venue are confirmed, everyone gets one place for the game-night details.</p></article>
     </div>
   </section>
 
-  <section class="section" aria-labelledby="calendar-title">
+  <section class="section" id="discover" aria-labelledby="role-value-title">
     <div class="section-heading">
-      <p class="eyebrow">GAME-NIGHT CALENDAR · SAMPLE</p>
-      <h2 id="calendar-title">See when all three sides line up.</h2>
-      <p class="muted">Text status labels make each date understandable without relying on color or icons alone. Calendar synchronization is not live yet.</p>
+      <p class="eyebrow">BUILT FOR ALL THREE SIDES</p>
+      <h2 id="role-value-title">You should see your problem — and your payoff — immediately.</h2>
+      <p class="muted">Each side gets a different benefit, but every action helps create more tables that can actually play.</p>
     </div>
-    <div class="calendar">
-      <article class="date-card ready"><p class="eyebrow"><time datetime="2026-09-10">SEP 10</time></p><h3>Ready</h3><div class="status-row"><span>Game Master</span><strong class="good">Confirmed</strong></div><div class="status-row"><span>Players</span><strong class="good">5 of 5</strong></div><div class="status-row"><span>Venue</span><strong class="good">Confirmed</strong></div></article>
-      <article class="date-card"><p class="eyebrow"><time datetime="2026-09-24">SEP 24</time></p><h3>Needs 2 Players</h3><div class="status-row"><span>Game Master</span><strong class="good">Confirmed</strong></div><div class="status-row"><span>Players</span><strong class="warn">3 of 5</strong></div><div class="status-row"><span>Venue</span><strong class="good">Confirmed</strong></div></article>
-      <article class="date-card"><p class="eyebrow"><time datetime="2026-10-08">OCT 8</time></p><h3>Needs a Venue</h3><div class="status-row"><span>Game Master</span><strong class="good">Confirmed</strong></div><div class="status-row"><span>Players</span><strong class="good">5 of 5</strong></div><div class="status-row"><span>Venue</span><strong class="warn">Still needed</strong></div></article>
+
+    <div class="role-value-stack">
+      <article class="role-value-card" id="players">
+        <div class="role-value-heading"><span class="role-value-icon" aria-hidden="true">🎲</span><div><p class="eyebrow">FOR PLAYERS</p><h3>Stop searching for “a group.” Find a table that fits you.</h3></div></div>
+        <div class="role-value-body">
+          <p>Instead of scrolling through old posts and hoping schedules line up, tell us what you want once. Your Player signal can help a DM see that local demand exists.</p>
+          <div class="value-points"><span>✓ Game/system fit</span><span>✓ Schedule fit</span><span>✓ Travel fit</span><span>✓ Table style &amp; environment</span></div>
+          <div class="actions"><a class="button primary" href="join.html#player">Find My Table</a><a class="button" href="#shared-games">See Forming Games</a></div>
+        </div>
+      </article>
+
+      <article class="role-value-card" id="dms">
+        <div class="role-value-heading"><span class="role-value-icon" aria-hidden="true">🧙</span><div><p class="eyebrow">FOR DUNGEON MASTERS</p><h3>Spend your energy running D&amp;D, not chasing schedules.</h3></div></div>
+        <div class="role-value-body">
+          <p>See whether Players want the game, whether their schedules work, and whether a nearby public venue can hold the table before you commit to organizing it.</p>
+          <div class="value-points"><span>✓ Local Player demand</span><span>✓ Compatible availability</span><span>✓ Venue capacity &amp; hours</span><span>✓ Commitment management</span></div>
+          <div class="actions"><a class="button primary" href="join.html#gm">Form My Table</a><a class="button" href="find-venue.html">Find Players + a Place</a></div>
+        </div>
+      </article>
+
+      <article class="role-value-card" id="venues">
+        <div class="role-value-heading"><span class="role-value-icon" aria-hidden="true">🍽️</span><div><p class="eyebrow">FOR VENUES</p><h3>Bring organized groups into the hours you want filled.</h3></div></div>
+        <div class="role-value-body">
+          <p>Your venue is not just a pin on a map. Post when you want groups, how many seats you have, and your house requirements. A compatible D&amp;D table can form around that opening.</p>
+          <div class="value-points"><span>✓ Expected headcount</span><span>✓ Recurring schedule</span><span>✓ Purchase policies up front</span><span>✓ One DM contact</span></div>
+          <div class="actions"><a class="button primary" href="venues.html#signup">Fill My Tables</a><a class="button" href="venues.html#benefits">See Venue Benefits</a></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="section" id="shared-games" aria-labelledby="shared-games-title">
+    <div class="section-heading">
+      <p class="eyebrow" id="shared-games-mode">FORMING GAMES · EARLY ACCESS</p>
+      <h2 id="shared-games-title">See tables that are coming together.</h2>
+      <p class="muted">A Forming table has a DM and game plan but may still need Players, venue approval, or both. Save your Player preferences first if you want to request a seat when live listings are available.</p>
+    </div>
+    <div class="grid" id="shared-games-list" aria-live="polite"><article class="status-card"><h3>Checking forming games…</h3><p class="muted">You can still explore the rest of the site if live listings are unavailable.</p></article></div>
+    <p id="shared-games-status" class="muted" role="status" aria-live="polite"></p>
+  </section>
+
+  <section class="section" aria-labelledby="confirmed-title">
+    <div class="section-heading">
+      <p class="eyebrow">WHEN THE TABLE IS CONFIRMED</p>
+      <h2 id="confirmed-title">Everyone knows what happens next.</h2>
+      <p class="muted">Confirmation is not the end of the workflow. It is where coordination gets easier.</p>
+    </div>
+    <div class="grid">
+      <article class="status-card"><p class="eyebrow">PLAYER</p><h3>Know where to be and what changed</h3><p>See your seat, schedule, venue details, announcements, and table information in one place.</p><a class="button" href="game-hub.html?role=player">See Player Game Hub</a></article>
+      <article class="status-card"><p class="eyebrow">DM</p><h3>Keep one table organized</h3><p>Manage commitments, session changes, Player communication, and venue coordination without rebuilding the group every week.</p><a class="button" href="game-hub.html?role=gm">See DM Game Hub</a></article>
+      <article class="status-card"><p class="eyebrow">VENUE</p><h3>Know the group and expected headcount</h3><p>See the scheduled game, group size, recurring pattern, and the DM who is your point of contact.</p><a class="button" href="game-hub.html?role=venue">See Venue Game Hub</a></article>
+    </div>
+  </section>
+
+  <section class="section final-cta" aria-labelledby="start-title">
+    <p class="eyebrow">START WHERE YOU ARE</p>
+    <h2 id="start-title">More tables. More game nights. More D&amp;D.</h2>
+    <p class="muted">You do not need to wait for somebody else to post first. Players, DMs, and venues can each start the opportunity.</p>
+    <div class="role-cta-row">
+      <a class="button primary" href="join.html#player">🎲 I Want to Play</a>
+      <a class="button primary" href="join.html#gm">🧙 I Want to DM</a>
+      <a class="button primary" href="venues.html#signup">🍽️ I Have a Venue</a>
     </div>
   </section>
 </main>
 
-<footer><div class="shell footer-row"><span>Dinner, Dice &amp; Dragons · Turn local RPG interest into actual game nights.</span><span><a href="join.html#player">Players</a> · <a href="join.html#gm">GMs</a> · <a href="venues.html#signup">Venues</a> · <a href="conduct.html">Safety</a></span></div></footer>
+<footer><div class="shell footer-row"><span>Dinner, Dice &amp; Dragons · More D&amp;D. Less searching, scheduling, and organizing.</span><span><a href="#players">Players</a> · <a href="#dms">DMs</a> · <a href="#venues">Venues</a> · <a href="#how-it-works">How It Works</a> · <a href="conduct.html">Safety</a></span></div></footer>
 <script src="api-config.js"></script>
 <script src="api-client.js"></script>
 <script src="shared-registration.js"></script>
 <script src="shared-games.js"></script>
-<script src="dashboard.js"></script>
 </body>
 </html>
