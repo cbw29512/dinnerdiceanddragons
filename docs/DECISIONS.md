@@ -120,6 +120,36 @@ No long-term commitment is required during validation.
 
 **Pilot metrics:** confirmed guests, actual attendance, repeat groups, cancellations/no-shows, qualitative venue feedback, optional spend feedback, and whether the venue chooses to continue.
 
+## Decision 016 — Supabase Auth + PostgreSQL for the first production identity/data foundation
+
+**Status:** Accepted for initial production implementation
+
+Dinner, Dice & Dragons will use **Supabase Auth** as the initial authentication provider and **PostgreSQL** as the durable relational data store. The initial managed database target may be Supabase Postgres, while application models and migrations remain portable PostgreSQL and the API/policy layer remains FastAPI.
+
+**Why:**
+
+- Auth provides verified-email flows and standards-based signed JWTs that FastAPI can verify server-side.
+- Supabase Auth is backed by PostgreSQL and integrates naturally with a relational application schema.
+- The initial local/pilot scale fits comfortably within the provider's entry tiers without forcing a bespoke authentication system.
+- Using an external mature identity provider avoids storing or verifying user passwords in DDD application code.
+- Standard PostgreSQL tables, stable DDD internal IDs, and provider-subject mapping preserve a future migration path.
+
+**Authorization rule:**
+
+Authentication answers **who the user is**. The DDD application database answers **what that user is allowed to do**. Player, DM, Venue Manager, moderator, admin, ownership, booking, registration, messaging, and moderation permissions remain server-side application policy; provider metadata is not the authoritative permission store.
+
+**Consequences:**
+
+- `User.id` remains an immutable internal DDD identifier.
+- Supabase `sub` is stored as `auth_provider_user_id` and is unique, but is not exposed as the application's public identity.
+- One DDD User may hold multiple application roles.
+- Anonymous visitors remain browse-only.
+- Verified email is required before active participation.
+- FastAPI validates signed access tokens and enforces account status, roles, ownership, and resource relationships.
+- Sensitive application tables are not opened to unrestricted browser writes; database/RLS controls may be used as defense in depth, not as a replacement for API authorization.
+- Provider/service secrets are server-only and never committed or shipped to the browser.
+- Auth/provider migration must preserve the internal DDD User ID and application relationships.
+
 ---
 
 ## How to add decisions
