@@ -12,6 +12,8 @@ A feature is not usable merely because it is visible or wired to JavaScript. A p
 
 Browser-local preview behavior and early-access shared behavior are intentionally distinguished from production-live behavior. Sample data must be labeled as sample data.
 
+Automated accessibility checks are regression guards, not a declaration of complete WCAG conformance. Manual assistive-technology and human review remain required before production launch.
+
 ## Product clarity
 
 - [x] Homepage leads with the outcome: play more D&D with less searching, scheduling, and organizing.
@@ -53,6 +55,8 @@ Browser-local preview behavior and early-access shared behavior are intentionall
 - [x] Table style/environment/accessibility notes are supported.
 - [x] Code of Conduct acknowledgement is required.
 - [x] Browser validation and visible save/error state exist.
+- [x] Invalid submissions announce a useful error summary, mark invalid controls with `aria-invalid`, and move focus to the first problem field.
+- [x] Correcting an invalid field clears its invalid state.
 - [x] Disconnected mode truthfully says information is saved on the current device.
 - [x] A saved Player profile can contribute normalized demand to local Table Match preview behavior.
 - [x] Early-access seat request/cancel actions exist when the shared endpoint is configured.
@@ -99,6 +103,7 @@ Browser-local preview behavior and early-access shared behavior are intentionall
 - [x] Match selection carries venue/schedule/capacity/demand evidence into game creation.
 - [x] Individual Player identities/contact details are not exposed in aggregate demand.
 - [x] Sample demand is explicitly labeled as sample rather than live community demand.
+- [x] Live-rendered Table Match result cards are included in the automated accessibility regression suite.
 - [ ] Experience/style/environment/accessibility Table Fit inputs are not yet calculated by the matching engine.
 - [ ] Production-grade authenticated shared matching.
 
@@ -139,6 +144,7 @@ Browser-local preview behavior and early-access shared behavior are intentionall
 - [x] Potential Player interest is explicitly separated from confirmed seats.
 - [x] When the shared endpoint is not configured, technical/shared controls are hidden and the browser-only confirmation preview is clearly labeled.
 - [x] When the shared endpoint is configured, role-specific DM/Venue/Player controls replace the local preview.
+- [x] Confirmation/lifecycle layout has a dedicated narrow-width reflow safeguard and passes a 320px no-horizontal-overflow browser test.
 - [ ] Production authorization for lifecycle actions.
 
 ## Confirmed Game Hub
@@ -152,6 +158,7 @@ Browser-local preview behavior and early-access shared behavior are intentionall
 - [x] Venue view emphasizes expected guests, recurring schedule, and one DM point of contact.
 - [x] Message controls are explicitly labeled previews and say no real message was sent.
 - [x] Browser test verifies role switching and message-preview behavior.
+- [x] Automated accessibility scans run after each DM / Player / Venue view is revealed, not only on initial page load.
 - [ ] Production persistent messaging.
 - [ ] Live calendar synchronization.
 - [ ] Production attendance/reputation calculations.
@@ -171,22 +178,30 @@ Browser-local preview behavior and early-access shared behavior are intentionall
 
 ## Accessibility / mobile
 
-- [x] Skip links on major pages.
+- [x] Skip links exist on all 17 HTML pages.
+- [x] Every skip link targets a programmatically focusable `#main` landmark.
+- [x] Fast static CI rejects pages whose skip target is missing or cannot receive programmatic focus.
+- [x] Chromium verifies the skip link is the first keyboard stop, becomes visible, and moves focus to main content after activation across all 17 pages.
 - [x] Semantic main/navigation landmarks.
 - [x] Visible keyboard focus.
+- [x] Homepage Player, DM, and Venue primary paths are reachable by keyboard without a focus trap.
 - [x] Programmatic labels on filters/forms.
 - [x] Native controls used for primary interactions.
+- [x] Invalid Player-form state is tested for live error announcement, `aria-invalid`, first-error focus, and automated accessibility regressions.
 - [x] Game Hub role state is programmatically exposed.
 - [x] Status updates use live regions where applicable.
 - [x] Important state labels use text, not color alone.
 - [x] Reduced-motion preference supported.
 - [x] Mobile layouts collapse major grids.
 - [x] Primary controls use touch-friendly minimum target sizes.
-- [x] Chromium smoke test checks the homepage at 390 × 844 and asserts no horizontal overflow.
+- [x] Automated axe-core scans run against 18 route/state variants using WCAG 2.0/2.1 A/AA and WCAG 2.2 AA rule tags; the current CI run reports no selected-rule violations.
+- [x] Dynamic axe checks cover live Table Match results and all three revealed Game Hub role views.
+- [x] Chromium checks the homepage at 390 × 844 and asserts no horizontal overflow.
+- [x] Chromium checks 10 core routes at 320px wide and asserts no horizontal page overflow.
 - [ ] Manual NVDA pass.
 - [ ] Manual VoiceOver pass.
-- [ ] Formal automated contrast/Lighthouse CI gate.
-- [ ] Full WCAG 2.2 AA review before production.
+- [ ] Lighthouse performance / best-practices CI gate.
+- [ ] Full manual WCAG 2.2 AA review before production.
 
 ## SEO / crawlability
 
@@ -219,11 +234,12 @@ Browser-local preview behavior and early-access shared behavior are intentionall
 - [x] Saved-DM/demand-summary logic is separated from Table Match rendering.
 - [x] Lifecycle state model, rendering, and interaction controller are separate modules.
 - [x] Forms, experience builder, matching, recurring games, game creation, lifecycle, and Game Hub use separate scripts.
-- [x] CI validates HTML metadata/internal links, fragments, placeholder links, button/controller wiring, browser JavaScript syntax, and Apps Script syntax.
+- [x] CI validates HTML metadata/internal links, fragments, placeholder links, focusable skip targets, button/controller wiring, browser JavaScript syntax, and Apps Script syntax.
 - [x] Node unit tests cover core Table Match hard-fit and lifecycle status rules.
-- [x] Chromium browser smoke tests run in CI using a local static server.
-- [x] Seven browser tests currently cover homepage role entrances, Player onboarding controls/save, Venue onboarding/save, mobile overflow, DM match→create→confirm→Hub, recurring setup/commitments, and Game Hub role/message behavior.
-- [ ] Lighthouse/accessibility CI gate.
+- [x] Playwright + axe browser regression tests run in CI using a local static server.
+- [x] The current browser suite has 40 passing Chromium tests covering functional journeys, 18 automated accessibility route/state scans, keyboard navigation/focus, invalid-form behavior, dynamic Table Match/Game Hub states, and 320px reflow.
+- [x] Player, DM, and Venue each have a direct functional browser-tested path.
+- [ ] Lighthouse performance / best-practices CI gate.
 - [ ] Shared navigation/layout component before production framework migration.
 
 ## Critical gaps before calling this a production multi-user MVP
@@ -236,11 +252,13 @@ Browser-local preview behavior and early-access shared behavior are intentionall
 6. Persistent Game Hub messaging.
 7. Attendance and structured reputation persistence.
 8. Reporting/moderation workflow.
-9. Manual assistive-technology testing and automated accessibility/contrast gate.
+9. Manual assistive-technology testing and full manual WCAG 2.2 AA review.
 10. Shared navigation/layout component or migration to the production application framework.
 
 ## Current assessment
 
 Dinner, Dice & Dragons is now a **user-first connected validation site** for the core product loop. A new visitor sees three equal reasons to use the product; a Player can save what they want; a DM can match Player interest with a venue, form a table, collect commitments, and reach Confirmed; a Venue can save an open table and move into its game-night view; and recurring campaigns can carry one-date exceptions without breaking the schedule.
 
-The critical local workflows are no longer trusted only because their buttons appear wired. CI now launches Chromium and clicks through seven representative end-to-end scenarios, including a direct workflow for each of the three audiences. The remaining product-risk milestone is turning the early-access/shared model into a secure authenticated multi-user service while preserving the privacy, explainability, and role clarity established by the current site.
+The critical workflows are no longer trusted only because their controls appear wired. CI now runs 40 Chromium tests spanning functional journeys, automated axe accessibility scans, site-wide skip-link focus behavior, invalid-form error handling, dynamic UI states, and 320px reflow. The accessibility gate is deliberately treated as regression coverage rather than a claim of complete WCAG conformance; NVDA, VoiceOver, and full manual WCAG review remain outstanding.
+
+The remaining product-risk milestone is turning the early-access/shared model into a secure authenticated multi-user service while preserving the privacy, explainability, accessibility, and role clarity established by the current site.
