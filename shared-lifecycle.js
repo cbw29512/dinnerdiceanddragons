@@ -19,92 +19,94 @@
 
   function setConnectedLayout(connected) {
     try {
+      const sharedSection = document.querySelector("#shared-lifecycle");
       const localDemo = document.querySelector("#local-lifecycle-demo");
       const localHero = document.querySelector("#local-hero-card");
+      if (sharedSection) sharedSection.hidden = !connected;
       if (localDemo) localDemo.hidden = connected;
       if (localHero) localHero.hidden = connected;
     } catch (error) {
-      logError("Unable to toggle local lifecycle fallback", error);
+      logError("Unable to toggle lifecycle layout", error);
     }
   }
 
   function writeError(error, action) {
     try {
       return error.message === "Shared pilot writes are disabled"
-        ? `Shared pilot writes are disabled; ${action} is currently read-only.`
+        ? `This early-access connection is currently read-only, so ${action.toLowerCase()} is unavailable.`
         : `${action} failed: ${error.message || "unknown error"}`;
     } catch (nestedError) {
-      logError("Unable to format shared lifecycle error", nestedError);
+      logError("Unable to format lifecycle error", nestedError);
       return `${action} failed.`;
     }
   }
 
   async function loadGM() {
     try {
-      setStatus("Loading shared Player commitments…");
+      setStatus("Loading Player commitments…");
       const queue = await window.DDDSharedLifecycleData.gmQueue();
       window.DDDSharedLifecycleView.renderGM(panel, queue, async (registrationId, action) => {
         try {
           setStatus(`${action === "approve" ? "Approving" : action === "decline" ? "Declining" : "Removing"} Player…`);
           await window.DDDSharedLifecycleData.gmManage(registrationId, action);
-          setStatus("Shared Player commitment updated.");
+          setStatus("Player commitment updated.");
           await loadGM();
         } catch (error) {
-          logError("Unable to update shared Player commitment", error);
+          logError("Unable to update Player commitment", error);
           setStatus(writeError(error, "Player commitment update"));
         }
       });
-      setStatus(`Shared table status: ${String(queue.state?.status || "forming").toUpperCase()}.`);
+      setStatus(`Table status: ${String(queue.state?.status || "forming").toUpperCase()}.`);
     } catch (error) {
-      logError("Unable to load GM shared lifecycle", error);
-      window.DDDSharedLifecycleView.renderMessage(panel, "GM shared state unavailable", error.message || "Save a GM profile and Forming table first.");
-      setStatus("GM shared commitment state is unavailable.");
+      logError("Unable to load GM lifecycle", error);
+      window.DDDSharedLifecycleView.renderMessage(panel, "Your DM table is not available yet", error.message || "Save a DM profile and create a Forming table first.");
+      setStatus("DM table commitments are unavailable.");
     }
   }
 
   async function loadVenue() {
     try {
-      setStatus("Loading shared Venue booking requests…");
+      setStatus("Loading booking requests…");
       const queue = await window.DDDSharedLifecycleData.venueQueue();
       window.DDDSharedLifecycleView.renderVenue(panel, queue, async (gameId, action) => {
         try {
-          setStatus(`${action === "approve" ? "Approving" : action === "decline" ? "Declining" : "Reopening"} Venue request…`);
+          setStatus(`${action === "approve" ? "Approving" : action === "decline" ? "Declining" : "Reopening"} booking…`);
           await window.DDDSharedLifecycleData.venueManage(gameId, action);
-          setStatus("Shared Venue booking updated.");
+          setStatus("Venue booking updated.");
           await loadVenue();
         } catch (error) {
-          logError("Unable to update shared Venue booking", error);
+          logError("Unable to update Venue booking", error);
           setStatus(writeError(error, "Venue booking update"));
         }
       });
-      setStatus(`${queue.bookings?.length || 0} booking request${queue.bookings?.length === 1 ? "" : "s"} for this Venue Manager.`);
+      setStatus(`${queue.bookings?.length || 0} booking request${queue.bookings?.length === 1 ? "" : "s"} for this venue.`);
     } catch (error) {
-      logError("Unable to load Venue shared lifecycle", error);
-      window.DDDSharedLifecycleView.renderMessage(panel, "Venue shared state unavailable", error.message || "Save a Venue opening first.");
-      setStatus("Venue shared booking state is unavailable.");
+      logError("Unable to load Venue lifecycle", error);
+      window.DDDSharedLifecycleView.renderMessage(panel, "Your venue bookings are not available yet", error.message || "Save a venue opening first.");
+      setStatus("Venue booking requests are unavailable.");
     }
   }
 
   async function loadPlayer() {
     try {
-      setStatus("Loading your shared seat state…");
+      setStatus("Loading your seats…");
       const state = await window.DDDSharedLifecycleData.playerState();
       window.DDDSharedLifecycleView.renderPlayer(panel, state, async (gameId) => {
         try {
-          setStatus("Cancelling shared registration…");
+          setStatus("Cancelling your registration…");
           await window.DDDSharedLifecycleData.playerCancel(gameId);
-          setStatus("Shared registration cancelled; waitlist recovery recalculated if needed.");
+          setStatus("Registration cancelled. If someone was waiting, the open seat can now be recovered.");
           await loadPlayer();
         } catch (error) {
-          logError("Unable to cancel shared Player registration", error);
+          logError("Unable to cancel Player registration", error);
           setStatus(writeError(error, "Registration cancellation"));
         }
       });
-      setStatus(`${state.registrations?.length || 0} active shared registration${state.registrations?.length === 1 ? "" : "s"}.`);
+      setStatus(`${state.registrations?.length || 0} active registration${state.registrations?.length === 1 ? "" : "s"}.`);
     } catch (error) {
-      logError("Unable to load Player shared lifecycle", error);
-      window.DDDSharedLifecycleView.renderMessage(panel, "Player shared state unavailable", error.message || "Save a Player signal first.");
-      setStatus("Player shared seat state is unavailable.");
+      logError("Unable to load Player lifecycle", error);
+      window.DDDSharedLifecycleView.renderMessage(panel, "Your seats are not available yet", error.message || "Save your Player preferences first.");
+      setStatus("Player seat information is unavailable.");
     }
   }
 
@@ -118,7 +120,7 @@
       window.history.replaceState({}, "", url);
       await loaders[safeRole]();
     } catch (error) {
-      logError("Unable to load shared lifecycle role", error);
+      logError("Unable to load lifecycle role", error);
     }
   }
 
@@ -132,7 +134,7 @@
       if (ids.playerId) return "player";
       return "gm";
     } catch (error) {
-      logError("Unable to choose initial shared lifecycle role", error);
+      logError("Unable to choose initial lifecycle role", error);
       return "gm";
     }
   }
@@ -142,15 +144,11 @@
       if (!panel || !roleSelect) return;
       const connected = Boolean(window.DDD_API?.isConfigured());
       setConnectedLayout(connected);
-      if (!connected) {
-        window.DDDSharedLifecycleView.renderMessage(panel, "Shared pilot not connected", "The local lifecycle simulator remains available below. Configure the pilot API to manage commitments across browsers.");
-        setStatus("Local prototype mode active.");
-        return;
-      }
+      if (!connected) return;
       roleSelect.addEventListener("change", () => loadRole(roleSelect.value));
       await loadRole(initialRole());
     } catch (error) {
-      logError("Unable to initialize shared lifecycle", error);
+      logError("Unable to initialize lifecycle", error);
     }
   }
 
