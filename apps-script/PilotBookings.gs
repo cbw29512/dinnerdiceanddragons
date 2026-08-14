@@ -1,10 +1,14 @@
 function saveBookingForGame_(gameId, payload, seriesId, now) {
   try {
     if (!payload.venue_window_id || !payload.gm_id) return { booking_id:"", status:"not_required" };
+    const venueWindow = dddFindBy_("VenueWindows", "venue_window_id", payload.venue_window_id)[0];
+    if (!venueWindow || !pilotActive_(venueWindow.active)) throw new Error("Selected venue window is unavailable");
+    if (String(venueWindow.venue_id || "") !== String(payload.venue_id || "")) throw new Error("Selected venue window does not belong to the Game venue");
+
     const bookingId = `booking_${gameId}`;
     const existing = dddFindBy_("VenueBookingRequests", "booking_id", bookingId)[0] || null;
     const sameWindow = existing && String(existing.venue_window_id) === String(payload.venue_window_id);
-    const approvalRequired = payload.approval_required === true || String(payload.approval_required).toLowerCase() === "true" || String(payload.approval_required).toLowerCase() === "on";
+    const approvalRequired = pilotActive_(venueWindow.approval_required);
     let bookingStatus = approvalRequired ? "requested" : "approved";
     if (sameWindow && ["approved", "declined"].includes(String(existing.status))) bookingStatus = String(existing.status);
 
@@ -24,7 +28,7 @@ function saveBookingForGame_(gameId, payload, seriesId, now) {
       created_at:now,
       updated_at:now
     });
-    return { booking_id:bookingId, status:bookingStatus };
+    return { booking_id:bookingId, status:bookingStatus, approval_required:approvalRequired };
   } catch (error) {
     console.error("[DDD] saveBookingForGame_ failed", error);
     throw error;
