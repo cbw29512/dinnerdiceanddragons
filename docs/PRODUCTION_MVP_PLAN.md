@@ -76,7 +76,7 @@ See `docs/DECISIONS.md`, Decision 016.
 - [x] Create FastAPI production backend skeleton.
 - [x] Add environment/settings model with safe secret handling.
 - [x] Add PostgreSQL connection/session layer.
-- [ ] Add Alembic migrations.
+- [x] Add Alembic migrations.
 - [ ] Add Docker development runtime and health check.
 - [ ] Add backend CI tests/lint/syntax gate.
 
