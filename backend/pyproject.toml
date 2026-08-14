@@ -9,6 +9,7 @@ description = "Production API for Dinner, Dice & Dragons"
 requires-python = ">=3.13,<3.15"
 dependencies = [
   "fastapi==0.139.2",
+  "pydantic-settings==2.14.2",
   "uvicorn[standard]==0.51.0",
 ]
 
