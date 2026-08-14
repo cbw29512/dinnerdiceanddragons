@@ -34,7 +34,7 @@ jobs:
           while IFS= read -r -d '' file; do
             echo "Checking $file"
             node --check "$file"
-          done < <(find . -type f -name '*.js' -not -path './.git/*' -print0)
+          done < <(find . -type f -name '*.js' -not -path './.git/*' -not -path './node_modules/*' -print0)
 
       - name: Run matching and lifecycle unit tests
         run: node tests/run-tests.js
@@ -48,3 +48,31 @@ jobs:
             cp "$file" /tmp/ddd-apps-script-check.js
             node --check /tmp/ddd-apps-script-check.js
           done < <(find apps-script -type f -name '*.gs' -print0)
+
+  browser-smoke:
+    name: Browser click-through tests
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+
+      - name: Set up Python for local site server
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install browser test dependency
+        run: npm install
+
+      - name: Install Chromium and system dependencies
+        run: npx playwright install --with-deps chromium
+
+      - name: Click through critical Player, DM, Venue, and recurring flows
+        run: npm run test:e2e
