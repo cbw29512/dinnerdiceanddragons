@@ -52,15 +52,20 @@ for (const path of pages) {
   });
 }
 
-test("skip link is the first keyboard stop and becomes visible", async ({ page }) => {
+test("skip link is the first keyboard stop and activation reaches main content", async ({ page }) => {
   await page.goto("/index.html");
 
   const skipLink = page.locator(".skip-link");
+  const main = page.locator("#main");
   await page.keyboard.press("Tab");
 
   await expect(skipLink).toBeFocused();
   await expect(skipLink).toBeVisible();
   await expect(skipLink).toHaveAttribute("href", "#main");
+
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/#main$/);
+  await expect(main).toBeFocused();
 });
 
 test("primary homepage paths are reachable by keyboard without a focus trap", async ({ page }) => {
