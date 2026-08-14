@@ -3,6 +3,7 @@ function doGet(e) {
     const action = String((e && e.parameter && e.parameter.action) || "health");
     if (action === "health") return json_({ ok:true, service:"Dinner Dice & Dragons Pilot API" });
     if (action === "games.list") return json_({ ok:true, games:listPublicGames_() });
+    if (action === "demand.summary") return json_({ ok:true, demand:listDemandSummary_() });
     return json_({ ok:false, error:"Unknown action" });
   } catch (error) {
     console.error("[DDD] doGet failed", error);
