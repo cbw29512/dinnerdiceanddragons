@@ -50,7 +50,7 @@ jobs:
           done < <(find apps-script -type f -name '*.gs' -print0)
 
   browser-smoke:
-    name: Browser, accessibility, and reflow tests
+    name: Browser, accessibility, reflow, and runtime tests
     needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -62,20 +62,18 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: lts/*
+          cache: npm
 
       - name: Set up Python for local site server
         uses: actions/setup-python@v6
         with:
           python-version: "3.13"
 
-      - name: Install browser test dependencies
-        run: npm install
-
-      - name: Emit generated lockfile
-        run: node -e "process.stdout.write('DDD_LOCKFILE_BASE64=' + require('fs').readFileSync('package-lock.json').toString('base64') + '\n')"
+      - name: Install locked browser test dependencies
+        run: npm ci
 
       - name: Install Chromium and system dependencies
         run: npx playwright install --with-deps chromium
 
-      - name: Run functional, keyboard, WCAG, and 320px reflow tests
+      - name: Run functional, keyboard, WCAG, reflow, and runtime tests
         run: npm run test:e2e
