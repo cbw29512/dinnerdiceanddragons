@@ -163,11 +163,12 @@ A feature is not usable merely because it is visible. The user must understand w
 - [x] Homepage has canonical, Open Graph, theme-color, and WebSite structured data.
 - [x] Dashboard prototype is `noindex,follow` and canonicalized to the homepage.
 - [x] Obsolete duplicate `index-old.html` was removed.
-- [x] `robots.txt` points crawlers to the sitemap.
 - [x] `sitemap.xml` lists the focused public acquisition, trust, and sample-table surfaces.
+- [x] Project-path `robots.txt` was intentionally removed because robots rules must live at the host root, not `/dinnerdiceanddragons/robots.txt`.
+- [ ] Add a root-level robots file when the production/custom domain root is controlled, and advertise the sitemap there.
 - [ ] Review whether remaining internal workflow prototypes should receive `noindex,follow` before broader public promotion.
 - [ ] Add a social-share image before launch marketing.
-- [ ] Validate the deployed site in Search Console when a production domain is chosen.
+- [ ] Validate and submit the sitemap in Search Console when a production domain is chosen.
 
 ## Navigation / consistency
 
