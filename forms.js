@@ -85,16 +85,21 @@
         if (gmId) values.gm_id = gmId;
       } else if (type === "Game") {
         const gameId = localStorage.getItem("ddd-game-id") || "";
+        const seriesId = localStorage.getItem("ddd-series-id") || "";
         const gmId = localStorage.getItem("ddd-game-master-id") || "";
         if (gameId) values.game_id = gameId;
+        if (seriesId) values.series_id = seriesId;
         if (gmId) values.gm_id = gmId;
         values.status = "forming";
         const rawMatch = localStorage.getItem("ddd-selected-venue-slot");
         if (rawMatch) {
           const match = JSON.parse(rawMatch);
           if (match.venueId) values.venue_id = match.venueId;
+          if (match.venueWindowId) values.venue_window_id = match.venueWindowId;
+          if (match.sourceMode) values.match_source = match.sourceMode;
           if (match.matchScore !== undefined) values.match_score = match.matchScore;
           if (match.eligiblePlayers !== undefined) values.compatible_player_count = match.eligiblePlayers;
+          if (match.usablePlayers !== undefined) values.usable_player_count = match.usablePlayers;
         }
       }
       return values;
@@ -118,6 +123,7 @@
       const identity = result.player_id || result.gm_id || result.game_id || "";
       if (identity) localStorage.setItem(`ddd-${type.toLowerCase().replaceAll(" ", "-")}-id`, identity);
       if (result.user_id) localStorage.setItem("ddd-user-id", result.user_id);
+      if (result.series_id) localStorage.setItem("ddd-series-id", result.series_id);
     } catch (error) {
       logError("Unable to persist returned pilot identity", error);
     }
