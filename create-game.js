@@ -30,7 +30,7 @@
       const select = document.querySelector(selector);
       if (!select || !Number.isFinite(Number(value))) return;
       const desired = String(value);
-      if ([...select.options].some((option) => option.value === desired)) select.value = desired;
+      if ([...select.options].some((option) => option.value === desired && !option.disabled)) select.value = desired;
     } catch (error) {
       logError(`Unable to set ${selector}`, error);
     }
@@ -48,6 +48,9 @@
       let minPlayers = Number.parseInt(minimum.value, 10);
       if (!Number.isFinite(maxPlayers) || !Number.isFinite(minPlayers)) return;
 
+      [...minimum.options].forEach((option) => {
+        option.disabled = Number(option.value) > maxPlayers;
+      });
       if (minPlayers > maxPlayers) {
         minPlayers = maxPlayers;
         minimum.value = String(maxPlayers);
@@ -92,8 +95,19 @@
 
   function applyCapacityDefaults(slot) {
     try {
+      const seatSelect = document.querySelector("#player-seats");
       const capacity = Number(slot.playerCapacity);
-      if (Number.isFinite(capacity) && capacity >= 3) setSelectIfAvailable("#player-seats", Math.min(capacity, 8));
+      if (seatSelect && Number.isFinite(capacity)) {
+        [...seatSelect.options].forEach((option) => {
+          option.disabled = Number(option.value) > capacity;
+        });
+        const usableChoice = [...seatSelect.options]
+          .map((option) => Number(option.value))
+          .filter((value) => Number.isFinite(value) && value <= capacity)
+          .sort((a, b) => b - a)[0];
+        if (Number.isFinite(usableChoice)) seatSelect.value = String(usableChoice);
+      }
+
       const usablePlayers = Number(slot.usablePlayers);
       if (Number.isFinite(usablePlayers) && usablePlayers >= 2) setSelectIfAvailable("#min-players", Math.min(3, usablePlayers));
       updateCommitmentSummary();
@@ -131,7 +145,7 @@
         const usable = Number(slot.usablePlayers) || Number(slot.eligiblePlayers) || 0;
         fit.innerHTML = `<strong>${slot.matchScore || "—"}/100 explained fit</strong> · ${slot.eligiblePlayers || 0} compatible Player signal${slot.eligiblePlayers === 1 ? "" : "s"} · ${usable} fit current table capacity`;
         const capacity = document.createElement("p");
-        capacity.textContent = `Venue table capacity: GM + ${slot.playerCapacity || "?"} Players.`;
+        capacity.textContent = `Venue table capacity: GM + ${slot.playerCapacity || "?"} Players. Larger Player-count options are disabled.`;
         const policy = document.createElement("p");
         policy.textContent = `Venue policy: ${slot.policy || "See venue terms"}`;
         const approval = document.createElement("p");
@@ -155,6 +169,11 @@
           if (!Number.isFinite(minPlayers) || !Number.isFinite(maxPlayers) || minPlayers > maxPlayers) return;
           const rawMatch = localStorage.getItem("ddd-selected-venue-slot");
           const match = rawMatch ? JSON.parse(rawMatch) : {};
+          const venueCapacity = Number(match.playerCapacity) || maxPlayers;
+          if (maxPlayers > venueCapacity) {
+            logError("Player seat selection exceeds matched venue capacity", { maxPlayers, venueCapacity });
+            return;
+          }
           const lifecycle = {
             title: form.elements.title?.value || "Forming Table",
             system: form.elements.system?.value || match.system || "RPG",
@@ -166,7 +185,7 @@
             maxPlayers,
             candidatePlayers: Number(match.eligiblePlayers) || 0,
             usablePlayerDemand: Number(match.usablePlayers) || 0,
-            venuePlayerCapacity: Number(match.playerCapacity) || maxPlayers,
+            venuePlayerCapacity: venueCapacity,
             matchScore: Number(match.matchScore) || 0,
             confirmedPlayers: 0,
             waitlistedPlayers: 0,
