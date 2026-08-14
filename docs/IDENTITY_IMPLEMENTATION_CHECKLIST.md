@@ -3,7 +3,7 @@
 Do not enable unrestricted public participation until these controls are implemented and tested.
 
 ## Authentication
-- [ ] Select mature authentication provider
+- [x] Select mature authentication provider — Supabase Auth (see `docs/DECISIONS.md`, Decision 016)
 - [ ] Verified email required for active account
 - [ ] Bot/signup-abuse protection enabled
 - [ ] Disposable-email policy evaluated
