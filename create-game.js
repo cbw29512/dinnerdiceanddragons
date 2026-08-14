@@ -143,18 +143,27 @@
         time.textContent = `${slot.system || "RPG"} · ${slot.day || ""} · ${slot.gmStart || ""} · ${formatDuration(slot.durationMinutes)}`;
         const fit = document.createElement("p");
         const usable = Number(slot.usablePlayers) || Number(slot.eligiblePlayers) || 0;
-        fit.innerHTML = `<strong>${slot.matchScore || "—"}/100 explained fit</strong> · ${slot.eligiblePlayers || 0} compatible Player signal${slot.eligiblePlayers === 1 ? "" : "s"} · ${usable} fit current table capacity`;
+        fit.innerHTML = `<strong>${slot.matchScore || "—"}/100 fit</strong> · ${slot.eligiblePlayers || 0} potential Player${slot.eligiblePlayers === 1 ? "" : "s"} match this game night · ${usable} fit the current table capacity`;
         const capacity = document.createElement("p");
-        capacity.textContent = `Venue table capacity: GM + ${slot.playerCapacity || "?"} Players. Larger Player-count options are disabled.`;
+        capacity.textContent = `Venue table capacity: you + ${slot.playerCapacity || "?"} Players. Larger Player-count options are disabled automatically.`;
         const policy = document.createElement("p");
         policy.textContent = `Venue policy: ${slot.policy || "See venue terms"}`;
         const approval = document.createElement("p");
         approval.className = "microcopy";
-        approval.textContent = slot.system === "D&D 5e" ? "Choose the D&D edition below. This table remains Forming until the venue approves and the minimum Player commitment is met." : "This table remains Forming until the venue approves and the minimum Player commitment is met.";
+        approval.textContent = slot.system === "D&D 5e" ? "Choose the D&D edition below. The table stays Forming until the venue approves and enough Players commit." : "The table stays Forming until the venue approves and enough Players commit.";
         summary.append(title, time, fit, capacity, policy, approval);
       }
     } catch (error) {
       logError("Unable to load selected Table Match", error);
+    }
+  }
+
+  function revealNextStep() {
+    try {
+      const next = document.querySelector("#game-next-step");
+      if (next) next.hidden = false;
+    } catch (error) {
+      logError("Unable to reveal game next step", error);
     }
   }
 
@@ -194,6 +203,7 @@
             completed: false
           };
           localStorage.setItem("ddd-lifecycle-demo", JSON.stringify(lifecycle));
+          revealNextStep();
         } catch (error) {
           logError("Unable to seed table lifecycle demo", error);
         }
