@@ -29,13 +29,24 @@
   function renderSource(source) {
     try {
       const box = document.querySelector("#series-source");
-      if (!box) return;
-      if (!source) return;
+      if (!box || !source) return;
       box.innerHTML = `<p class="eyebrow">SELECTED RECURRING MATCH</p><h2>${source.system} · ${source.venue}</h2><p>${source.patternSummary} · ${source.viableCount}/${source.sessions.length} dates viable · ${source.compatiblePlayers} compatible Player signals</p>`;
       document.querySelector("#series-system-name").value = source.system;
       document.querySelector("#series-venue-name").value = source.venue;
     } catch (error) {
       logError("Unable to render series source", error);
+    }
+  }
+
+  function sessionStatus(session) {
+    try {
+      if (session.exception === "skip") return "Skipped by GM";
+      if (session.exception === "move_requested") return "Move requested";
+      if (session.viable) return "Viable";
+      return session.blackout ? "Venue conflict" : "Needs recovery";
+    } catch (error) {
+      logError("Unable to label series session", error);
+      return "Needs review";
     }
   }
 
@@ -48,9 +59,8 @@
         return;
       }
       list.innerHTML = source.sessions.map((session, index) => {
-        const checked = session.viable ? "checked" : "";
-        const status = session.viable ? "Viable" : session.blackout ? "Venue conflict" : "Needs recovery";
-        return `<div class="venue-schedule-row"><strong>${humanDate(session.date)}</strong><span>${status}</span><span>${session.playerCount} Player signals</span><label><input type="checkbox" name="series_session" value="${index}" ${checked}> Include</label></div>`;
+        const checked = session.viable && !session.exception ? "checked" : "";
+        return `<div class="venue-schedule-row"><strong>${humanDate(session.date)}</strong><span>${sessionStatus(session)}</span><span>${session.playerCount} Player signals</span><label><input type="checkbox" name="series_session" value="${index}" ${checked}> Include</label></div>`;
       }).join("");
     } catch (error) {
       logError("Unable to render sessions", error);
@@ -92,7 +102,7 @@
           waitlistedPlayers: 0,
           sourceViable: session.viable,
           sourcePlayerSignals: session.playerCount,
-          exception: session.viable ? null : "recovery_needed"
+          exception: session.exception || (session.viable ? null : "recovery_needed")
         }))
       };
     } catch (error) {
@@ -106,7 +116,7 @@
       const box = document.querySelector("#series-preview");
       if (!box) return;
       box.hidden = false;
-      box.innerHTML = `<p class="eyebrow">FORMING SERIES CREATED</p><h2>${series.title}</h2><p>${series.system} · ${series.venue} · ${series.sessions.length} planned sessions</p><p><strong>Commitment model:</strong> ${series.commitmentModel}</p><p><strong>Confirmation rule per session:</strong> venue approved + ${series.minPlayers} confirmed Players.</p><div>${series.sessions.map((session) => `<div class="venue-schedule-row"><strong>${humanDate(session.date)}</strong><span>${session.status}</span><span>0/${series.minPlayers} Players</span><span>${session.exception ? "Recovery needed" : "Ready to form"}</span></div>`).join("")}</div><div class="next-step"><a class="button primary" href="series-commitments.html">Manage Player Commitments</a><a class="button secondary" href="table-lifecycle.html">Manage Session Lifecycle</a><a class="button secondary" href="game-hub.html">Preview Game Hub</a></div>`;
+      box.innerHTML = `<p class="eyebrow">FORMING SERIES CREATED</p><h2>${series.title}</h2><p>${series.system} · ${series.venue} · ${series.sessions.length} planned sessions</p><p><strong>Commitment model:</strong> ${series.commitmentModel}</p><p><strong>Confirmation rule per session:</strong> venue approved + ${series.minPlayers} confirmed Players.</p><div>${series.sessions.map((session) => `<div class="venue-schedule-row"><strong>${humanDate(session.date)}</strong><span>${session.status}</span><span>0/${series.minPlayers} Players</span><span>${session.exception ? "Exception/recovery noted" : "Ready to form"}</span></div>`).join("")}</div><div class="next-step"><a class="button primary" href="series-commitments.html">Manage Player Commitments</a><a class="button secondary" href="table-lifecycle.html?role=gm">Manage Session Lifecycle</a><a class="button secondary" href="game-hub.html?role=gm">Preview Game Hub</a></div>`;
     } catch (error) {
       logError("Unable to render series preview", error);
     }
