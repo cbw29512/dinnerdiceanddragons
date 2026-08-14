@@ -25,6 +25,17 @@
     }
   }
 
+  function setSelectIfAvailable(selector, value) {
+    try {
+      const select = document.querySelector(selector);
+      if (!select || !Number.isFinite(Number(value))) return;
+      const desired = String(value);
+      if ([...select.options].some((option) => option.value === desired)) select.value = desired;
+    } catch (error) {
+      logError(`Unable to set ${selector}`, error);
+    }
+  }
+
   function updateCommitmentSummary() {
     try {
       const seats = document.querySelector("#player-seats");
@@ -69,9 +80,25 @@
         form.elements.system.focus();
         return;
       }
+      if (system === "Call of Cthulhu") {
+        form.elements.system.value = "Call of Cthulhu 7e";
+        return;
+      }
       form.elements.system.value = system;
     } catch (error) {
       logError("Unable to apply matched RPG system", error);
+    }
+  }
+
+  function applyCapacityDefaults(slot) {
+    try {
+      const capacity = Number(slot.playerCapacity);
+      if (Number.isFinite(capacity) && capacity >= 3) setSelectIfAvailable("#player-seats", Math.min(capacity, 8));
+      const usablePlayers = Number(slot.usablePlayers);
+      if (Number.isFinite(usablePlayers) && usablePlayers >= 2) setSelectIfAvailable("#min-players", Math.min(3, usablePlayers));
+      updateCommitmentSummary();
+    } catch (error) {
+      logError("Unable to apply matched capacity defaults", error);
     }
   }
 
@@ -92,6 +119,7 @@
       if (duration) duration.value = formatDuration(slot.durationMinutes);
       if (venue) venue.value = slot.venueName || "";
       setSystemFromMatch(form, slot.system);
+      applyCapacityDefaults(slot);
 
       if (summary) {
         summary.replaceChildren();
@@ -100,13 +128,16 @@
         const time = document.createElement("p");
         time.textContent = `${slot.system || "RPG"} · ${slot.day || ""} · ${slot.gmStart || ""} · ${formatDuration(slot.durationMinutes)}`;
         const fit = document.createElement("p");
-        fit.innerHTML = `<strong>${slot.matchScore || "—"}% Table Match</strong> · ${slot.eligiblePlayers || 0} compatible Player signal${slot.eligiblePlayers === 1 ? "" : "s"}`;
+        const usable = Number(slot.usablePlayers) || Number(slot.eligiblePlayers) || 0;
+        fit.innerHTML = `<strong>${slot.matchScore || "—"}/100 explained fit</strong> · ${slot.eligiblePlayers || 0} compatible Player signal${slot.eligiblePlayers === 1 ? "" : "s"} · ${usable} fit current table capacity`;
+        const capacity = document.createElement("p");
+        capacity.textContent = `Venue table capacity: GM + ${slot.playerCapacity || "?"} Players.`;
         const policy = document.createElement("p");
         policy.textContent = `Venue policy: ${slot.policy || "See venue terms"}`;
         const approval = document.createElement("p");
         approval.className = "microcopy";
         approval.textContent = slot.system === "D&D 5e" ? "Choose the D&D edition below. This table remains Forming until the venue approves and the minimum Player commitment is met." : "This table remains Forming until the venue approves and the minimum Player commitment is met.";
-        summary.append(title, time, fit, policy, approval);
+        summary.append(title, time, fit, capacity, policy, approval);
       }
     } catch (error) {
       logError("Unable to load selected Table Match", error);
@@ -128,10 +159,15 @@
             title: form.elements.title?.value || "Forming Table",
             system: form.elements.system?.value || match.system || "RPG",
             venue: form.elements.venue?.value || match.venueName || "Partner Venue",
+            venueId: match.venueId || "",
             day: form.elements.day?.value || match.day || "",
             start: form.elements.start_time?.value || match.gmStart || "",
             minPlayers,
             maxPlayers,
+            candidatePlayers: Number(match.eligiblePlayers) || 0,
+            usablePlayerDemand: Number(match.usablePlayers) || 0,
+            venuePlayerCapacity: Number(match.playerCapacity) || maxPlayers,
+            matchScore: Number(match.matchScore) || 0,
             confirmedPlayers: 0,
             waitlistedPlayers: 0,
             venueApproved: false,
@@ -163,7 +199,11 @@
     }
   }
 
-  bindSelection();
-  bindControls();
-  bindLifecycleSeed();
+  try {
+    bindSelection();
+    bindControls();
+    bindLifecycleSeed();
+  } catch (error) {
+    logError("Unable to initialize game creation", error);
+  }
 })();
