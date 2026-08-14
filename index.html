@@ -46,13 +46,13 @@
     </div>
 
     <aside class="panel ready" aria-labelledby="next-game-title">
-      <p class="eyebrow">NEXT GAME</p>
+      <p class="eyebrow">NEXT GAME · SAMPLE</p>
       <h2 id="next-game-title">Game Night Ready</h2>
       <p><strong>Shadows Over Florence</strong><br>Wednesday · 6–10 PM</p>
       <div class="status-row"><span>Game Master</span><strong class="good">Confirmed</strong></div>
       <div class="status-row"><span>Players</span><strong class="good">5 of 5</strong></div>
       <div class="status-row"><span>Venue</span><strong class="good">Confirmed</strong></div>
-      <div class="actions"><a class="button primary" href="game-hub.html">Open Game Hub</a></div>
+      <div class="actions"><a class="button primary" href="game-hub.html">Preview Game Hub</a></div>
     </aside>
   </section>
 
@@ -64,7 +64,7 @@
     </div>
     <div class="grid">
       <article class="status-card role-content player"><p class="eyebrow">PLAYER SIGNAL</p><h3>Tell GMs what you want</h3><p>Share systems, availability, travel distance, and table preferences.</p><a class="button" href="join.html#player">Update My Player Signal</a></article>
-      <article class="status-card role-content player"><p class="eyebrow">FORMING TABLE</p><h3>See what a match looks like</h3><p class="muted">Review game, schedule, venue, Table Fit, and what is still needed.</p><a class="button" href="games/shadows-over-florence/">View a Forming Table</a></article>
+      <article class="status-card role-content player"><p class="eyebrow">FORMING TABLE</p><h3>See what a match looks like</h3><p class="muted">Review game, schedule, venue, Table Fit, and what is still needed.</p><a class="button" href="#shared-games">Browse Forming Tables</a></article>
       <article class="status-card role-content player"><p class="eyebrow">CONFIRMED TABLE</p><h3>Keep game night organized</h3><p class="muted">See announcements, your seat, venue logistics, and table discussion.</p><a class="button" href="game-hub.html">Preview Player Game Hub</a></article>
 
       <article class="status-card role-content gm" hidden><p class="eyebrow">PLAYER DEMAND</p><h3>Find Players who fit</h3><p>Compare system, schedule, travel range, and venue availability.</p><a class="button" href="find-venue.html">Find Players + Venue</a></article>
@@ -75,6 +75,16 @@
       <article class="status-card role-content venue" hidden><p class="eyebrow">TABLE MATCH</p><h3>See how all three sides line up</h3><p class="muted">A viable game needs compatible GM supply, Player demand, and venue capacity.</p><a class="button" href="find-venue.html">Preview Table Matching</a></article>
       <article class="status-card role-content venue" hidden><p class="eyebrow">NEXT GROUP</p><h3>Know the expected headcount</h3><p class="muted">The GM remains the venue’s point of contact for the organized group.</p><a class="button" href="game-hub.html">Preview Venue Game Hub</a></article>
     </div>
+  </section>
+
+  <section class="section role-content player" id="shared-games" aria-labelledby="shared-games-title">
+    <div class="section-heading">
+      <p class="eyebrow" id="shared-games-mode">SHARED PILOT · CHECKING CONNECTION</p>
+      <h2 id="shared-games-title">Forming tables you can join.</h2>
+      <p class="muted">When the pilot API is connected, this section lists shared Games and can create a real pilot seat request using the Player identity saved in this browser. The pilot does not yet provide production authentication.</p>
+    </div>
+    <div class="grid" id="shared-games-list" aria-live="polite"><article class="status-card"><h3>Checking shared pilot…</h3><p class="muted">Local prototype features remain available even if the pilot is disconnected.</p></article></div>
+    <p id="shared-games-status" class="muted" role="status" aria-live="polite"></p>
   </section>
 
   <section class="section" id="how-it-works" aria-labelledby="how-it-works-title">
@@ -92,9 +102,9 @@
 
   <section class="section" aria-labelledby="calendar-title">
     <div class="section-heading">
-      <p class="eyebrow">GAME-NIGHT CALENDAR</p>
+      <p class="eyebrow">GAME-NIGHT CALENDAR · SAMPLE</p>
       <h2 id="calendar-title">See when all three sides line up.</h2>
-      <p class="muted">Text status labels make each date understandable without relying on color or icons alone.</p>
+      <p class="muted">Text status labels make each date understandable without relying on color or icons alone. Calendar synchronization is not live yet.</p>
     </div>
     <div class="calendar">
       <article class="date-card ready"><p class="eyebrow"><time datetime="2026-09-10">SEP 10</time></p><h3>Ready</h3><div class="status-row"><span>Game Master</span><strong class="good">Confirmed</strong></div><div class="status-row"><span>Players</span><strong class="good">5 of 5</strong></div><div class="status-row"><span>Venue</span><strong class="good">Confirmed</strong></div></article>
@@ -105,6 +115,9 @@
 </main>
 
 <footer><div class="shell footer-row"><span>Dinner, Dice &amp; Dragons · Turn local RPG interest into actual game nights.</span><span><a href="join.html#player">Players</a> · <a href="join.html#gm">GMs</a> · <a href="venues.html#signup">Venues</a> · <a href="conduct.html">Safety</a></span></div></footer>
+<script src="api-config.js"></script>
+<script src="api-client.js"></script>
+<script src="shared-games.js"></script>
 <script src="dashboard.js"></script>
 </body>
 </html>
