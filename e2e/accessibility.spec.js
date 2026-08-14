@@ -6,8 +6,29 @@ const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
 const pages = [
   "/index.html",
+  "/dashboard-prototype.html",
   "/join.html#player",
   "/join.html#gm",
+  "/venues.html",
+  "/find-venue.html",
+  "/create-game.html",
+  "/recurring-match.html",
+  "/form-series.html",
+  "/series-commitments.html",
+  "/table-lifecycle.html?role=gm",
+  "/game-hub.html?role=player",
+  "/conduct.html",
+  "/reputation.html",
+  "/venue-feedback.html",
+  "/games/lighthouse-at-blackwater/index.html",
+  "/games/shadows-over-florence/index.html",
+  "/games/trouble-below-the-old-road/index.html",
+];
+
+const skipLinkPages = [
+  "/index.html",
+  "/dashboard-prototype.html",
+  "/join.html",
   "/venues.html",
   "/find-venue.html",
   "/create-game.html",
@@ -52,20 +73,22 @@ for (const path of pages) {
   });
 }
 
-test("skip link is the first keyboard stop and activation reaches main content", async ({ page }) => {
-  await page.goto("/index.html");
+test("skip links are the first keyboard stop and move focus to main content site-wide", async ({ page }) => {
+  for (const path of skipLinkPages) {
+    await page.goto(path);
 
-  const skipLink = page.locator(".skip-link");
-  const main = page.locator("#main");
-  await page.keyboard.press("Tab");
+    const skipLink = page.locator(".skip-link");
+    const main = page.locator("#main");
+    await page.keyboard.press("Tab");
 
-  await expect(skipLink).toBeFocused();
-  await expect(skipLink).toBeVisible();
-  await expect(skipLink).toHaveAttribute("href", "#main");
+    await expect(skipLink, `Skip link should be first on ${path}`).toBeFocused();
+    await expect(skipLink, `Skip link should be visible on focus for ${path}`).toBeVisible();
+    await expect(skipLink).toHaveAttribute("href", "#main");
 
-  await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/#main$/);
-  await expect(main).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page, `Skip link should navigate to #main on ${path}`).toHaveURL(/#main$/);
+    await expect(main, `Skip link should move focus into main content on ${path}`).toBeFocused();
+  }
 });
 
 test("primary homepage paths are reachable by keyboard without a focus trap", async ({ page }) => {
