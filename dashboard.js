@@ -22,7 +22,7 @@
       title: "Turn open tables into game nights.",
       copy: "Post the times and capacity you want filled, connect with GMs, and keep expected headcount and game-night logistics in one place.",
       primary: { href: "venues.html#signup", label: "Fill My Tables" },
-      secondary: { href: "game-hub.html", label: "Preview Venue Game Hub" }
+      secondary: { href: "game-hub.html?role=venue", label: "Preview Venue Game Hub" }
     }
   });
 
@@ -39,6 +39,16 @@
       if (node) node.textContent = value;
     } catch (error) {
       logError(`Unable to update ${selector}`, error);
+    }
+  }
+
+  function syncHubLinks(role) {
+    try {
+      document.querySelectorAll('a[href^="game-hub.html"]').forEach((link) => {
+        link.href = `game-hub.html?role=${encodeURIComponent(role)}`;
+      });
+    } catch (error) {
+      logError("Unable to preserve role in Game Hub links", error);
     }
   }
 
@@ -69,6 +79,7 @@
         secondary.textContent = config.secondary.label;
       }
 
+      syncHubLinks(role);
       setText("#hero-title", config.title);
       setText("#hero-copy", config.copy);
       if (document.body.dataset.homepage !== "true") {
