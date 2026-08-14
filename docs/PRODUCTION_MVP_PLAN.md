@@ -75,7 +75,7 @@ See `docs/DECISIONS.md`, Decision 016.
 - [x] Establish this production-MVP master checklist.
 - [x] Create FastAPI production backend skeleton.
 - [x] Add environment/settings model with safe secret handling.
-- [ ] Add PostgreSQL connection/session layer.
+- [x] Add PostgreSQL connection/session layer.
 - [ ] Add Alembic migrations.
 - [ ] Add Docker development runtime and health check.
 - [ ] Add backend CI tests/lint/syntax gate.
