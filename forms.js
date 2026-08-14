@@ -6,7 +6,12 @@
   }
 
   function getStatusNode(form) {
-    return form.querySelector(".form-status");
+    try {
+      return form.querySelector(".form-status");
+    } catch (error) {
+      logError("Unable to find form status node", error);
+      return null;
+    }
   }
 
   function validatePostalCode(form) {
@@ -47,14 +52,56 @@
   }
 
   function localKey_(type) {
-    return `ddd-preview-${type.toLowerCase().replaceAll(" ", "-")}`;
+    try {
+      return `ddd-preview-${type.toLowerCase().replaceAll(" ", "-")}`;
+    } catch (error) {
+      logError("Unable to build local preview key", error);
+      return "ddd-preview-profile";
+    }
   }
 
   function apiAction_(type) {
-    if (type === "Player") return "player.save";
-    if (type === "Game Master") return "gm.save";
-    if (type === "Game") return "game.save";
-    return "";
+    try {
+      if (type === "Player") return "player.save";
+      if (type === "Game Master") return "gm.save";
+      if (type === "Game") return "game.save";
+      return "";
+    } catch (error) {
+      logError("Unable to resolve form API action", error);
+      return "";
+    }
+  }
+
+  function injectKnownIdentity_(type, values) {
+    try {
+      const userId = localStorage.getItem("ddd-user-id") || "";
+      if (userId) values.user_id = userId;
+
+      if (type === "Player") {
+        const playerId = localStorage.getItem("ddd-player-id") || "";
+        if (playerId) values.player_id = playerId;
+      } else if (type === "Game Master") {
+        const gmId = localStorage.getItem("ddd-game-master-id") || "";
+        if (gmId) values.gm_id = gmId;
+      } else if (type === "Game") {
+        const gameId = localStorage.getItem("ddd-game-id") || "";
+        const gmId = localStorage.getItem("ddd-game-master-id") || "";
+        if (gameId) values.game_id = gameId;
+        if (gmId) values.gm_id = gmId;
+        values.status = "forming";
+        const rawMatch = localStorage.getItem("ddd-selected-venue-slot");
+        if (rawMatch) {
+          const match = JSON.parse(rawMatch);
+          if (match.venueId) values.venue_id = match.venueId;
+          if (match.matchScore !== undefined) values.match_score = match.matchScore;
+          if (match.eligiblePlayers !== undefined) values.compatible_player_count = match.eligiblePlayers;
+        }
+      }
+      return values;
+    } catch (error) {
+      logError("Unable to reuse saved pilot identity", error);
+      return values;
+    }
   }
 
   function saveLocal_(type, values) {
@@ -66,10 +113,20 @@
     }
   }
 
+  function persistReturnedIdentity_(type, result) {
+    try {
+      const identity = result.player_id || result.gm_id || result.game_id || "";
+      if (identity) localStorage.setItem(`ddd-${type.toLowerCase().replaceAll(" ", "-")}-id`, identity);
+      if (result.user_id) localStorage.setItem("ddd-user-id", result.user_id);
+    } catch (error) {
+      logError("Unable to persist returned pilot identity", error);
+    }
+  }
+
   async function saveForm_(form) {
     try {
       const type = form.dataset.profileType || "Profile";
-      const values = serializeForm(form);
+      const values = injectKnownIdentity_(type, serializeForm(form));
       saveLocal_(type, values);
       const action = apiAction_(type);
       const status = getStatusNode(form);
@@ -86,12 +143,10 @@
       const result = await window.DDD_API.post(action, values);
       if (!result.ok) throw new Error(result.error || "Save failed");
 
-      const identity = result.player_id || result.gm_id || result.game_id || "";
-      if (identity) localStorage.setItem(`ddd-${type.toLowerCase().replaceAll(" ", "-")}-id`, identity);
-      if (result.user_id) localStorage.setItem("ddd-user-id", result.user_id);
+      persistReturnedIdentity_(type, result);
       if (status) {
         status.className = "form-status success-message";
-        status.textContent = "Saved.";
+        status.textContent = "Saved to the shared pilot.";
       }
     } catch (error) {
       logError("Unable to save form", error);
