@@ -88,7 +88,7 @@ def check_generic_controls(page: Path, parser: InteractionParser) -> list[str]:
 
 
 PAGE_SCRIPT_REQUIREMENTS: dict[str, tuple[str, ...]] = {
-    "index.html": ("shared-registration.js", "shared-games.js", "dashboard.js"),
+    "index.html": ("shared-registration.js", "shared-games.js"),
     "dashboard-prototype.html": ("dashboard.js",),
     "join.html": ("form-pilot.js", "experience-profiles.js", "availability.js", "forms.js"),
     "venues.html": ("form-pilot.js", "forms.js"),
