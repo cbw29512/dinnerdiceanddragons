@@ -1,0 +1,35 @@
+/* Page-specific reflow safeguards for the confirmation/lifecycle workflow. */
+#shared-lifecycle .panel,
+#shared-lifecycle-content > *,
+#local-lifecycle-demo .panel,
+#local-lifecycle-demo .role-card,
+#local-lifecycle-demo .hub-summary,
+#local-lifecycle-demo .hub-columns,
+#local-lifecycle-demo .hub-metrics,
+#local-lifecycle-demo .next-step {
+  min-width: 0;
+}
+
+#shared-lifecycle select,
+#local-lifecycle-demo select {
+  width: 100%;
+  max-width: 100%;
+}
+
+#local-lifecycle-demo .button,
+#shared-lifecycle .button {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+#local-lifecycle-demo h2,
+#local-lifecycle-demo h3,
+#local-lifecycle-demo p,
+#local-lifecycle-demo li,
+#local-lifecycle-demo strong,
+#shared-lifecycle h2,
+#shared-lifecycle h3,
+#shared-lifecycle p {
+  overflow-wrap: anywhere;
+}
