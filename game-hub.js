@@ -3,7 +3,7 @@
 
   // Data schema: the Game Hub exposes exactly three supported participant views.
   const ROLE_LABELS = Object.freeze({
-    gm: "Game Master",
+    gm: "Dungeon Master",
     player: "Player",
     venue: "Venue"
   });
@@ -81,7 +81,7 @@
             preview.querySelector("p").textContent = textarea.value.trim();
             form.before(preview);
             textarea.value = "";
-            if (status) status.textContent = "Message preview added to this page. This prototype does not persist or send messages yet.";
+            if (status) status.textContent = "Preview added to this page only. No message was sent.";
           } catch (error) {
             logError("Unable to add message preview", error);
           }
