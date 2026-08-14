@@ -15,11 +15,36 @@
     }
   }
 
-  function renderDemandSnapshot(container) {
+  function setDemandCopy(mode) {
+    try {
+      const label = document.querySelector("#demand-mode-label");
+      const heading = document.querySelector("#demand-heading");
+      const description = document.querySelector("#demand-description");
+      if (mode === "shared") {
+        if (label) label.textContent = "SHARED PILOT PLAYER DEMAND";
+        if (heading) heading.textContent = "What Players are asking for";
+        if (description) description.textContent = "Anonymous aggregate from the configured shared pilot. Individual Player identities, ZIP codes, travel radii, and contact details are not exposed here.";
+      } else {
+        if (label) label.textContent = "PROTOTYPE PLAYER DEMAND";
+        if (heading) heading.textContent = "What Players could be asking for";
+        if (description) description.textContent = "This validation prototype combines seeded demo Player signals with any Player signal saved in this browser. It is not live community demand. Individual Player names and private contact details are not exposed here.";
+      }
+    } catch (error) {
+      logError("Unable to update demand-mode copy", error);
+    }
+  }
+
+  function renderSummaries(container, summaries, mode) {
     try {
       if (!container) return;
-      const summaries = window.DDDTableMatch.summarizeDemand();
       container.replaceChildren();
+      if (!summaries.length) {
+        const empty = document.createElement("p");
+        empty.className = "microcopy";
+        empty.textContent = mode === "shared" ? "No active shared Player demand has been recorded yet." : "No prototype Player demand is available yet.";
+        container.appendChild(empty);
+        return;
+      }
       summaries.slice(0, 6).forEach((summary) => {
         const item = document.createElement("article");
         item.className = "demand-snapshot-card";
@@ -28,12 +53,35 @@
         const label = document.createElement("span");
         label.textContent = `${summary.system} · ${summary.day}`;
         const note = document.createElement("small");
-        note.textContent = summary.localCount ? "Includes your saved Player signal" : "Aggregated Player demand";
+        note.textContent = mode === "shared"
+          ? "Anonymous shared-pilot demand"
+          : (summary.localCount ? "Includes your saved Player signal" : "Seeded prototype demand");
         item.append(count, label, note);
         container.appendChild(item);
       });
     } catch (error) {
-      logError("Unable to render Player demand snapshot", error);
+      logError("Unable to render Player demand summaries", error);
+    }
+  }
+
+  async function renderDemandSnapshot(container) {
+    try {
+      if (!container) return;
+      if (window.DDD_API?.isConfigured()) {
+        const result = await window.DDD_API.get("demand.summary");
+        if (result.ok && Array.isArray(result.demand)) {
+          setDemandCopy("shared");
+          renderSummaries(container, result.demand, "shared");
+          return;
+        }
+        logError("Shared demand summary unavailable; using prototype fallback", new Error(result.error || "Unknown pilot API response"));
+      }
+      setDemandCopy("prototype");
+      renderSummaries(container, window.DDDTableMatch.summarizeDemand(), "prototype");
+    } catch (error) {
+      logError("Unable to load Player demand snapshot", error);
+      setDemandCopy("prototype");
+      renderSummaries(container, window.DDDTableMatch.summarizeDemand(), "prototype");
     }
   }
 
