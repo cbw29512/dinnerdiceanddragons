@@ -17,7 +17,7 @@
       view.node("game-hub-link")?.addEventListener("click", () => {
         try {
           if (model.deriveStatus(state) !== "confirmed" && !state.completed) {
-            view.statusMessage("Confirm the venue and minimum Player commitments before opening the Game Hub.");
+            view.statusMessage("Confirm the venue and the minimum number of Players before opening the Game Hub.");
             return;
           }
           window.location.href = "game-hub.html?role=gm";
@@ -30,9 +30,9 @@
         try {
           if (state.completed) return;
           state.venueApproved = !state.venueApproved;
-          view.appendRecovery(state.venueApproved ? "Venue approved the table." : "Venue approval was withdrawn; the table can no longer remain Confirmed.");
+          view.appendRecovery(state.venueApproved ? "Venue marked confirmed." : "Venue marked pending; the table is no longer Confirmed.");
           view.render(state);
-          view.statusMessage(state.venueApproved ? "Venue approved the table." : "Venue approval withdrawn.");
+          view.statusMessage(state.venueApproved ? "Venue marked confirmed." : "Venue marked pending.");
         } catch (error) {
           logError("Unable to toggle venue approval", error);
         }
@@ -43,13 +43,13 @@
           if (state.completed || !state.gmAvailable) return;
           if (state.confirmedPlayers < state.maxPlayers) {
             state.confirmedPlayers += 1;
-            view.appendRecovery(`Player confirmed. ${state.confirmedPlayers}/${state.maxPlayers} seats now filled.`);
+            view.appendRecovery(`Sample Player added. ${state.confirmedPlayers}/${state.maxPlayers} seats now filled.`);
           } else {
             state.waitlistedPlayers += 1;
-            view.appendRecovery(`Table full. New Player added to waitlist at position ${state.waitlistedPlayers}.`);
+            view.appendRecovery(`Table full. Sample Player added to the waitlist at position ${state.waitlistedPlayers}.`);
           }
           view.render(state);
-          view.statusMessage(state.status === "confirmed" ? "Confirmation threshold satisfied. The table is Confirmed and the Game Hub is unlocked." : "Player commitment recorded.");
+          view.statusMessage(state.status === "confirmed" ? "The table now has everything it needs. Game Hub is unlocked." : "Sample Player commitment added.");
         } catch (error) {
           logError("Unable to add Player", error);
         }
@@ -58,19 +58,19 @@
       view.node("cancel-player")?.addEventListener("click", () => {
         try {
           if (state.completed || state.confirmedPlayers <= 0) {
-            view.statusMessage(state.completed ? "Completed games cannot be changed in this demo." : "There are no confirmed Players to cancel.");
+            view.statusMessage(state.completed ? "A played game cannot be changed in this preview." : "There are no confirmed sample Players to remove.");
             return;
           }
           const notice = view.currentNotice();
           state.confirmedPlayers -= 1;
-          view.appendRecovery(`Player cancelled with ${model.noticeLabel(notice)}. ${model.reputationEffect(notice)}`);
+          view.appendRecovery(`Sample Player released the seat with ${model.noticeLabel(notice)}. ${model.reputationEffect(notice)}`);
           if (state.waitlistedPlayers > 0) {
             state.waitlistedPlayers -= 1;
             state.confirmedPlayers += 1;
-            view.appendRecovery("First waitlisted Player promoted automatically into the open seat.");
+            view.appendRecovery("The first waitlisted Player moved automatically into the open seat.");
           }
           view.render(state);
-          view.statusMessage(state.status === "forming" ? "The table is below minimum commitment and returned to Forming; the Game Hub is locked again." : "Player cancellation processed; recovery applied where possible.");
+          view.statusMessage(state.status === "forming" ? "The table dropped below the minimum and returned to Forming. Game Hub is locked again." : "Seat released and the waitlist was checked automatically.");
         } catch (error) {
           logError("Unable to cancel Player", error);
         }
@@ -81,11 +81,11 @@
           if (state.completed || !state.gmAvailable) return;
           const notice = view.currentNotice();
           state.gmAvailable = false;
-          view.appendRecovery(`GM cancelled the session with ${model.noticeLabel(notice)}. ${model.reputationEffect(notice)}`);
+          view.appendRecovery(`DM cancelled the game night with ${model.noticeLabel(notice)}. ${model.reputationEffect(notice)}`);
           view.render(state);
-          view.statusMessage("Session cancelled by the GM. In production, Players and the venue would be notified immediately.");
+          view.statusMessage("Game night cancelled by the DM. Players and the venue would need to be notified.");
         } catch (error) {
-          logError("Unable to cancel GM session", error);
+          logError("Unable to cancel DM game night", error);
         }
       });
 
@@ -93,23 +93,23 @@
         try {
           if (state.completed || state.gmAvailable) return;
           state.gmAvailable = true;
-          view.appendRecovery("GM restored availability. Table status recalculated from venue approval and Player commitments.");
+          view.appendRecovery("DM restored the game night. Readiness was recalculated from venue and Player commitments.");
           view.render(state);
-          view.statusMessage("GM availability restored.");
+          view.statusMessage("Game night restored by the DM.");
         } catch (error) {
-          logError("Unable to restore GM session", error);
+          logError("Unable to restore DM game night", error);
         }
       });
 
       view.node("complete-game")?.addEventListener("click", () => {
         try {
           if (model.deriveStatus(state) !== "confirmed") {
-            view.statusMessage("Only a Confirmed table can be completed.");
+            view.statusMessage("Only a Confirmed table can be marked played.");
             return;
           }
           state.completed = true;
           view.render(state);
-          view.statusMessage("Game marked Completed. Attendance and eligible post-game feedback can now create verified reputation evidence.");
+          view.statusMessage("Game marked played. Attendance and eligible post-game feedback can now be recorded.");
         } catch (error) {
           logError("Unable to complete game", error);
         }
@@ -121,13 +121,13 @@
           const log = view.node("recovery-log");
           if (log) log.innerHTML = "<p>No changes yet.</p>";
           view.render(state);
-          view.statusMessage("Lifecycle demo reset.");
+          view.statusMessage("Confirmation preview reset.");
         } catch (error) {
           logError("Unable to reset lifecycle", error);
         }
       });
     } catch (error) {
-      logError("Unable to initialize lifecycle simulator", error);
+      logError("Unable to initialize lifecycle preview", error);
     }
   }
 
