@@ -20,6 +20,8 @@ function doPost(e) {
     validateHoneypot_(payload);
 
     if (action === "match.query") return json_(tableMatchQuery_(payload));
+    if (action === "player.registration_state") return json_(playerRegistrationState_(payload));
+    if (action === "gm.registration_queue") return json_(gmRegistrationQueue_(payload));
 
     assertWritesEnabled_();
     lock = LockService.getScriptLock();
@@ -30,6 +32,9 @@ function doPost(e) {
     if (action === "venue.save") return json_(saveVenueProfile_(payload));
     if (action === "game.save") return json_(saveGame_(payload));
     if (action === "game.join") return json_(joinGame_(payload));
+    if (action === "game.cancel_registration") return json_(cancelPlayerRegistration_(payload));
+    if (action === "gm.registration_manage") return json_(gmManageRegistration_(payload));
+    if (action === "venue.booking_manage") return json_(venueManageBooking_(payload));
 
     return json_({ ok:false, error:"Unknown action" });
   } catch (error) {
