@@ -10,7 +10,7 @@
       if (Array.isArray(value)) return value.filter(Boolean);
       return value ? [value] : [];
     } catch (error) {
-      logError("Unable to normalize saved GM field", error);
+      logError("Unable to normalize saved DM field", error);
       return [];
     }
   }
@@ -21,13 +21,13 @@
       const heading = document.querySelector("#demand-heading");
       const description = document.querySelector("#demand-description");
       if (mode === "shared") {
-        if (label) label.textContent = "SHARED PILOT PLAYER DEMAND";
-        if (heading) heading.textContent = "What Players are asking for";
-        if (description) description.textContent = "Anonymous aggregate from the configured shared pilot. Individual Player identities, ZIP codes, travel radii, and contact details are not exposed here.";
+        if (label) label.textContent = "LOCAL PLAYER INTEREST";
+        if (heading) heading.textContent = "What Players are looking for";
+        if (description) description.textContent = "Player interest is shown as anonymous totals. Names, contact details, ZIP codes, and individual travel ranges are not exposed here.";
       } else {
-        if (label) label.textContent = "PROTOTYPE PLAYER DEMAND";
-        if (heading) heading.textContent = "What Players could be asking for";
-        if (description) description.textContent = "This validation prototype combines seeded demo Player signals with any Player signal saved in this browser. It is not live community demand. Individual Player names and private contact details are not exposed here.";
+        if (label) label.textContent = "SAMPLE PLAYER INTEREST";
+        if (heading) heading.textContent = "See what local demand could look like";
+        if (description) description.textContent = "This preview uses sample Player interest plus any Player preferences saved on this device. Sample counts are not live community demand.";
       }
     } catch (error) {
       logError("Unable to update demand-mode copy", error);
@@ -41,7 +41,7 @@
       if (!summaries.length) {
         const empty = document.createElement("p");
         empty.className = "microcopy";
-        empty.textContent = mode === "shared" ? "No active shared Player demand has been recorded yet." : "No prototype Player demand is available yet.";
+        empty.textContent = mode === "shared" ? "No active Player interest has been recorded yet." : "No sample Player interest is available yet.";
         container.appendChild(empty);
         return;
       }
@@ -54,13 +54,13 @@
         label.textContent = `${summary.system} · ${summary.day}`;
         const note = document.createElement("small");
         note.textContent = mode === "shared"
-          ? "Anonymous shared-pilot demand"
-          : (summary.localCount ? "Includes your saved Player signal" : "Seeded prototype demand");
+          ? "Anonymous Player interest"
+          : (summary.localCount ? "Includes your saved Player preferences" : "Sample demand");
         item.append(count, label, note);
         container.appendChild(item);
       });
     } catch (error) {
-      logError("Unable to render Player demand summaries", error);
+      logError("Unable to render Player interest summaries", error);
     }
   }
 
@@ -74,28 +74,28 @@
           renderSummaries(container, result.demand, "shared");
           return;
         }
-        logError("Shared demand summary unavailable; using prototype fallback", new Error(result.error || "Unknown pilot API response"));
+        logError("Online demand summary unavailable; using sample fallback", new Error(result.error || "Unknown API response"));
       }
-      setDemandCopy("prototype");
-      renderSummaries(container, window.DDDTableMatch.summarizeDemand(), "prototype");
+      setDemandCopy("sample");
+      renderSummaries(container, window.DDDTableMatch.summarizeDemand(), "sample");
     } catch (error) {
-      logError("Unable to load Player demand snapshot", error);
-      setDemandCopy("prototype");
-      renderSummaries(container, window.DDDTableMatch.summarizeDemand(), "prototype");
+      logError("Unable to load Player interest snapshot", error);
+      setDemandCopy("sample");
+      renderSummaries(container, window.DDDTableMatch.summarizeDemand(), "sample");
     }
   }
 
-  function readSavedGm() {
+  function readSavedDm() {
     try {
       const raw = localStorage.getItem("ddd-preview-game-master");
       return raw ? JSON.parse(raw) : null;
     } catch (error) {
-      logError("Unable to read saved GM signal", error);
+      logError("Unable to read saved DM preferences", error);
       return null;
     }
   }
 
-  function applySavedGm(form, statusNode, profile) {
+  function applySavedDm(form, statusNode, profile) {
     try {
       if (!form || !profile) return false;
       const systems = asArray(profile.gm_system);
@@ -107,10 +107,10 @@
       if (starts[0]) form.elements.start.value = starts[0];
       if (profile.postal_code) form.elements.gm_zip.value = profile.postal_code;
       if (profile.radius) form.elements.gm_radius.value = String(profile.radius);
-      if (statusNode) statusNode.textContent = "Loaded your saved GM system, availability, ZIP code, and travel range. You can change anything below.";
+      if (statusNode) statusNode.textContent = "Loaded your saved DM game, availability, ZIP code, and travel range. Change anything you want below.";
       return Boolean(normalizedSystem && days[0] && starts[0] && profile.postal_code);
     } catch (error) {
-      logError("Unable to apply saved GM signal", error);
+      logError("Unable to apply saved DM preferences", error);
       return false;
     }
   }
@@ -124,11 +124,11 @@
       if (query.get("day")) form.elements.day.value = query.get("day");
       if (query.get("start")) form.elements.start.value = query.get("start");
 
-      let loadedSavedGm = false;
-      if (!hasQuery) loadedSavedGm = applySavedGm(form, statusNode, readSavedGm());
+      let loadedSavedDm = false;
+      if (!hasQuery) loadedSavedDm = applySavedDm(form, statusNode, readSavedDm());
       if (!form.elements.gm_zip.value) form.elements.gm_zip.value = localStorage.getItem("ddd-home-zip") || "29501";
       if (!form.elements.gm_radius.value) form.elements.gm_radius.value = localStorage.getItem("ddd-travel-radius") || "25";
-      return loadedSavedGm;
+      return loadedSavedDm;
     } catch (error) {
       logError("Unable to prefill Table Match", error);
       return false;
