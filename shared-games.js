@@ -25,17 +25,17 @@
     try {
       if (status) status.textContent = message;
     } catch (error) {
-      logError("Unable to update shared game status", error);
+      logError("Unable to update game status", error);
     }
   }
 
   function writeErrorMessage(error, action) {
     try {
       return error.message === "Shared pilot writes are disabled"
-        ? `The shared pilot is currently read-only; ${action} is disabled.`
+        ? `Seat changes are temporarily read-only; ${action} is unavailable right now.`
         : `Could not ${action}: ${error.message || "request failed"}`;
     } catch (nestedError) {
-      logError("Unable to format shared write error", nestedError);
+      logError("Unable to format game action error", nestedError);
       return `Could not ${action}.`;
     }
   }
@@ -49,14 +49,14 @@
       setStatus(`Requesting a seat at ${game.title}…`);
       const result = await window.DDDSharedRegistration.request(game.game_id);
       const messages = {
-        confirmed:"Your seat is confirmed in the shared pilot.",
-        requested:"Your seat request was sent to the shared pilot.",
-        waitlisted:"The table is full; you were added to the shared pilot waitlist."
+        confirmed: "Your seat is confirmed.",
+        requested: "Your seat request was sent to the DM.",
+        waitlisted: "The table is full, so you were added to the waitlist."
       };
-      setStatus(messages[result.status] || `Registration status: ${result.status}.`);
+      setStatus(messages[result.status] || `Your registration status is ${result.status}.`);
       await loadGames();
     } catch (error) {
-      logError("Unable to request shared pilot seat", error);
+      logError("Unable to request seat", error);
       setStatus(writeErrorMessage(error, "request the seat"));
     }
   }
@@ -65,10 +65,10 @@
     try {
       setStatus(`Cancelling your registration for ${game.title}…`);
       await window.DDDSharedRegistration.cancel(game.game_id);
-      setStatus("Your shared pilot registration was cancelled. If a waitlist existed, recovery was recalculated automatically.");
+      setStatus("Your registration was cancelled. If the table had a waitlist, the next seat is recalculated automatically.");
       await loadGames();
     } catch (error) {
-      logError("Unable to cancel shared pilot seat", error);
+      logError("Unable to cancel seat", error);
       setStatus(writeErrorMessage(error, "cancel the registration"));
     }
   }
@@ -79,20 +79,20 @@
       card.appendChild(make("p", String(game.status || "forming").toUpperCase(), "eyebrow"));
       card.appendChild(make("h3", game.title || "Forming Table"));
       card.appendChild(make("p", `${game.system || "RPG"} · ${game.starts_at || "Schedule pending"}`, "muted"));
-      const venue = game.venue ? `${game.venue.name}${game.venue.city ? ` · ${game.venue.city}, ${game.venue.state}` : ""}` : "Venue pending";
+      const venue = game.venue ? `${game.venue.name}${game.venue.city ? ` · ${game.venue.city}, ${game.venue.state}` : ""}` : "Venue still needed";
       card.appendChild(make("p", venue, "muted"));
       card.appendChild(make("p", `${Number(game.confirmed_players || 0)} confirmed · ${Number(game.requested_players || 0)} requested · ${Number(game.max_players || 0)} Player seats · ${Number(game.waitlisted_players || 0)} waitlisted`, "muted"));
       card.appendChild(make("p", game.venue_approved ? "Venue approved" : "Venue approval still needed", "muted"));
 
       const playerId = window.DDDSharedRegistration.playerId();
       if (registration) {
-        card.appendChild(make("p", `Your pilot status: ${String(registration.status).toUpperCase()}`, "eyebrow"));
+        card.appendChild(make("p", `Your status: ${String(registration.status).toUpperCase()}`, "eyebrow"));
         const cancel = make("button", registration.status === "requested" ? "Cancel My Request" : "Cancel My Seat", "button");
         cancel.type = "button";
         cancel.addEventListener("click", () => cancelSeat(game));
         card.appendChild(cancel);
       } else {
-        const label = !playerId ? "Save Player Signal to Join" : String(game.join_mode || "").toLowerCase().includes("request") ? "Request a Seat" : "Join This Table";
+        const label = !playerId ? "Save My Player Preferences to Join" : String(game.join_mode || "").toLowerCase().includes("request") ? "Request a Seat" : "Join This Table";
         const action = make("button", label, "button");
         action.type = "button";
         action.addEventListener("click", () => requestSeat(game));
@@ -100,7 +100,7 @@
       }
       return card;
     } catch (error) {
-      logError("Unable to render shared pilot game", error);
+      logError("Unable to render forming game", error);
       return null;
     }
   }
@@ -111,8 +111,8 @@
       list.replaceChildren();
       if (!window.DDD_API?.isConfigured()) return renderDisconnected();
 
-      mode.textContent = "SHARED PILOT · CONNECTED";
-      setStatus("Loading shared forming tables…");
+      mode.textContent = "FORMING GAMES · EARLY ACCESS";
+      setStatus("Loading forming games…");
       const [gamesResult, registrationMap] = await Promise.all([window.DDD_API.get("games.list"), window.DDDSharedRegistration.loadMap()]);
       if (!gamesResult.ok || !Array.isArray(gamesResult.games)) throw new Error(gamesResult.error || "Invalid game-list response");
       gamesResult.games.forEach((game) => {
@@ -121,36 +121,40 @@
       });
       if (!gamesResult.games.length) {
         const empty = make("article", null, "status-card");
-        empty.appendChild(make("h3", "No shared forming tables yet."));
-        empty.appendChild(make("p", "Player demand can still help a GM decide what to form next.", "muted"));
+        empty.appendChild(make("h3", "No forming games are listed yet."));
+        empty.appendChild(make("p", "Save what you want to play. Your Player preferences can help a DM see what local Players are looking for.", "muted"));
+        const action = make("a", "Tell DMs What I Want to Play", "button");
+        action.href = "join.html#player";
+        empty.appendChild(action);
         list.appendChild(empty);
       }
-      setStatus(`${gamesResult.games.length} shared pilot table${gamesResult.games.length === 1 ? "" : "s"} available.`);
+      setStatus(`${gamesResult.games.length} forming table${gamesResult.games.length === 1 ? "" : "s"} available.`);
     } catch (error) {
-      logError("Unable to load shared pilot games", error);
-      mode.textContent = "SHARED PILOT · CONNECTION ERROR";
-      setStatus("Shared game listings are unavailable right now; the rest of the validation prototype still works locally.");
+      logError("Unable to load forming games", error);
+      mode.textContent = "FORMING GAMES · TEMPORARILY UNAVAILABLE";
+      setStatus("Live game listings are unavailable right now. You can still save your Player preferences or preview how a forming table works.");
     }
   }
 
   function renderDisconnected() {
     try {
-      mode.textContent = "SHARED PILOT · NOT CONNECTED";
+      mode.textContent = "FORMING GAMES · SAMPLE";
       const card = make("article", null, "status-card");
-      card.appendChild(make("h3", "Shared game listings are dormant."));
-      card.appendChild(make("p", "The GitHub Pages validation site is still in local prototype mode. Configure the pilot API to replace this message with shared forming tables.", "muted"));
-      const preview = make("a", "Preview a Forming Table", "button");
+      card.appendChild(make("h3", "See what a forming table looks like."));
+      card.appendChild(make("p", "Live shared listings are not connected on this public preview right now, but you can explore a complete example table and see what Players will know before committing.", "muted"));
+      const preview = make("a", "See a Forming Table", "button");
       preview.href = "games/shadows-over-florence/";
       card.appendChild(preview);
       list.appendChild(card);
+      setStatus("Showing a sample forming table while live listings are unavailable.");
     } catch (error) {
-      logError("Unable to render disconnected shared pilot", error);
+      logError("Unable to render forming-game fallback", error);
     }
   }
 
   try {
     loadGames();
   } catch (error) {
-    logError("Unable to initialize shared game discovery", error);
+    logError("Unable to initialize game discovery", error);
   }
 })();
