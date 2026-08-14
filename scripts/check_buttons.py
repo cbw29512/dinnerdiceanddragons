@@ -87,9 +87,6 @@ def check_generic_controls(page: Path, parser: InteractionParser) -> list[str]:
     return errors
 
 
-# Pages with controls whose behavior depends on JavaScript. The list intentionally
-# names the dependency so a future markup refactor cannot silently leave a visible
-# button behind while dropping its controller script.
 PAGE_SCRIPT_REQUIREMENTS: dict[str, tuple[str, ...]] = {
     "index.html": ("shared-registration.js", "shared-games.js", "dashboard.js"),
     "dashboard-prototype.html": ("dashboard.js",),
@@ -106,9 +103,6 @@ PAGE_SCRIPT_REQUIREMENTS: dict[str, tuple[str, ...]] = {
 }
 
 
-# Source-level signatures for the controls that matter most. These are not tests of
-# browser layout; they are a regression gate that proves the visible controls still
-# have a controller path in source.
 SOURCE_WIRING: dict[str, tuple[str, ...]] = {
     "dashboard.js": ('.role-btn', 'addEventListener("click"', '#role-select'),
     "experience-profiles.js": ('.add-experience', '.remove-experience', 'addEventListener("click"'),
@@ -125,7 +119,8 @@ SOURCE_WIRING: dict[str, tuple[str, ...]] = {
     "table-lifecycle.js": ('game-hub-link', 'toggle-venue', 'add-player', 'cancel-player', 'cancel-gm', 'restore-gm', 'complete-game', 'reset-lifecycle'),
     "game-hub.js": ('.hub-role', '.quick-message', 'addEventListener("click"', 'addEventListener("submit"'),
     "venue-feedback.js": ('#venue-feedback-form', 'addEventListener("submit"'),
-    "shared-games.js": ('game.join', 'Cancel My Seat', 'addEventListener("click"'),
+    "shared-registration.js": ('game.join', 'game.cancel_registration'),
+    "shared-games.js": ('DDDSharedRegistration.request', 'DDDSharedRegistration.cancel', 'addEventListener("click"'),
 }
 
 
