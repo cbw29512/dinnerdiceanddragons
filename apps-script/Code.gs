@@ -22,6 +22,7 @@ function doPost(e) {
     if (action === "match.query") return json_(tableMatchQuery_(payload));
     if (action === "player.registration_state") return json_(playerRegistrationState_(payload));
     if (action === "gm.registration_queue") return json_(gmRegistrationQueue_(payload));
+    if (action === "venue.booking_queue") return json_(venueBookingQueue_(payload));
 
     assertWritesEnabled_();
     lock = LockService.getScriptLock();
