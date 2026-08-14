@@ -24,12 +24,12 @@
   function defaultReasons(match) {
     try {
       return [
-        "Venue is available for the full session.",
-        "Venue is inside the GM travel radius.",
-        "Counted Players can attend the full session.",
-        "Counted Players are within their own travel radius.",
-        `Venue can seat the GM plus ${match.hardFit.playerCapacity} Players.`,
-        "Compatible demand is not yet a seat commitment."
+        "Venue is available for the full game night.",
+        "Venue is inside your travel range.",
+        "Interested Players can make the full game time.",
+        "Interested Players are within their own travel ranges.",
+        `Venue can seat you plus ${match.hardFit.playerCapacity} Players.`,
+        "Player interest is not counted as a confirmed seat until someone actually joins."
       ];
     } catch (error) {
       logError("Unable to build match reasons", error);
@@ -40,23 +40,23 @@
   function buildCard(match) {
     try {
       const card = make("article", null, "table-match-card");
-      const source = match.mode === "shared" ? "SHARED PILOT" : "PROTOTYPE";
-      const readiness = match.hardFit.viable ? "VIABLE TO FORM" : "EMERGING";
+      const source = match.mode === "shared" ? "LOCAL MATCH" : "SAMPLE MATCH";
+      const readiness = match.hardFit.viable ? "READY TO FORM" : "NEEDS MORE PLAYERS";
       const playerCount = Number(match.eligiblePlayerCount || 0);
       const playerText = playerCount > match.hardFit.playerCapacity
-        ? `${playerCount} compatible Player signals · ${match.hardFit.playerCapacity} seats available`
-        : `${playerCount} compatible Player signal${playerCount === 1 ? "" : "s"}`;
+        ? `${playerCount} potential Players · ${match.hardFit.playerCapacity} seats available`
+        : `${playerCount} potential Player${playerCount === 1 ? "" : "s"}`;
 
-      card.appendChild(make("p", `${source} · POTENTIAL MATCH · ${readiness}`, "eyebrow"));
+      card.appendChild(make("p", `${source} · ${readiness}`, "eyebrow"));
       card.appendChild(make("div", `${match.score.total}/100`, "match-score"));
       card.appendChild(make("h3", `${match.system} · ${match.day}`));
       const summary = make("p");
       summary.appendChild(make("strong", playerText));
-      summary.appendChild(document.createTextNode(` · ${match.venue.name} · ${Number(match.distance).toFixed(1)} miles from GM`));
+      summary.appendChild(document.createTextNode(` · ${match.venue.name} · ${Number(match.distance).toFixed(1)} miles from you`));
       card.appendChild(summary);
 
       const breakdown = make("div", null, "match-breakdown");
-      [["Usable Player demand", match.score.demand, 40], ["GM distance", match.score.distance, 25], ["Schedule", match.score.schedule, 25], ["Capacity", match.score.capacity, 10]].forEach(([label, value, max]) => {
+      [["Player fit", match.score.demand, 40], ["Travel", match.score.distance, 25], ["Schedule", match.score.schedule, 25], ["Capacity", match.score.capacity, 10]].forEach(([label, value, max]) => {
         const row = make("span");
         row.appendChild(document.createTextNode(`${label} `));
         row.appendChild(make("b", `${value}/${max}`));
@@ -71,7 +71,7 @@
       reasonTexts.forEach((reason) => reasons.appendChild(make("p", `✓ ${reason}`)));
       card.appendChild(reasons);
 
-      const action = make("button", match.hardFit.viable ? "Start Forming This Table" : `Need ${match.hardFit.needsPlayers} More Player Signal${match.hardFit.needsPlayers === 1 ? "" : "s"}`, "button primary");
+      const action = make("button", match.hardFit.viable ? "Start Forming This Table" : `Needs ${match.hardFit.needsPlayers} More Interested Player${match.hardFit.needsPlayers === 1 ? "" : "s"}`, "button primary");
       action.type = "button";
       action.disabled = !match.hardFit.viable;
       action.addEventListener("click", () => selectMatch(match));
@@ -137,8 +137,8 @@
       });
       if (!matches.length) {
         const empty = make("div", null, "panel empty-state");
-        empty.appendChild(make("h3", "No three-sided match yet."));
-        empty.appendChild(make("p", "Try another system, day, time, or travel radius. The absence of a match is itself useful demand information."));
+        empty.appendChild(make("h3", "No match for that game night yet."));
+        empty.appendChild(make("p", "Try another day, time, game, or travel range. You can also save what you want to run so future Player interest can line up with it."));
         results.appendChild(empty);
       }
     } catch (error) {
@@ -155,30 +155,30 @@
         return;
       }
 
-      status.textContent = window.DDD_API?.isConfigured() ? "Calculating private shared-pilot overlap…" : "Calculating prototype Player + GM + Venue overlap…";
+      status.textContent = "Checking Player interest, your schedule, travel distance, and venue availability…";
       const calculation = await window.DDDTableMatchCalculator.calculate(values);
       const matches = calculation.matches || [];
       renderMatches(matches);
       const viableCount = matches.filter((match) => match.hardFit.viable).length;
-      const modeText = calculation.mode === "shared" ? "Shared pilot" : calculation.mode === "prototype-fallback" ? "Prototype fallback — shared matcher unavailable" : "Prototype";
-      status.textContent = `${modeText}: ${matches.length} potential match${matches.length === 1 ? "" : "es"} found; ${viableCount} viable to form.`;
+      const sourceText = calculation.mode === "shared" ? "Local results" : calculation.mode === "prototype-fallback" ? "Sample results — online matching unavailable" : "Sample results";
+      status.textContent = `${sourceText}: ${matches.length} option${matches.length === 1 ? "" : "s"} found; ${viableCount} ready to form.`;
       localStorage.setItem("ddd-home-zip", values.gmZip);
       localStorage.setItem("ddd-travel-radius", String(values.gmRadius));
     } catch (error) {
       logError("Unable to submit Table Match", error);
-      if (status) status.textContent = "Unable to calculate matches right now.";
+      if (status) status.textContent = "We couldn’t calculate matches right now. Please try again.";
     }
   }
 
   function initialize() {
     try {
       window.DDDTableMatchProfile?.renderDemandSnapshot(document.querySelector("#demand-snapshot"));
-      const loadedSavedGm = window.DDDTableMatchProfile?.prefill(form, document.querySelector("#saved-gm-status"));
+      const loadedSavedDm = window.DDDTableMatchProfile?.prefill(form, document.querySelector("#saved-gm-status"));
       form?.addEventListener("submit", async (event) => {
         event.preventDefault();
         await submitMatch();
       });
-      if (loadedSavedGm) submitMatch();
+      if (loadedSavedDm) submitMatch();
     } catch (error) {
       logError("Unable to initialize Table Match UI", error);
     }
