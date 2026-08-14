@@ -5,7 +5,7 @@
     console.error(`[Dinner Dice & Dragons] ${message}`, error);
   }
 
-  function getStatusNode(form) {
+  function statusNode(form) {
     try {
       return form.querySelector(".form-status");
     } catch (error) {
@@ -17,8 +17,7 @@
   function validatePostalCode(form) {
     try {
       const postal = form.querySelector('[name="postal_code"]');
-      if (!postal) return true;
-      if (/^\d{5}$/.test(postal.value.trim())) return true;
+      if (!postal || /^\d{5}$/.test(postal.value.trim())) return true;
       postal.setCustomValidity("Enter a five-digit US ZIP code.");
       postal.reportValidity();
       postal.focus();
@@ -29,7 +28,7 @@
     }
   }
 
-  function serializeForm(form) {
+  function serialize(form) {
     try {
       const output = {};
       for (const [rawKey, value] of new FormData(form).entries()) {
@@ -51,128 +50,46 @@
     }
   }
 
-  function localKey_(type) {
+  function saveLocal(type, values) {
     try {
-      return `ddd-preview-${type.toLowerCase().replaceAll(" ", "-")}`;
+      const key = `ddd-preview-${type.toLowerCase().replaceAll(" ", "-")}`;
+      localStorage.setItem(key, JSON.stringify(values));
     } catch (error) {
-      logError("Unable to build local preview key", error);
-      return "ddd-preview-profile";
-    }
-  }
-
-  function apiAction_(type) {
-    try {
-      if (type === "Player") return "player.save";
-      if (type === "Game Master") return "gm.save";
-      if (type === "Venue") return "venue.save";
-      if (type === "Game") return "game.save";
-      return "";
-    } catch (error) {
-      logError("Unable to resolve form API action", error);
-      return "";
-    }
-  }
-
-  function injectKnownIdentity_(type, values) {
-    try {
-      const userId = localStorage.getItem("ddd-user-id") || "";
-      if (userId) values.user_id = userId;
-
-      if (type === "Player") {
-        const playerId = localStorage.getItem("ddd-player-id") || "";
-        if (playerId) values.player_id = playerId;
-      } else if (type === "Game Master") {
-        const gmId = localStorage.getItem("ddd-game-master-id") || "";
-        if (gmId) values.gm_id = gmId;
-      } else if (type === "Venue") {
-        const venueId = localStorage.getItem("ddd-venue-id") || "";
-        const managerId = localStorage.getItem("ddd-venue-manager-id") || "";
-        const windowId = localStorage.getItem("ddd-venue-window-id") || "";
-        if (venueId) values.venue_id = venueId;
-        if (managerId) values.venue_manager_id = managerId;
-        if (windowId) values.venue_window_id = windowId;
-      } else if (type === "Game") {
-        const gameId = localStorage.getItem("ddd-game-id") || "";
-        const seriesId = localStorage.getItem("ddd-series-id") || "";
-        const gmId = localStorage.getItem("ddd-game-master-id") || "";
-        if (gameId) values.game_id = gameId;
-        if (seriesId) values.series_id = seriesId;
-        if (gmId) values.gm_id = gmId;
-        values.status = "forming";
-        const rawMatch = localStorage.getItem("ddd-selected-venue-slot");
-        if (rawMatch) {
-          const match = JSON.parse(rawMatch);
-          if (match.venueId) values.venue_id = match.venueId;
-          if (match.venueWindowId) values.venue_window_id = match.venueWindowId;
-          if (match.sourceMode) values.match_source = match.sourceMode;
-          if (match.matchScore !== undefined) values.match_score = match.matchScore;
-          if (match.eligiblePlayers !== undefined) values.compatible_player_count = match.eligiblePlayers;
-          if (match.usablePlayers !== undefined) values.usable_player_count = match.usablePlayers;
-          if (match.approvalRequired !== undefined) values.approval_required = match.approvalRequired;
-        }
-      }
-      return values;
-    } catch (error) {
-      logError("Unable to reuse saved pilot identity", error);
-      return values;
-    }
-  }
-
-  function saveLocal_(type, values) {
-    try {
-      localStorage.setItem(localKey_(type), JSON.stringify(values));
-    } catch (error) {
-      logError("Unable to save local fallback", error);
+      logError("Unable to save local form fallback", error);
       throw error;
     }
   }
 
-  function persistReturnedIdentity_(type, result) {
+  function announce(node, message, success) {
     try {
-      if (result.user_id) localStorage.setItem("ddd-user-id", result.user_id);
-      if (result.player_id) localStorage.setItem("ddd-player-id", result.player_id);
-      if (result.gm_id) localStorage.setItem("ddd-game-master-id", result.gm_id);
-      if (result.game_id) localStorage.setItem("ddd-game-id", result.game_id);
-      if (result.series_id) localStorage.setItem("ddd-series-id", result.series_id);
-      if (result.venue_id) localStorage.setItem("ddd-venue-id", result.venue_id);
-      if (result.venue_manager_id) localStorage.setItem("ddd-venue-manager-id", result.venue_manager_id);
-      if (result.venue_window_id) localStorage.setItem("ddd-venue-window-id", result.venue_window_id);
+      if (!node) return;
+      node.className = `form-status ${success ? "success-message" : "error-message"}`;
+      node.textContent = message;
     } catch (error) {
-      logError(`Unable to persist returned ${type} pilot identity`, error);
+      logError("Unable to announce form state", error);
     }
   }
 
-  async function saveForm_(form) {
+  async function saveForm(form) {
     try {
       const type = form.dataset.profileType || "Profile";
-      const values = injectKnownIdentity_(type, serializeForm(form));
-      saveLocal_(type, values);
-      const action = apiAction_(type);
-      const status = getStatusNode(form);
+      const values = window.DDDFormPilot?.injectIdentity(type, serialize(form)) || serialize(form);
+      saveLocal(type, values);
+      const status = statusNode(form);
 
-      if (!action || !window.DDD_API?.isConfigured()) {
-        if (status) {
-          status.className = "form-status success-message";
-          status.textContent = "Saved. We’ll use this information in your current browser experience.";
-        }
+      if (!window.DDDFormPilot?.actionFor(type) || !window.DDD_API?.isConfigured()) {
+        announce(status, "Saved. We’ll use this information in your current browser experience.", true);
+        form.dispatchEvent(new CustomEvent("ddd:save-success", { detail:{ type, shared:false, result:null, values } }));
         return;
       }
 
       if (status) status.textContent = "Saving…";
-      const result = await window.DDD_API.post(action, values);
-      if (!result.ok) throw new Error(result.error || "Save failed");
-      persistReturnedIdentity_(type, result);
-      if (status) {
-        status.className = "form-status success-message";
-        status.textContent = "Saved to the shared pilot.";
-      }
+      const saved = await window.DDDFormPilot.save(type, values);
+      announce(status, "Saved to the shared pilot.", true);
+      form.dispatchEvent(new CustomEvent("ddd:save-success", { detail:{ type, shared:saved.shared, result:saved.result, values } }));
     } catch (error) {
       logError("Unable to save form", error);
-      const status = getStatusNode(form);
-      if (status) {
-        status.className = "form-status error-message";
-        status.textContent = "We couldn’t save online, but your information is still saved on this device.";
-      }
+      announce(statusNode(form), "We couldn’t save online, but your information is still saved on this device.", false);
     }
   }
 
@@ -189,7 +106,7 @@
             form.reportValidity();
             return;
           }
-          await saveForm_(form);
+          await saveForm(form);
         } catch (error) {
           logError("Unable to submit form", error);
         }
