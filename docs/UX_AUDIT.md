@@ -83,6 +83,7 @@ Browser-local preview behavior and early-access shared behavior are intentionall
 - [x] Venue approval control is represented.
 - [x] Value language includes expected headcount, recurring traffic, policies, and one DM point of contact.
 - [x] Table Match enforces venue per-table capacity as a hard constraint, including the DM’s seat.
+- [x] Browser test proves a Venue can save an open table and continue into the Venue Game Hub view.
 - [x] Early-access venue manager/booking actions exist when the shared endpoint is configured.
 - [ ] Production venue manager authentication/verification.
 - [ ] Production venue analytics.
@@ -221,7 +222,7 @@ Browser-local preview behavior and early-access shared behavior are intentionall
 - [x] CI validates HTML metadata/internal links, fragments, placeholder links, button/controller wiring, browser JavaScript syntax, and Apps Script syntax.
 - [x] Node unit tests cover core Table Match hard-fit and lifecycle status rules.
 - [x] Chromium browser smoke tests run in CI using a local static server.
-- [x] Six browser tests currently cover homepage role entrances, Player onboarding controls/save, mobile overflow, DM match→create→confirm→Hub, recurring setup/commitments, and Game Hub role/message behavior.
+- [x] Seven browser tests currently cover homepage role entrances, Player onboarding controls/save, Venue onboarding/save, mobile overflow, DM match→create→confirm→Hub, recurring setup/commitments, and Game Hub role/message behavior.
 - [ ] Lighthouse/accessibility CI gate.
 - [ ] Shared navigation/layout component before production framework migration.
 
@@ -240,6 +241,6 @@ Browser-local preview behavior and early-access shared behavior are intentionall
 
 ## Current assessment
 
-Dinner, Dice & Dragons is now a **user-first connected validation site** for the core product loop. A new visitor sees three equal reasons to use the product; a Player can save what they want; a DM can match Player interest with a venue, form a table, collect commitments, and reach Confirmed; a Venue can understand the expected group and its role; and recurring campaigns can carry one-date exceptions without breaking the schedule.
+Dinner, Dice & Dragons is now a **user-first connected validation site** for the core product loop. A new visitor sees three equal reasons to use the product; a Player can save what they want; a DM can match Player interest with a venue, form a table, collect commitments, and reach Confirmed; a Venue can save an open table and move into its game-night view; and recurring campaigns can carry one-date exceptions without breaking the schedule.
 
-The critical local workflows are no longer trusted only because their buttons appear wired. CI now launches Chromium and clicks through six representative end-to-end scenarios. The remaining product-risk milestone is turning the early-access/shared model into a secure authenticated multi-user service while preserving the privacy, explainability, and role clarity established by the current site.
+The critical local workflows are no longer trusted only because their buttons appear wired. CI now launches Chromium and clicks through seven representative end-to-end scenarios, including a direct workflow for each of the three audiences. The remaining product-risk milestone is turning the early-access/shared model into a secure authenticated multi-user service while preserving the privacy, explainability, and role clarity established by the current site.
