@@ -31,7 +31,7 @@ function saveGame_(payload) {
       gm_id:payload.gm_id || "",
       system:payload.system || "",
       venue_id:payload.venue_id || "",
-      status:payload.status || "forming",
+      status:"forming",
       starts_at:payload.starts_at || `${payload.day || ""} ${payload.start_time || ""}`.trim(),
       ends_at:payload.ends_at || "",
       min_players:payload.min_players || "",
@@ -42,7 +42,9 @@ function saveGame_(payload) {
       created_at:now,
       updated_at:now
     });
-    return { ok:true, game_id:gameId, series_id:seriesId };
+    const booking = saveBookingForGame_(gameId, payload, seriesId, now);
+    const gameState = refreshSharedGameStatus_(gameId);
+    return { ok:true, game_id:gameId, series_id:seriesId, booking_id:booking.booking_id, booking_status:booking.status, game_state:gameState };
   } catch (error) {
     console.error("[DDD] saveGame_ failed", error);
     throw error;
@@ -83,7 +85,9 @@ function listPublicGames_() {
     const registrations = dddRows_("Registrations");
     return games.map((game) => {
       const confirmed = registrations.filter((row) => String(row.game_id) === String(game.game_id) && String(row.status) === "confirmed").length;
+      const requested = registrations.filter((row) => String(row.game_id) === String(game.game_id) && String(row.status) === "requested").length;
       const waitlisted = registrations.filter((row) => String(row.game_id) === String(game.game_id) && String(row.status) === "waitlisted").length;
+      const booking = bookingForGame_(game.game_id);
       return {
         game_id:game.game_id,
         title:game.title,
@@ -94,9 +98,11 @@ function listPublicGames_() {
         min_players:Number(game.min_players || 0),
         max_players:Number(game.max_players || 0),
         confirmed_players:confirmed,
+        requested_players:requested,
         waitlisted_players:waitlisted,
         expected_guests:confirmed + 1,
         join_mode:game.join_mode,
+        venue_approved:!game.venue_id || Boolean(booking && String(booking.status) === "approved"),
         venue:venues[String(game.venue_id)] ? {
           venue_id:venues[String(game.venue_id)].venue_id,
           name:venues[String(game.venue_id)].name,
@@ -115,6 +121,8 @@ function listPublicGames_() {
 function joinGame_(payload) {
   try {
     if (!payload.game_id || !payload.player_id) throw new Error("game_id and player_id are required");
+    const player = dddFindBy_("Players", "player_id", payload.player_id)[0];
+    if (!player) throw new Error("Player profile not found");
     const game = latestGameById_(payload.game_id);
     if (!game) throw new Error("Game not found");
     if (["draft", "cancelled", "completed"].includes(String(game.status))) throw new Error("This game is not accepting registrations");
@@ -140,7 +148,8 @@ function joinGame_(payload) {
       cancelled_at:""
     };
     dddAppend_("Registrations", row);
-    return { ok:true, registration_id:row.registration_id, status:registrationStatus };
+    const gameState = refreshSharedGameStatus_(payload.game_id);
+    return { ok:true, registration_id:row.registration_id, status:registrationStatus, game_state:gameState };
   } catch (error) {
     console.error("[DDD] joinGame_ failed", error);
     throw error;
