@@ -64,6 +64,7 @@
     try {
       if (type === "Player") return "player.save";
       if (type === "Game Master") return "gm.save";
+      if (type === "Venue") return "venue.save";
       if (type === "Game") return "game.save";
       return "";
     } catch (error) {
@@ -83,6 +84,13 @@
       } else if (type === "Game Master") {
         const gmId = localStorage.getItem("ddd-game-master-id") || "";
         if (gmId) values.gm_id = gmId;
+      } else if (type === "Venue") {
+        const venueId = localStorage.getItem("ddd-venue-id") || "";
+        const managerId = localStorage.getItem("ddd-venue-manager-id") || "";
+        const windowId = localStorage.getItem("ddd-venue-window-id") || "";
+        if (venueId) values.venue_id = venueId;
+        if (managerId) values.venue_manager_id = managerId;
+        if (windowId) values.venue_window_id = windowId;
       } else if (type === "Game") {
         const gameId = localStorage.getItem("ddd-game-id") || "";
         const seriesId = localStorage.getItem("ddd-series-id") || "";
@@ -100,6 +108,7 @@
           if (match.matchScore !== undefined) values.match_score = match.matchScore;
           if (match.eligiblePlayers !== undefined) values.compatible_player_count = match.eligiblePlayers;
           if (match.usablePlayers !== undefined) values.usable_player_count = match.usablePlayers;
+          if (match.approvalRequired !== undefined) values.approval_required = match.approvalRequired;
         }
       }
       return values;
@@ -120,12 +129,16 @@
 
   function persistReturnedIdentity_(type, result) {
     try {
-      const identity = result.player_id || result.gm_id || result.game_id || "";
-      if (identity) localStorage.setItem(`ddd-${type.toLowerCase().replaceAll(" ", "-")}-id`, identity);
       if (result.user_id) localStorage.setItem("ddd-user-id", result.user_id);
+      if (result.player_id) localStorage.setItem("ddd-player-id", result.player_id);
+      if (result.gm_id) localStorage.setItem("ddd-game-master-id", result.gm_id);
+      if (result.game_id) localStorage.setItem("ddd-game-id", result.game_id);
       if (result.series_id) localStorage.setItem("ddd-series-id", result.series_id);
+      if (result.venue_id) localStorage.setItem("ddd-venue-id", result.venue_id);
+      if (result.venue_manager_id) localStorage.setItem("ddd-venue-manager-id", result.venue_manager_id);
+      if (result.venue_window_id) localStorage.setItem("ddd-venue-window-id", result.venue_window_id);
     } catch (error) {
-      logError("Unable to persist returned pilot identity", error);
+      logError(`Unable to persist returned ${type} pilot identity`, error);
     }
   }
 
@@ -148,7 +161,6 @@
       if (status) status.textContent = "Saving…";
       const result = await window.DDD_API.post(action, values);
       if (!result.ok) throw new Error(result.error || "Save failed");
-
       persistReturnedIdentity_(type, result);
       if (status) {
         status.className = "form-status success-message";
