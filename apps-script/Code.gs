@@ -12,14 +12,18 @@ function doGet(e) {
 }
 
 function doPost(e) {
-  const lock = LockService.getScriptLock();
+  let lock = null;
   try {
-    assertWritesEnabled_();
-    lock.waitLock(10000);
     const request = parseRequest_(e);
     const action = String(request.action || "");
     const payload = request.payload || {};
     validateHoneypot_(payload);
+
+    if (action === "match.query") return json_(tableMatchQuery_(payload));
+
+    assertWritesEnabled_();
+    lock = LockService.getScriptLock();
+    lock.waitLock(10000);
 
     if (action === "player.save") return json_(savePlayerProfile_(payload));
     if (action === "gm.save") return json_(saveGMProfile_(payload));
@@ -32,7 +36,7 @@ function doPost(e) {
     return json_({ ok:false, error:String(error && error.message ? error.message : "Request failed") });
   } finally {
     try {
-      if (lock.hasLock()) lock.releaseLock();
+      if (lock && lock.hasLock()) lock.releaseLock();
     } catch (error) {
       console.error("[DDD] lock release failed", error);
     }
