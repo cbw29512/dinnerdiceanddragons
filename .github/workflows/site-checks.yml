@@ -33,6 +33,9 @@ jobs:
             node --check "$file"
           done < <(find . -type f -name '*.js' -not -path './.git/*' -print0)
 
+      - name: Run matching and lifecycle unit tests
+        run: node tests/run-tests.js
+
       - name: Check Apps Script syntax
         shell: bash
         run: |
