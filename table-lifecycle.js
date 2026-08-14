@@ -16,6 +16,10 @@
       start: "18:00",
       minPlayers: 3,
       maxPlayers: 5,
+      candidatePlayers: 0,
+      usablePlayerDemand: 0,
+      venuePlayerCapacity: 5,
+      matchScore: 0,
       confirmedPlayers: 0,
       waitlistedPlayers: 0,
       venueApproved: false,
@@ -55,7 +59,14 @@
     }
   }
 
-  function node(id) { return document.getElementById(id); }
+  function node(id) {
+    try {
+      return document.getElementById(id);
+    } catch (error) {
+      logError(`Unable to find ${id}`, error);
+      return null;
+    }
+  }
 
   function setText(id, value) {
     try {
@@ -79,20 +90,30 @@
   }
 
   function noticeLabel(value) {
-    const labels = {
-      early: "more than 24 hours notice",
-      late: "less than 24 hours notice",
-      same_day: "same-day / very late notice",
-      no_show: "no notice / no-show"
-    };
-    return labels[value] || "notice recorded";
+    try {
+      const labels = {
+        early: "more than 24 hours notice",
+        late: "less than 24 hours notice",
+        same_day: "same-day / very late notice",
+        no_show: "no notice / no-show"
+      };
+      return labels[value] || "notice recorded";
+    } catch (error) {
+      logError("Unable to label cancellation notice", error);
+      return "notice recorded";
+    }
   }
 
   function reputationEffect(value) {
-    if (value === "early") return "No negative reputation event by default.";
-    if (value === "late" || value === "same_day") return "Logged as a late-cancellation reliability event; isolated events should not create a public caution.";
-    if (value === "no_show") return "Logged separately as a no-show; repeated verified no-shows may affect reliability.";
-    return "No automatic reputation effect.";
+    try {
+      if (value === "early") return "No negative reputation event by default.";
+      if (value === "late" || value === "same_day") return "Logged as a late-cancellation reliability event; isolated events should not create a public caution.";
+      if (value === "no_show") return "Logged separately as a no-show; repeated verified no-shows may affect reliability.";
+      return "No automatic reputation effect.";
+    } catch (error) {
+      logError("Unable to describe reputation effect", error);
+      return "No automatic reputation effect.";
+    }
   }
 
   function renderRequirements(state) {
@@ -130,14 +151,14 @@
         paragraph.textContent = "The GM is unavailable, so this session cannot remain Confirmed. Players and venue should be notified immediately; recurring future sessions remain separate unless explicitly cancelled.";
       } else if (state.status === "confirmed") {
         strong.textContent = "Confirmed";
-        paragraph.textContent = "GM, venue, and minimum Player commitment are all satisfied.";
+        paragraph.textContent = "GM, venue, and minimum Player commitment are all satisfied. The Game Hub is now available for coordination.";
       } else {
         strong.textContent = "Forming";
         const missing = [];
         if (!state.venueApproved) missing.push("venue approval");
         if (!state.gmAvailable) missing.push("GM availability");
         if (state.confirmedPlayers < state.minPlayers) missing.push(`${state.minPlayers - state.confirmedPlayers} more Player commitment${state.minPlayers - state.confirmedPlayers === 1 ? "" : "s"}`);
-        paragraph.textContent = `Still waiting for ${missing.join(" and ")}.`;
+        paragraph.textContent = `Still waiting for ${missing.join(" and ")}. Matching demand shows who could fit; only explicit seat commitments count toward confirmation.`;
       }
       box.append(strong, paragraph);
     } catch (error) {
@@ -165,6 +186,34 @@
       box.append(strong, paragraph);
     } catch (error) {
       logError("Unable to render reputation gate", error);
+    }
+  }
+
+  function renderHubGate(state) {
+    try {
+      const button = node("game-hub-link");
+      const label = node("hub-gate-label");
+      if (!button) return;
+      const unlocked = state.status === "confirmed" || state.status === "completed";
+      button.disabled = !unlocked;
+      if (label) label.textContent = unlocked ? "Confirmed — coordination is unlocked." : "Game Hub unlocks when Confirmed.";
+    } catch (error) {
+      logError("Unable to render Game Hub gate", error);
+    }
+  }
+
+  function renderMatchOrigin(state) {
+    try {
+      const candidateCount = Number(state.candidatePlayers) || 0;
+      const usableCount = Number(state.usablePlayerDemand) || 0;
+      const capacity = Number(state.venuePlayerCapacity) || state.maxPlayers;
+      if (!candidateCount) {
+        setText("match-origin", "This table was not seeded from a saved Table Match. Commitments below still control confirmation.");
+        return;
+      }
+      setText("match-origin", `Started from an explained Table Match with ${candidateCount} compatible Player signal${candidateCount === 1 ? "" : "s"}; ${usableCount} fit the selected table capacity of ${capacity} Players. Demand is not counted as commitment.`);
+    } catch (error) {
+      logError("Unable to render Table Match origin", error);
     }
   }
 
@@ -197,12 +246,20 @@
       renderRequirements(state);
       renderExplanation(state);
       renderReputationGate(state);
+      renderHubGate(state);
+      renderMatchOrigin(state);
     } catch (error) {
       logError("Unable to render lifecycle", error);
     }
   }
 
-  function statusMessage(message) { setText("lifecycle-status", message); }
+  function statusMessage(message) {
+    try {
+      setText("lifecycle-status", message);
+    } catch (error) {
+      logError("Unable to announce lifecycle status", error);
+    }
+  }
 
   function appendRecovery(message) {
     try {
@@ -231,6 +288,16 @@
       let state = loadState();
       render(state);
 
+      node("game-hub-link")?.addEventListener("click", () => {
+        try {
+          if (deriveStatus(state) !== "confirmed" && !state.completed) {
+            statusMessage("Confirm the venue and minimum Player commitments before opening the Game Hub.");
+            return;
+          }
+          window.location.href = "game-hub.html?role=gm";
+        } catch (error) { logError("Unable to open Game Hub", error); }
+      });
+
       node("toggle-venue")?.addEventListener("click", () => {
         try {
           if (state.completed) return;
@@ -252,7 +319,7 @@
             appendRecovery(`Table full. New Player added to waitlist at position ${state.waitlistedPlayers}.`);
           }
           render(state);
-          statusMessage(state.status === "confirmed" ? "Confirmation threshold satisfied. The table is Confirmed." : "Player commitment recorded.");
+          statusMessage(state.status === "confirmed" ? "Confirmation threshold satisfied. The table is Confirmed and the Game Hub is unlocked." : "Player commitment recorded.");
         } catch (error) { logError("Unable to add Player", error); }
       });
 
@@ -271,7 +338,7 @@
             appendRecovery("First waitlisted Player promoted automatically into the open seat.");
           }
           render(state);
-          statusMessage(state.status === "forming" ? "The table is below minimum commitment and returned to Forming." : "Player cancellation processed; recovery applied where possible.");
+          statusMessage(state.status === "forming" ? "The table is below minimum commitment and returned to Forming; the Game Hub is locked again." : "Player cancellation processed; recovery applied where possible.");
         } catch (error) { logError("Unable to cancel Player", error); }
       });
 
@@ -323,5 +390,9 @@
     }
   }
 
-  bind();
+  try {
+    bind();
+  } catch (error) {
+    logError("Lifecycle failed to initialize", error);
+  }
 })();
