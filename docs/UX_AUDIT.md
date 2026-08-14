@@ -4,7 +4,7 @@
 
 This is the living audit for whether a first-time Player, Game Master, or Venue can understand the prototype, complete the intended conceptual flow, and recover from errors without owner explanation.
 
-Last major pass: 2026-08-10.
+Last major pass: 2026-08-14.
 
 ## Audit rule
 
@@ -25,7 +25,11 @@ A feature is not usable merely because it is visible. The user must understand w
 ## Homepage / discovery
 
 - [x] Browse does not require signup.
-- [x] ZIP + travel-radius filtering is visible.
+- [x] Dashboard gives Player / GM / Venue a clear first action.
+- [x] The `Viewing as` control is a native select and stays synchronized with the role buttons.
+- [x] Role-specific dashboard links carry the selected role into the Game Hub.
+- [x] `#discover` and `#how-it-works` anchors remain valid for links from existing pages.
+- [x] ZIP + travel-radius filtering is visible on the detailed discovery surfaces.
 - [x] ZIP privacy is explained.
 - [x] Matching status uses ARIA live feedback.
 - [x] Empty result state provides recovery guidance.
@@ -35,9 +39,9 @@ A feature is not usable merely because it is visible. The user must understand w
 - [x] Discovery actions use View Table / Why It Fits / This Could Fit Me.
 - [x] Dedicated game-detail URLs exist.
 - [x] Detail pages show saved distance when available.
-- [x] All sample game-page Player links now target the valid `#player` onboarding section.
-- [ ] System/date/play-style filters.
-- [ ] Calendar discovery.
+- [x] All sample game-page Player links target the valid `#player` onboarding section.
+- [ ] System/date/play-style filters on the unified dashboard itself.
+- [ ] Calendar discovery backed by shared data.
 - [ ] Map-style discovery concept.
 - [ ] “This Could Fit Me” is prototype-only and does not persist shared demand yet.
 
@@ -96,7 +100,7 @@ A feature is not usable merely because it is visible. The user must understand w
 
 ## Sample table detail pages
 
-- [x] All three pages now identify themselves as Forming tables.
+- [x] All three pages identify themselves as Forming tables.
 - [x] Navigation uses Find Tables / Find My Table / Table Match / Safety.
 - [x] Old invalid `#player-signup` fragments were removed.
 - [x] Table Fit and trust/environment are shown separately.
@@ -108,10 +112,14 @@ A feature is not usable merely because it is visible. The user must understand w
 
 - [x] Hub is positioned after confirmation, not as a generic social feed.
 - [x] GM / Player / Venue role switching exists.
+- [x] Role buttons expose pressed state and controlled regions to assistive technology.
+- [x] `?role=player|gm|venue` deep links open the appropriate Hub view.
 - [x] Expected headcount and recurrence are visible.
 - [x] GM ↔ Venue operations are separated from Player table discussion.
 - [x] Venue announcements are logistics-focused.
 - [x] Player → Venue structured questions exist.
+- [x] Required message fields are identified programmatically.
+- [x] Prototype messaging now says a preview was added instead of falsely implying persistence.
 - [x] Venue traffic proof is demonstrated with sample data.
 - [ ] Messages are preview-only.
 - [ ] Calendar synchronization is not live.
@@ -137,33 +145,49 @@ A feature is not usable merely because it is visible. The user must understand w
 - [x] Visible keyboard focus.
 - [x] Programmatic labels on filters/forms.
 - [x] Native controls used for primary interactions.
+- [x] Dashboard role selection works with a native select plus pressed-state buttons.
+- [x] Game Hub role state is programmatically exposed.
 - [x] Status updates use live regions where applicable.
 - [x] Important state labels use text, not color alone.
 - [x] Reduced-motion preference supported.
 - [x] Mobile layouts collapse major grids.
+- [x] Dashboard primary controls use touch-friendly minimum target sizes.
 - [ ] Manual NVDA pass.
 - [ ] Manual VoiceOver pass.
 - [ ] Formal automated contrast audit.
 - [ ] Full WCAG 2.2 AA review before production.
 
+## SEO / crawlability
+
+- [x] Homepage has a descriptive title and meta description.
+- [x] Homepage has canonical, Open Graph, theme-color, and WebSite structured data.
+- [x] Dashboard prototype is `noindex,follow` and canonicalized to the homepage.
+- [x] Obsolete duplicate `index-old.html` was removed.
+- [x] `robots.txt` points crawlers to the sitemap.
+- [x] `sitemap.xml` lists the focused public acquisition, trust, and sample-table surfaces.
+- [ ] Review whether remaining internal workflow prototypes should receive `noindex,follow` before broader public promotion.
+- [ ] Add a social-share image before launch marketing.
+- [ ] Validate the deployed site in Search Console when a production domain is chosen.
+
 ## Navigation / consistency
 
-- [x] Core role pages now use new product vocabulary.
-- [x] Sample game pages now use the new lifecycle vocabulary.
-- [x] Broken Player fragment links discovered during this audit were fixed.
+- [x] Core role pages use the new product vocabulary.
+- [x] Sample game pages use the new lifecycle vocabulary.
+- [x] Broken Player fragment links discovered during earlier audits were fixed.
+- [x] Stale `reputation.html → index.html#demand` navigation was fixed.
+- [x] CI validates cross-page and same-page fragment targets.
+- [x] CI rejects inert `href="#"` placeholder links.
+- [x] README reflects the three-sided Table Match product direction.
 - [ ] Header navigation is not yet a single shared component, so wording can drift between static pages.
-- [ ] CI currently checks files, but fragment/anchor validation should be added.
-- [ ] README remains partly based on the earlier product model and should be refreshed when connector editing permits.
 
 ## Technical quality
 
 - [x] Static prototype deploys without backend dependence.
 - [x] Geographic matching is modularized.
-- [x] Forms, experience builder, discovery, venue matching, game creation, and Game Hub use separate scripts.
-- [x] Current CI validates HTML metadata/internal file links, browser JS syntax, and Apps Script syntax.
+- [x] Forms, experience builder, discovery, venue matching, game creation, dashboard, and Game Hub use separate scripts.
+- [x] Current CI validates HTML metadata/internal file links, fragment targets, placeholder links, browser JS syntax, and Apps Script syntax.
 - [x] New product charter, positioning, roadmap, and Definition of Done agree on Table Match direction.
 - [ ] Automated browser behavior smoke tests.
-- [ ] Automated fragment-link validation.
 - [ ] Lighthouse/accessibility CI gate.
 - [ ] Shared navigation/layout component before production framework migration.
 
@@ -183,4 +207,4 @@ A feature is not usable merely because it is visible. The user must understand w
 
 ## Current assessment
 
-The site is now a **coherent validation prototype** for a differentiated three-sided local tabletop matching product. It should not yet be described as a functioning multi-user community platform. The next product-risk milestone is real Player-demand aggregation feeding Table Match—not additional generic social features.
+The site is now a **coherent validation prototype** for a differentiated three-sided local tabletop matching product with a role-aware dashboard, corrected internal navigation, and stronger static quality gates. It should not yet be described as a functioning multi-user community platform. The next product-risk milestone remains real Player-demand aggregation feeding Table Match—not additional generic social features.
