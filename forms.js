@@ -78,14 +78,14 @@
       const status = statusNode(form);
 
       if (!window.DDDFormPilot?.actionFor(type) || !window.DDD_API?.isConfigured()) {
-        announce(status, "Saved. We’ll use this information in your current browser experience.", true);
+        announce(status, "Saved on this device. You can continue with the next step below.", true);
         form.dispatchEvent(new CustomEvent("ddd:save-success", { detail:{ type, shared:false, result:null, values } }));
         return;
       }
 
       if (status) status.textContent = "Saving…";
       const saved = await window.DDDFormPilot.save(type, values);
-      announce(status, "Saved to the shared pilot.", true);
+      announce(status, "Saved. Your information is now available to the matching flow.", true);
       form.dispatchEvent(new CustomEvent("ddd:save-success", { detail:{ type, shared:saved.shared, result:saved.result, values } }));
     } catch (error) {
       logError("Unable to save form", error);
