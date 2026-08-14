@@ -61,6 +61,7 @@ function pilotMatchExplanations_(match) {
       { criterion:"schedule", result:"pass", summary:"Venue and counted Players cover the full proposed session." },
       { criterion:"distance", result:"pass", summary:`Venue is ${match.distance.toFixed(1)} miles from the GM and counted Players are inside their own travel limits.` },
       { criterion:"venue_capacity", result:match.hardFit.viable ? "pass" : "emerging", summary:`Venue can seat the GM plus ${match.hardFit.playerCapacity} Players; ${match.hardFit.usablePlayers} compatible Players fit the current table.` },
+      { criterion:"venue_verification", result:match.venue && match.venue.verified ? "pass" : "unverified", summary:match.venue && match.venue.verified ? "Venue is verified in the shared pilot." : "Venue is active pilot data but is not verified yet." },
       { criterion:"commitment", result:"not_evaluated", summary:"Demand indicates compatibility, not a confirmed seat commitment." }
     ];
   } catch (error) {
