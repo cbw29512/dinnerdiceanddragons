@@ -29,10 +29,10 @@
       if (!list) return;
       list.replaceChildren();
       [
-        { met: state.venueApproved, text: "Venue approval" },
-        { met: state.gmAvailable, text: "GM available" },
+        { met: state.venueApproved, text: "Venue confirmed" },
+        { met: state.gmAvailable, text: "DM available" },
         { met: state.confirmedPlayers >= state.minPlayers, text: `${state.minPlayers} minimum confirmed Players` },
-        { met: state.confirmedPlayers <= state.maxPlayers, text: `${state.maxPlayers} maximum confirmed Player seats` }
+        { met: state.confirmedPlayers <= state.maxPlayers, text: `No more than ${state.maxPlayers} Player seats` }
       ].forEach((requirement) => {
         const item = document.createElement("li");
         item.textContent = `${requirement.met ? "✓" : "○"} ${requirement.text}`;
@@ -51,21 +51,21 @@
       const strong = document.createElement("strong");
       const paragraph = document.createElement("p");
       if (state.status === "completed") {
-        strong.textContent = "Completed";
-        paragraph.textContent = "The session happened. Attendance can now be recorded and eligible feedback can create verified reputation evidence.";
+        strong.textContent = "Played";
+        paragraph.textContent = "Game night happened. Attendance can now be recorded and eligible feedback can be collected.";
       } else if (state.status === "cancelled") {
         strong.textContent = "Cancelled";
-        paragraph.textContent = "The GM is unavailable, so this session cannot remain Confirmed. Players and venue should be notified immediately in production.";
+        paragraph.textContent = "The DM is unavailable, so this game night is no longer Confirmed. Players and the venue need to know about the change.";
       } else if (state.status === "confirmed") {
         strong.textContent = "Confirmed";
-        paragraph.textContent = "GM, venue, and minimum Player commitment are all satisfied. The Game Hub is now available for coordination.";
+        paragraph.textContent = "The DM, venue, and minimum Player count are ready. The Game Hub is available for game-night coordination.";
       } else {
-        strong.textContent = "Forming";
+        strong.textContent = "Still Forming";
         const missing = [];
-        if (!state.venueApproved) missing.push("venue approval");
-        if (!state.gmAvailable) missing.push("GM availability");
-        if (state.confirmedPlayers < state.minPlayers) missing.push(`${state.minPlayers - state.confirmedPlayers} more Player commitment${state.minPlayers - state.confirmedPlayers === 1 ? "" : "s"}`);
-        paragraph.textContent = `Still waiting for ${missing.join(" and ")}. Matching demand shows who could fit; only explicit seat commitments count toward confirmation.`;
+        if (!state.venueApproved) missing.push("venue confirmation");
+        if (!state.gmAvailable) missing.push("DM availability");
+        if (state.confirmedPlayers < state.minPlayers) missing.push(`${state.minPlayers - state.confirmedPlayers} more Player${state.minPlayers - state.confirmedPlayers === 1 ? "" : "s"}`);
+        paragraph.textContent = `Still waiting for ${missing.join(" and ")}. Potential matches do not count as confirmed seats until Players actually commit.`;
       }
       box.append(strong, paragraph);
     } catch (error) {
@@ -81,14 +81,14 @@
       const strong = document.createElement("strong");
       const paragraph = document.createElement("p");
       if (state.completed) {
-        strong.textContent = "Eligible after attendance";
-        paragraph.textContent = "Verified attendance, hosting, and eligible post-game feedback may now enter the Reputation Ledger.";
+        strong.textContent = "Attendance can be recorded";
+        paragraph.textContent = "Once attendance is verified, eligible post-game feedback can be tied to a game that actually happened.";
       } else if (state.status === "cancelled") {
-        strong.textContent = "No play reputation unlocked";
-        paragraph.textContent = "A cancelled session does not create played-session reputation. Only the cancellation timing/classification may create a reliability event under policy.";
+        strong.textContent = "No played-game feedback";
+        paragraph.textContent = "A cancelled game night does not count as a played session. Cancellation timing can still be handled separately under the reliability rules.";
       } else {
-        strong.textContent = "Locked";
-        paragraph.textContent = "No played-session reputation can be earned from an unplayed table.";
+        strong.textContent = "Available after the game";
+        paragraph.textContent = "Played-game attendance and feedback stay locked until the game night is marked played.";
       }
       box.append(strong, paragraph);
     } catch (error) {
@@ -103,7 +103,7 @@
       if (!button) return;
       const unlocked = state.status === "confirmed" || state.status === "completed";
       button.disabled = !unlocked;
-      if (label) label.textContent = unlocked ? "Confirmed — coordination is unlocked." : "Game Hub unlocks when Confirmed.";
+      if (label) label.textContent = unlocked ? "Table Confirmed — Game Hub is ready." : "Game Hub unlocks when the table is Confirmed.";
     } catch (error) {
       logError("Unable to render Game Hub gate", error);
     }
@@ -115,10 +115,10 @@
       const usable = Number(state.usablePlayerDemand) || 0;
       const capacity = Number(state.venuePlayerCapacity) || state.maxPlayers;
       if (!candidates) {
-        setText("match-origin", "This table was not seeded from a saved Table Match. Commitments below still control confirmation.");
+        setText("match-origin", "This preview was not started from a saved Table Match. The confirmation rules still work the same way.");
         return;
       }
-      setText("match-origin", `Started from an explained Table Match with ${candidates} compatible Player signal${candidates === 1 ? "" : "s"}; ${usable} fit the selected table capacity of ${capacity} Players. Demand is not counted as commitment.`);
+      setText("match-origin", `Table Match found ${candidates} potential Player${candidates === 1 ? "" : "s"}; ${usable} fit this venue's ${capacity}-Player capacity. Potential interest does not count as a confirmed seat.`);
     } catch (error) {
       logError("Unable to render Table Match origin", error);
     }
@@ -133,17 +133,17 @@
       setText("lifecycle-meta", `${state.system} · ${state.venue} · ${state.day} ${model.humanTime(state.start)}`);
       setText("confirmed-count", String(state.confirmedPlayers));
       setText("waitlist-count", String(state.waitlistedPlayers));
-      setText("venue-state", state.venueApproved ? "Approved" : "Pending");
-      setText("table-state", state.status[0].toUpperCase() + state.status.slice(1));
-      setText("lifecycle-state-label", `${state.status.toUpperCase()} TABLE`);
+      setText("venue-state", state.venueApproved ? "Confirmed" : "Pending");
+      setText("table-state", state.status === "completed" ? "Played" : state.status[0].toUpperCase() + state.status.slice(1));
+      setText("lifecycle-state-label", `${state.status === "completed" ? "PLAYED" : state.status.toUpperCase()} TABLE`);
       setText("hero-venue", state.venueApproved ? "Yes" : "No");
       setText("hero-gm", state.gmAvailable ? "Yes" : "No");
       setText("hero-players", `${state.confirmedPlayers} / ${state.minPlayers} minimum`);
-      setText("hero-status", state.status.toUpperCase());
-      setText("hero-reason", state.status === "completed" ? "Session completed" : state.status === "cancelled" ? "GM cancelled session" : state.status === "confirmed" ? "All requirements satisfied" : "Waiting for required commitments");
+      setText("hero-status", state.status === "completed" ? "PLAYED" : state.status.toUpperCase());
+      setText("hero-reason", state.status === "completed" ? "Game night completed" : state.status === "cancelled" ? "DM cancelled game night" : state.status === "confirmed" ? "Everyone required is ready" : "Waiting for required commitments");
 
       const venueButton = node("toggle-venue");
-      if (venueButton) venueButton.textContent = state.venueApproved ? "Revoke Venue Approval" : "Approve Venue";
+      if (venueButton) venueButton.textContent = state.venueApproved ? "Mark Venue Pending" : "Mark Venue Confirmed";
       const completeButton = node("complete-game");
       if (completeButton) completeButton.disabled = state.status !== "confirmed";
       const cancelGmButton = node("cancel-gm");
