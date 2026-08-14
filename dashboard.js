@@ -71,9 +71,9 @@
 
       setText("#hero-title", config.title);
       setText("#hero-copy", config.copy);
-      document.title = document.body.dataset.homepage === "true"
-        ? `${config.label} Game Night Dashboard | Dinner, Dice & Dragons`
-        : `${config.label} Dashboard Prototype | Dinner, Dice & Dragons`;
+      if (document.body.dataset.homepage !== "true") {
+        document.title = `${config.label} Dashboard Prototype | Dinner, Dice & Dragons`;
+      }
 
       if (announce) setText("#role-status", `${config.label} view selected.`);
     } catch (error) {
