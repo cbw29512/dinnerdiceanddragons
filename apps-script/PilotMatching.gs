@@ -127,6 +127,7 @@ function tableMatchQuery_(payload) {
             city:String(venue.city || ""),
             state:String(venue.state || ""),
             postalCode:String(venue.postal_code || ""),
+            verified:pilotActive_(venue.verified),
             policy:String(venueWindow.purchase_policy || venue.purchase_policy || ""),
             approvalRequired:pilotActive_(venueWindow.approval_required)
           },
