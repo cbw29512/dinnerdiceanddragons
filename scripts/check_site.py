@@ -18,7 +18,10 @@ class PageParser(HTMLParser):
         self.scripts: list[str] = []
         self.fragments: set[str] = set()
         self.has_main = False
+        self.main_id = ""
+        self.main_tabindex = ""
         self.has_skip_link = False
+        self.skip_href = ""
         self.has_description = False
         self.in_title = False
         self.title_text = ""
@@ -35,10 +38,13 @@ class PageParser(HTMLParser):
             self.links.append(values["href"] or "")
             if "skip-link" in (values.get("class") or "").split():
                 self.has_skip_link = True
+                self.skip_href = values.get("href") or ""
         elif tag == "script" and values.get("src"):
             self.scripts.append(values["src"] or "")
         elif tag == "main":
             self.has_main = True
+            self.main_id = values.get("id") or ""
+            self.main_tabindex = values.get("tabindex") or ""
         elif tag == "meta" and values.get("name", "").lower() == "description" and values.get("content"):
             self.has_description = True
         elif tag == "title":
@@ -85,9 +91,7 @@ def resolve_local(page: Path, raw_url: str) -> Path | None:
 def check_fragment(page: Path, raw_url: str, target: Path, cache: dict[Path, PageParser]) -> str | None:
     try:
         fragment = unquote(urlsplit(raw_url).fragment)
-        if not fragment:
-            return None
-        if target.suffix.lower() != ".html" or not target.exists():
+        if not fragment or target.suffix.lower() != ".html" or not target.exists():
             return None
 
         target_parser = cache.get(target)
@@ -119,6 +123,10 @@ def check_page(page: Path, cache: dict[Path, PageParser]) -> list[str]:
             errors.append(f"{relative}: missing <main> landmark")
         if not parser.has_skip_link:
             errors.append(f"{relative}: missing .skip-link")
+        elif parser.skip_href != "#main":
+            errors.append(f"{relative}: .skip-link must target #main")
+        elif parser.main_id != "main" or parser.main_tabindex != "-1":
+            errors.append(f"{relative}: #main skip target must include tabindex=\"-1\" for keyboard focus")
 
         for raw_url in [*parser.links, *parser.scripts]:
             if raw_url.strip() == "#":
@@ -165,7 +173,7 @@ def main() -> int:
             LOGGER.error("Static site QA failed with %d issue(s).", len(all_errors))
             return 1
 
-        LOGGER.info("Static site QA passed for %d HTML page(s), including fragment links.", len(pages))
+        LOGGER.info("Static site QA passed for %d HTML page(s), including fragment and skip-focus checks.", len(pages))
         return 0
     except Exception:
         LOGGER.exception("Unexpected site-check failure")
