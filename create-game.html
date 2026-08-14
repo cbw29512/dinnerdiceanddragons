@@ -9,9 +9,9 @@
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to main content</a>
-<header class="site-header"><div class="shell nav-wrap"><a class="brand" href="index.html"><span aria-hidden="true">🎲</span><span>Dinner, Dice &amp; Dragons</span></a><nav aria-label="Primary navigation"><a href="index.html#discover">Find a Game</a><a aria-current="page" href="join.html#gm">GM a Game</a><a href="venues.html">Venues</a><a href="game-hub.html">Game Hub</a></nav></div></header>
+<header class="site-header"><div class="shell nav-wrap"><a class="brand" href="index.html"><span aria-hidden="true">🎲</span><span>Dinner, Dice &amp; Dragons</span></a><nav aria-label="Primary navigation"><a href="index.html#discover">Find a Game</a><a aria-current="page" href="join.html#gm">GM a Game</a><a href="venues.html">Venues</a><a href="game-hub.html?role=gm">Game Hub</a></nav></div></header>
 <main id="main">
-<section class="hero"><div class="shell hero-grid"><div><p class="eyebrow">SET UP YOUR GAME</p><h1>You found a time and place. Now tell Players what you’re running.</h1><p class="lede">Keep it simple: describe the game, choose how many Players you want, set expectations, and publish it.</p></div><aside class="hero-card"><p class="eyebrow">YOUR MATCHED TIME</p><div id="selected-slot"><p>No time and venue selected yet.</p><a class="button secondary" href="find-venue.html">Find Players + Venue</a></div></aside></div></section>
+<section class="hero"><div class="shell hero-grid"><div><p class="eyebrow">FORM A TABLE</p><h1>You found a viable match. Now turn it into a table Players and the venue can confirm.</h1><p class="lede">Describe the game, choose your Player limits, and save the Forming table. It becomes Confirmed only after venue approval and minimum Player commitment.</p></div><aside class="hero-card"><p class="eyebrow">YOUR MATCHED TIME</p><div id="selected-slot"><p>No time and venue selected yet.</p><a class="button secondary" href="find-venue.html">Find Players + Venue</a></div></aside></div></section>
 <section class="section"><div class="shell"><div class="template-intro"><div><p class="eyebrow">GAME DETAILS</p><h2>Give Players what they need to decide.</h2><p>A clear title, short pitch, schedule, Player count, and table expectations are enough.</p></div></div>
 <form class="panel form-grid prototype-form" id="game-form" data-profile-type="Game" novalidate>
 <h3 class="form-section-title">1. What are you running?</h3>
@@ -47,13 +47,13 @@
 <label>Table rules / boundaries<textarea name="boundaries" rows="4" placeholder="No PvP, respectful table, breaks every 90 minutes" required></textarea></label>
 <label>Homebrew / rules notes<textarea name="rules_notes" rows="3" placeholder="Optional house rules or character creation notes"></textarea></label>
 <label class="check-label"><input type="checkbox" required><span>I confirm this accurately describes my game.</span></label>
-<button class="button primary" type="submit">Save My Game</button>
+<button class="button primary" type="submit">Save Forming Table</button>
 <p class="form-status" role="status" aria-live="polite"></p>
 </form>
-<div class="next-step"><strong>Next →</strong><a class="button primary" href="game-hub.html">Open Game Hub</a><a class="button secondary" href="index.html#discover">See Games</a></div>
+<div class="next-step"><strong>Next →</strong><a class="button primary" href="table-lifecycle.html">Manage Commitments & Confirm</a><a class="button secondary" href="find-venue.html">Back to Table Match</a></div>
 </div></section>
 </main>
-<footer class="site-footer"><div class="shell footer-grid"><div><strong>Dinner, Dice &amp; Dragons</strong><p>Find the time. Form the table. Play.</p></div><div><a href="index.html">Home</a> · <a href="index.html#discover">Find a Game</a> · <a href="venues.html">Venues</a> · <a href="conduct.html">Safety</a></div></div></footer>
+<footer class="site-footer"><div class="shell footer-grid"><div><strong>Dinner, Dice &amp; Dragons</strong><p>Find the time. Form the table. Confirm it. Play.</p></div><div><a href="index.html">Home</a> · <a href="index.html#discover">Find a Game</a> · <a href="venues.html">Venues</a> · <a href="conduct.html">Safety</a></div></div></footer>
 <script src="api-config.js"></script><script src="api-client.js"></script><script src="forms.js"></script><script src="create-game.js"></script>
 </body>
 </html>
