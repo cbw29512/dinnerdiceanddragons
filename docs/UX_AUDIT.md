@@ -237,7 +237,9 @@ Automated accessibility checks are regression guards, not a declaration of compl
 - [x] CI validates HTML metadata/internal links, fragments, placeholder links, focusable skip targets, button/controller wiring, browser JavaScript syntax, and Apps Script syntax.
 - [x] Node unit tests cover core Table Match hard-fit and lifecycle status rules.
 - [x] Playwright + axe browser regression tests run in CI using a local static server.
-- [x] The current browser suite has 40 passing Chromium tests covering functional journeys, 18 automated accessibility route/state scans, keyboard navigation/focus, invalid-form behavior, dynamic Table Match/Game Hub states, and 320px reflow.
+- [x] The current browser suite has 57 passing Chromium tests covering functional journeys, 18 automated accessibility route/state scans, keyboard navigation/focus, invalid-form behavior, dynamic Table Match/Game Hub states, 320px reflow, and runtime health.
+- [x] Runtime-health tests cover all 17 HTML routes and fail on uncaught page errors, `console.error`, failed local requests, or local HTTP 4xx/5xx responses.
+- [x] Browser-test dependencies are committed in `package-lock.json` and CI installs them reproducibly with `npm ci` plus npm caching.
 - [x] Player, DM, and Venue each have a direct functional browser-tested path.
 - [ ] Lighthouse performance / best-practices CI gate.
 - [ ] Shared navigation/layout component before production framework migration.
@@ -259,6 +261,6 @@ Automated accessibility checks are regression guards, not a declaration of compl
 
 Dinner, Dice & Dragons is now a **user-first connected validation site** for the core product loop. A new visitor sees three equal reasons to use the product; a Player can save what they want; a DM can match Player interest with a venue, form a table, collect commitments, and reach Confirmed; a Venue can save an open table and move into its game-night view; and recurring campaigns can carry one-date exceptions without breaking the schedule.
 
-The critical workflows are no longer trusted only because their controls appear wired. CI now runs 40 Chromium tests spanning functional journeys, automated axe accessibility scans, site-wide skip-link focus behavior, invalid-form error handling, dynamic UI states, and 320px reflow. The accessibility gate is deliberately treated as regression coverage rather than a claim of complete WCAG conformance; NVDA, VoiceOver, and full manual WCAG review remain outstanding.
+The critical workflows are no longer trusted only because their controls appear wired. CI now runs 57 Chromium tests spanning functional journeys, automated axe accessibility scans, site-wide skip-link focus behavior, invalid-form error handling, dynamic UI states, 320px reflow, and runtime-health checks across all 17 pages. Browser dependencies are locked and installed with `npm ci` so the regression environment is reproducible. The accessibility gate is deliberately treated as regression coverage rather than a claim of complete WCAG conformance; NVDA, VoiceOver, and full manual WCAG review remain outstanding.
 
 The remaining product-risk milestone is turning the early-access/shared model into a secure authenticated multi-user service while preserving the privacy, explainability, accessibility, and role clarity established by the current site.
