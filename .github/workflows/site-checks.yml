@@ -24,6 +24,9 @@ jobs:
       - name: Check HTML metadata and internal links
         run: python scripts/check_site.py
 
+      - name: Check button and interaction wiring
+        run: python scripts/check_buttons.py
+
       - name: Check JavaScript syntax
         shell: bash
         run: |
