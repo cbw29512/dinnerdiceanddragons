@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Check HTML metadata and internal links
+      - name: Check HTML metadata, links, and skip-focus targets
         run: python scripts/check_site.py
 
       - name: Check button and interaction wiring
@@ -50,7 +50,7 @@ jobs:
           done < <(find apps-script -type f -name '*.gs' -print0)
 
   browser-smoke:
-    name: Browser click-through tests
+    name: Browser, accessibility, and reflow tests
     needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -68,11 +68,11 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install browser test dependency
+      - name: Install browser test dependencies
         run: npm install
 
       - name: Install Chromium and system dependencies
         run: npx playwright install --with-deps chromium
 
-      - name: Click through critical Player, DM, Venue, and recurring flows
+      - name: Run functional, keyboard, WCAG, and 320px reflow tests
         run: npm run test:e2e
