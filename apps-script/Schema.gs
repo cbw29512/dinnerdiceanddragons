@@ -9,6 +9,7 @@ const DDD_SCHEMA = {
   PlayerDemandSignals: ["demand_id","signal_key","player_id","system","preferred_format","preferred_cadence","status","created_at","updated_at"],
   GMSupplySignals: ["supply_id","signal_key","gm_id","system","preferred_format","preferred_cadence","minimum_players","maximum_players","table_style","status","created_at","updated_at"],
   Venues: ["venue_id","name","venue_type","address","city","state","postal_code","verified","purchase_policy","active","created_at","updated_at"],
+  VenueManagers: ["venue_manager_id","user_id","venue_id","role","active","created_at","updated_at"],
   VenueWindows: ["venue_window_id","venue_id","day_of_week","start_time","end_time","table_count","max_people_per_table","purchase_policy","approval_required","active","created_at","updated_at"],
   TableMatches: ["table_match_id","gm_id","venue_window_id","system","proposed_start","proposed_end","minimum_players","maximum_players","compatible_player_count","usable_player_count","fit_score","status","created_at","updated_at"],
   MatchExplanations: ["explanation_id","table_match_id","criterion","result","summary","weight","created_at"],
@@ -35,7 +36,7 @@ function setupDatabase() {
         sheet.setFrozenRows(1);
       }
     });
-    return { ok: true, sheets: Object.keys(DDD_SCHEMA).length };
+    return { ok:true, sheets:Object.keys(DDD_SCHEMA).length };
   } catch (error) {
     console.error("[DDD] setupDatabase failed", error);
     throw error;
