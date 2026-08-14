@@ -198,9 +198,10 @@ Automated accessibility checks are regression guards, not a declaration of compl
 - [x] Dynamic axe checks cover live Table Match results and all three revealed Game Hub role views.
 - [x] Chromium checks the homepage at 390 × 844 and asserts no horizontal overflow.
 - [x] Chromium checks 10 core routes at 320px wide and asserts no horizontal page overflow.
+- [x] Lighthouse CI runs three mobile-oriented measurements on each of five public routes and gates performance, accessibility, best-practices, SEO, and cumulative layout shift.
+- [x] Lighthouse reports are retained as private GitHub Actions artifacts for 14 days for regression diagnosis.
 - [ ] Manual NVDA pass.
 - [ ] Manual VoiceOver pass.
-- [ ] Lighthouse performance / best-practices CI gate.
 - [ ] Full manual WCAG 2.2 AA review before production.
 
 ## SEO / crawlability
@@ -241,7 +242,9 @@ Automated accessibility checks are regression guards, not a declaration of compl
 - [x] Runtime-health tests cover all 17 HTML routes and fail on uncaught page errors, `console.error`, failed local requests, or local HTTP 4xx/5xx responses.
 - [x] Browser-test dependencies are committed in `package-lock.json` and CI installs them reproducibly with `npm ci` plus npm caching.
 - [x] Player, DM, and Venue each have a direct functional browser-tested path.
-- [ ] Lighthouse performance / best-practices CI gate.
+- [x] Lighthouse CI is pinned to `@lhci/cli@0.15.1`, collects 15 mobile-oriented measurements per CI run, and preserves its raw reports as a 14-day workflow artifact.
+- [x] Lighthouse hard gates require performance ≥ 0.85, accessibility ≥ 0.95, best-practices ≥ 0.90, SEO ≥ 0.90, and cumulative layout shift ≤ 0.10; LCP > 4 s or total page weight > 512 KB currently warn.
+- [x] Initial Lighthouse baseline passed all hard assertions; representative scored runs were approximately 0.99–1.00 performance, 1.00 accessibility, 0.96 best-practices, and 1.00 SEO.
 - [ ] Shared navigation/layout component before production framework migration.
 
 ## Critical gaps before calling this a production multi-user MVP
@@ -261,6 +264,6 @@ Automated accessibility checks are regression guards, not a declaration of compl
 
 Dinner, Dice & Dragons is now a **user-first connected validation site** for the core product loop. A new visitor sees three equal reasons to use the product; a Player can save what they want; a DM can match Player interest with a venue, form a table, collect commitments, and reach Confirmed; a Venue can save an open table and move into its game-night view; and recurring campaigns can carry one-date exceptions without breaking the schedule.
 
-The critical workflows are no longer trusted only because their controls appear wired. CI now runs 57 Chromium tests spanning functional journeys, automated axe accessibility scans, site-wide skip-link focus behavior, invalid-form error handling, dynamic UI states, 320px reflow, and runtime-health checks across all 17 pages. Browser dependencies are locked and installed with `npm ci` so the regression environment is reproducible. The accessibility gate is deliberately treated as regression coverage rather than a claim of complete WCAG conformance; NVDA, VoiceOver, and full manual WCAG review remain outstanding.
+The critical workflows are no longer trusted only because their controls appear wired. CI now combines 57 Chromium functional/accessibility/reflow/runtime tests with a separate Lighthouse regression gate that collects 15 mobile-oriented measurements across five public routes. Browser dependencies are locked and installed with `npm ci`; Lighthouse CI is pinned independently, and its reports are retained for 14 days. The accessibility and Lighthouse gates are deliberately treated as regression coverage rather than a claim of complete WCAG conformance; NVDA, VoiceOver, and full manual WCAG review remain outstanding.
 
-The remaining product-risk milestone is turning the early-access/shared model into a secure authenticated multi-user service while preserving the privacy, explainability, accessibility, and role clarity established by the current site.
+The remaining product-risk milestone is turning the early-access/shared model into a secure authenticated multi-user service while preserving the privacy, explainability, accessibility, performance, and role clarity established by the current site.
