@@ -3,7 +3,7 @@ function savePlayerProfile_(payload) {
     const now = dddNow_();
     const userId = payload.user_id || dddId_("usr");
     const playerId = payload.player_id || dddId_("ply");
-    dddAppend_("Users", {
+    dddUpsert_("Users", "user_id", userId, {
       user_id: userId,
       email: payload.email || "",
       display_name: payload.display_name || "",
@@ -11,19 +11,21 @@ function savePlayerProfile_(payload) {
       created_at: now,
       updated_at: now
     });
-    dddAppend_("Players", {
+    dddUpsert_("Players", "player_id", playerId, {
       player_id: playerId,
       user_id: userId,
       postal_code: payload.postal_code || "",
       travel_radius_miles: payload.radius || "",
-      availability_summary: payload.availability || "",
+      availability_summary: summarizeAvailability_(payload),
       preferred_format: payload.preferred_format || "",
       willing_to_learn_new_system: payload.willing_to_learn || "",
       created_at: now,
       updated_at: now
     });
     savePlayerSystems_(playerId, payload, now);
-    return { ok: true, user_id: userId, player_id: playerId };
+    const availability_count = saveAvailabilityRules_("player", playerId, payload, now);
+    const demand_signal_count = savePlayerDemandSignals_(playerId, payload, now);
+    return { ok:true, user_id:userId, player_id:playerId, availability_count, demand_signal_count };
   } catch (error) {
     console.error("[DDD] savePlayerProfile_ failed", error);
     throw error;
@@ -32,18 +34,23 @@ function savePlayerProfile_(payload) {
 
 function savePlayerSystems_(playerId, payload, now) {
   try {
-    const systems = Array.isArray(payload.player_system) ? payload.player_system : [payload.player_system].filter(Boolean);
-    systems.forEach((system, index) => dddAppend_("PlayerSystems", {
-      player_system_id: dddId_("psx"),
-      player_id: playerId,
-      system,
-      edition: "",
-      years_playing: valueAt_(payload.player_years, index),
-      comfort_level: valueAt_(payload.player_comfort, index),
-      experience_notes: valueAt_(payload.player_system_notes, index),
-      created_at: now,
-      updated_at: now
-    }));
+    const systems = pilotArray_(payload.player_system);
+    systems.forEach((system, index) => {
+      const normalized = normalizePilotSystem_(system);
+      if (!normalized) return;
+      const key = `${playerId}::${normalized.toLowerCase()}`;
+      dddUpsert_("PlayerSystems", "player_system_id", key, {
+        player_system_id: key,
+        player_id: playerId,
+        system: normalized,
+        edition: String(system || "") === normalized ? "" : String(system || ""),
+        years_playing: valueAt_(payload.player_years, index),
+        comfort_level: valueAt_(payload.player_comfort, index),
+        experience_notes: valueAt_(payload.player_system_notes, index),
+        created_at: now,
+        updated_at: now
+      });
+    });
   } catch (error) {
     console.error("[DDD] savePlayerSystems_ failed", error);
     throw error;
@@ -55,10 +62,27 @@ function saveGMProfile_(payload) {
     const now = dddNow_();
     const userId = payload.user_id || dddId_("usr");
     const gmId = payload.gm_id || dddId_("gm");
-    dddAppend_("Users", { user_id:userId, email:payload.email||"", display_name:payload.display_name||"", status:"active", created_at:now, updated_at:now });
-    dddAppend_("GMs", { gm_id:gmId, user_id:userId, postal_code:payload.postal_code||"", travel_radius_miles:payload.radius||"", beginner_friendly:"", created_at:now, updated_at:now });
+    dddUpsert_("Users", "user_id", userId, {
+      user_id:userId,
+      email:payload.email || "",
+      display_name:payload.display_name || "",
+      status:"active",
+      created_at:now,
+      updated_at:now
+    });
+    dddUpsert_("GMs", "gm_id", gmId, {
+      gm_id:gmId,
+      user_id:userId,
+      postal_code:payload.postal_code || "",
+      travel_radius_miles:payload.radius || "",
+      beginner_friendly:String(payload.welcome || "").toLowerCase().includes("beginner") ? "yes" : "",
+      created_at:now,
+      updated_at:now
+    });
     saveGMSystems_(gmId, payload, now);
-    return { ok:true, user_id:userId, gm_id:gmId };
+    const availability_count = saveAvailabilityRules_("gm", gmId, payload, now);
+    const supply_signal_count = saveGMSupplySignals_(gmId, payload, now);
+    return { ok:true, user_id:userId, gm_id:gmId, availability_count, supply_signal_count };
   } catch (error) {
     console.error("[DDD] saveGMProfile_ failed", error);
     throw error;
@@ -67,19 +91,47 @@ function saveGMProfile_(payload) {
 
 function saveGMSystems_(gmId, payload, now) {
   try {
-    const systems = Array.isArray(payload.gm_system) ? payload.gm_system : [payload.gm_system].filter(Boolean);
-    systems.forEach((system, index) => dddAppend_("GMSystems", {
-      gm_system_id: dddId_("gsx"), gm_id:gmId, system, edition:"",
-      years_playing:valueAt_(payload.gm_years_playing,index), years_gming:valueAt_(payload.gm_years_gming,index),
-      comfort_level:valueAt_(payload.gm_comfort,index), experience_notes:valueAt_(payload.gm_system_notes,index),
-      created_at:now, updated_at:now
-    }));
+    const systems = pilotArray_(payload.gm_system);
+    systems.forEach((system, index) => {
+      const normalized = normalizePilotSystem_(system);
+      if (!normalized) return;
+      const key = `${gmId}::${normalized.toLowerCase()}`;
+      dddUpsert_("GMSystems", "gm_system_id", key, {
+        gm_system_id:key,
+        gm_id:gmId,
+        system:normalized,
+        edition:String(system || "") === normalized ? "" : String(system || ""),
+        years_playing:valueAt_(payload.gm_play_years,index),
+        years_gming:valueAt_(payload.gm_run_years,index),
+        comfort_level:valueAt_(payload.gm_comfort,index),
+        experience_notes:valueAt_(payload.gm_system_notes,index),
+        created_at:now,
+        updated_at:now
+      });
+    });
   } catch (error) {
     console.error("[DDD] saveGMSystems_ failed", error);
     throw error;
   }
 }
 
+function summarizeAvailability_(payload) {
+  try {
+    const days = pilotArray_(payload.availability_day);
+    const starts = pilotArray_(payload.availability_start);
+    const ends = pilotArray_(payload.availability_end);
+    return days.map((day, index) => `${day} ${starts[index] || ""}-${ends[index] || ""}`.trim()).join("; ");
+  } catch (error) {
+    console.error("[DDD] summarizeAvailability_ failed", error);
+    return "";
+  }
+}
+
 function valueAt_(value, index) {
-  return Array.isArray(value) ? (value[index] ?? "") : (index === 0 ? (value ?? "") : "");
+  try {
+    return Array.isArray(value) ? (value[index] ?? "") : (index === 0 ? (value ?? "") : "");
+  } catch (error) {
+    console.error("[DDD] valueAt_ failed", error);
+    return "";
+  }
 }
