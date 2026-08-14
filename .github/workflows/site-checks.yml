@@ -57,6 +57,63 @@ jobs:
             node --check /tmp/ddd-apps-script-check.js
           done < <(find apps-script -type f -name '*.gs' -print0)
 
+  docker-smoke:
+    name: Docker API and PostgreSQL health smoke test
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+
+      - name: Build and start development stack
+        run: docker compose up --build --detach
+
+      - name: Wait for API container health
+        shell: bash
+        run: |
+          set -euo pipefail
+          api_id="$(docker compose ps --quiet api)"
+          if [[ -z "$api_id" ]]; then
+            docker compose ps
+            docker compose logs api
+            exit 1
+          fi
+
+          for attempt in {1..30}; do
+            status="$(docker inspect --format '{{.State.Health.Status}}' "$api_id")"
+            echo "API health attempt ${attempt}: ${status}"
+            if [[ "$status" == "healthy" ]]; then
+              exit 0
+            fi
+            if [[ "$status" == "unhealthy" ]]; then
+              docker compose ps
+              docker compose logs api db
+              exit 1
+            fi
+            sleep 2
+          done
+
+          docker compose ps
+          docker compose logs api db
+          echo "API did not become healthy in the expected window."
+          exit 1
+
+      - name: Verify HTTP health endpoint
+        run: |
+          curl --fail --silent --show-error http://127.0.0.1:8000/api/v1/health \
+            | grep '"status":"ok"'
+
+      - name: Show healthy stack
+        run: docker compose ps
+
+      - name: Tear down development stack
+        if: always()
+        run: docker compose down --volumes --remove-orphans
+
   browser-smoke:
     name: Browser, accessibility, reflow, and runtime tests
     needs: validate
