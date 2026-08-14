@@ -121,6 +121,10 @@ def check_page(page: Path, cache: dict[Path, PageParser]) -> list[str]:
             errors.append(f"{relative}: missing .skip-link")
 
         for raw_url in [*parser.links, *parser.scripts]:
+            if raw_url.strip() == "#":
+                errors.append(f"{relative}: inert placeholder link: href=\"#\"")
+                continue
+
             target = resolve_local(page, raw_url)
             if target is None:
                 continue
