@@ -10,6 +10,8 @@ Last major pass: 2026-08-14.
 
 A feature is not usable merely because it is visible. The user must understand what it does, be able to operate it by touch/keyboard, receive clear feedback, and know the next step.
 
+Prototype-functional means the workflow can be demonstrated in the current browser. It does **not** mean the behavior is shared, authenticated, or production-live.
+
 ## Product clarity
 
 - [x] Homepage says the product turns local tabletop interest into actual game nights.
@@ -18,9 +20,10 @@ A feature is not usable merely because it is visible. The user must understand w
 - [x] Table Match is presented as the core differentiator.
 - [x] Lifecycle language exists: Potential Match / Forming / Confirmed / Game Hub / Played.
 - [x] People-swiping is no longer the primary discovery metaphor.
-- [x] Explainable criteria are preferred over opaque AI-style match scores.
-- [ ] Complete Player-demand aggregation is not implemented yet.
-- [ ] Forming → Confirmed state transition is not functional yet.
+- [x] Match scores are accompanied by criterion-level explanations rather than shown as unexplained AI percentages.
+- [x] Prototype Player-demand aggregation combines seeded demand with a Player signal saved in the current browser.
+- [x] Prototype Forming → Confirmed state transition is functional in browser-local lifecycle state.
+- [ ] Shared multi-user demand aggregation and lifecycle persistence are not implemented.
 
 ## Homepage / discovery
 
@@ -43,21 +46,21 @@ A feature is not usable merely because it is visible. The user must understand w
 - [ ] System/date/play-style filters on the unified dashboard itself.
 - [ ] Calendar discovery backed by shared data.
 - [ ] Map-style discovery concept.
-- [ ] “This Could Fit Me” is prototype-only and does not persist shared demand yet.
+- [ ] “This Could Fit Me” is prototype-only and does not create a shared seat request yet.
 
 ## Player — Find My Table
 
 - [x] Player role is explained before the form.
 - [x] Form collects ZIP and travel radius rather than requiring a home address.
-- [x] Availability is collected.
+- [x] Structured recurring availability windows are collected.
 - [x] System-specific experience is repeatable.
 - [x] Preferred format and willingness to learn are supported.
 - [x] Table style/environment/accessibility notes are supported.
 - [x] Code of Conduct acknowledgement is required.
 - [x] Browser validation and visible success/error state exist.
 - [x] Prototype storage limitation is disclosed.
-- [ ] Structured recurring Player availability model.
-- [ ] Shared Player demand aggregation.
+- [x] A saved Player profile contributes normalized demand signals to Table Match in the same browser.
+- [ ] Shared multi-user Player demand aggregation.
 - [ ] Real authentication/profile editing.
 
 ## Game Master — Form a Table
@@ -68,9 +71,11 @@ A feature is not usable merely because it is visible. The user must understand w
 - [x] System-specific GM experience is repeatable.
 - [x] Preferred cadence, style, welcomed Players, and expectations are collected.
 - [x] GM flows into Table Match rather than a generic venue directory.
-- [x] Venue results use distance + full-session overlap.
-- [x] GM can continue to the forming-game template.
-- [ ] Matching results do not yet include real aggregate Player demand.
+- [x] Saved GM system, first availability window, ZIP, and radius prefill Table Match and can auto-run the first match query.
+- [x] Venue results use GM distance + full-session overlap.
+- [x] Player eligibility uses system, full-session availability, and each Player’s own venue travel radius.
+- [x] Matching results include aggregated prototype Player demand.
+- [x] GM can continue from a viable match to the Forming table template.
 - [ ] GM verification/trust workflow is not functional.
 
 ## Venue — Fill My Tables
@@ -82,21 +87,53 @@ A feature is not usable merely because it is visible. The user must understand w
 - [x] Venue approval control is represented.
 - [x] Business value includes expected headcount, actual visits, and recurring traffic.
 - [x] Low-risk pilot framing exists.
-- [ ] Multiple live recurring windows.
+- [x] Table Match enforces per-table venue capacity as a hard constraint, including the GM’s seat.
+- [ ] Multiple shared/live recurring windows.
 - [ ] Venue manager authentication/verification.
 - [ ] Actual venue analytics are sample-only.
+
+## Table Match
+
+- [x] Seeded Player demand and a locally saved Player signal can be aggregated.
+- [x] D&D 5e edition labels normalize to a compatible D&D 5e matching family while edition is selected later when forming the game.
+- [x] System, day, full-session time overlap, GM radius, Player radius, venue availability, and capacity are enforced before formation.
+- [x] Venue capacity is a hard-fit rule rather than merely a score component.
+- [x] Excess Player demand is shown separately from seats actually available.
+- [x] Match breakdown exposes Player demand, GM distance, schedule, and capacity components.
+- [x] Match selection carries structured venue/schedule/capacity/demand evidence into Forming.
+- [x] Player identities/contact details are not exposed in the demand snapshot.
+- [x] Demand snapshot explicitly states that seeded data is prototype data, not live community demand.
+- [ ] Experience/style/environment/accessibility Table Fit inputs are not yet calculated by the matching engine.
+- [ ] Shared database-backed Player + GM + Venue matching.
 
 ## Forming game
 
 - [x] Game creation is explicitly framed as converting a viable match into a Forming table.
 - [x] Selected venue/time is carried forward.
+- [x] Matched Player-demand count and venue Player capacity are carried forward.
+- [x] Venue capacity disables impossible maximum Player counts.
 - [x] Recurrence and expected sessions are collected.
 - [x] Expected full-table headcount is visible.
+- [x] Minimum Players required for confirmation is editable.
 - [x] Player joining method, experience, age/environment, style, and boundaries are captured.
-- [ ] Minimum Players required for confirmation is not yet an editable field.
-- [ ] Venue approval is not a functional state change.
-- [ ] Player commitment is not a functional shared registration.
-- [ ] Waitlist/cancellation recovery is not implemented.
+- [x] Saving seeds browser-local lifecycle state with match evidence.
+- [x] Next step routes through commitment/confirmation management rather than directly into the Game Hub.
+- [ ] Shared Player registration/request persistence.
+
+## Forming → Confirmed lifecycle
+
+- [x] Venue approval is a functional browser-local state change.
+- [x] Player commitment count is a functional browser-local state change.
+- [x] Venue approval + minimum Player commitment derives Confirmed automatically.
+- [x] Falling below minimum commitment returns the table to Forming.
+- [x] GM cancellation moves the session to Cancelled.
+- [x] Waitlist and automatic promotion recovery are simulated.
+- [x] Cancellation timing classification is simulated separately from misconduct.
+- [x] Game Hub action is locked until Confirmed.
+- [x] Match demand is explicitly separated from actual Player commitment.
+- [x] Page states that approvals/commitments are local prototype simulation and notify nobody.
+- [ ] Shared seat registration/request/waitlist/cancellation recovery across real users.
+- [ ] Real venue approval workflow.
 
 ## Sample table detail pages
 
@@ -119,7 +156,7 @@ A feature is not usable merely because it is visible. The user must understand w
 - [x] Venue announcements are logistics-focused.
 - [x] Player → Venue structured questions exist.
 - [x] Required message fields are identified programmatically.
-- [x] Prototype messaging now says a preview was added instead of falsely implying persistence.
+- [x] Prototype messaging says a preview was added instead of falsely implying persistence.
 - [x] Venue traffic proof is demonstrated with sample data.
 - [ ] Messages are preview-only.
 - [ ] Calendar synchronization is not live.
@@ -136,7 +173,7 @@ A feature is not usable merely because it is visible. The user must understand w
 - [ ] Functional private report form.
 - [ ] Moderation queue/admin UI.
 - [ ] Structured post-game feedback form.
-- [ ] Functional attendance/no-show workflow.
+- [ ] Functional shared attendance/no-show workflow.
 
 ## Accessibility
 
@@ -185,27 +222,31 @@ A feature is not usable merely because it is visible. The user must understand w
 
 - [x] Static prototype deploys without backend dependence.
 - [x] Geographic matching is modularized.
+- [x] Saved-GM/demand-summary logic is separated from Table Match rendering.
+- [x] Lifecycle state model, lifecycle rendering, and lifecycle interaction controller are separate modules.
 - [x] Forms, experience builder, discovery, venue matching, game creation, dashboard, and Game Hub use separate scripts.
-- [x] Current CI validates HTML metadata/internal file links, fragment targets, placeholder links, browser JS syntax, and Apps Script syntax.
+- [x] CI validates HTML metadata/internal links, fragment targets, placeholder links, browser JS syntax, and Apps Script syntax.
+- [x] Zero-dependency Node unit tests cover core Table Match hard-fit and lifecycle status rules.
 - [x] New product charter, positioning, roadmap, and Definition of Done agree on Table Match direction.
 - [ ] Automated browser behavior smoke tests.
 - [ ] Lighthouse/accessibility CI gate.
 - [ ] Shared navigation/layout component before production framework migration.
 
-## Critical gaps before calling this a functional MVP
+## Critical gaps before calling this a functional multi-user MVP
 
-1. Structured Player availability and real Player-demand aggregation.
-2. Three-sided Table Match using Player + GM + Venue signals.
-3. Functional Potential Match → Forming → Confirmed lifecycle.
-4. Shared seat registration/request/waitlist/cancellation recovery.
-5. Authentication and role authorization.
-6. Venue verification/approval state.
-7. Calendar/reminders.
-8. Functional Game Hub messaging.
-9. Attendance + structured reputation.
-10. Reporting/moderation workflow.
-11. Browser/accessibility regression tests.
+1. Shared persistent Player, GM, and Venue signals rather than seeded/browser-local records.
+2. Shared seat request/approval/waitlist/cancellation transactions.
+3. Authentication and role authorization.
+4. Real venue verification and approval workflow.
+5. Table Fit scoring for experience/style/environment/accessibility inputs.
+6. Calendar/reminders.
+7. Functional Game Hub messaging.
+8. Attendance + structured reputation persistence.
+9. Reporting/moderation workflow.
+10. Browser/accessibility regression tests.
 
 ## Current assessment
 
-The site is now a **coherent validation prototype** for a differentiated three-sided local tabletop matching product with a role-aware dashboard, corrected internal navigation, and stronger static quality gates. It should not yet be described as a functioning multi-user community platform. The next product-risk milestone remains real Player-demand aggregation feeding Table Match—not additional generic social features.
+The site is now a **connected validation prototype** for the core product loop: a Player signal can contribute to demand, a saved GM signal can feed Table Match, venue capacity is enforced, a viable match can become a Forming table, commitments can move it to Confirmed, and confirmation unlocks the Game Hub. Those interactions are deliberately browser-local and clearly labeled as prototype behavior.
+
+The next product-risk milestone is no longer proving that the screens can connect conceptually. It is proving that the same workflow works with **shared multi-user state** for Player demand, GM supply, Venue capacity, seat commitments, and venue approval without losing the privacy and explainability rules established here.
