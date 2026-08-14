@@ -77,3 +77,35 @@ jobs:
 
       - name: Run functional, keyboard, WCAG, reflow, and runtime tests
         run: npm run test:e2e
+
+  lighthouse:
+    name: Lighthouse performance, SEO, and best-practices gate
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Install pinned Lighthouse CI
+        run: npm install --global @lhci/cli@0.15.1
+
+      - name: Collect Lighthouse reports
+        run: lhci collect --config=lighthouserc.cjs
+
+      - name: Enforce Lighthouse thresholds
+        run: lhci assert --config=lighthouserc.cjs
+
+      - name: Preserve Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci
+          if-no-files-found: error
+          retention-days: 14
