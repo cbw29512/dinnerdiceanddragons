@@ -1,3 +1,19 @@
 node_modules/
 playwright-report/
 test-results/
+
+# Python / FastAPI
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+backend/.venv/
+backend/*.egg-info/
+
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
