@@ -162,7 +162,7 @@
     try {
       const form = document.querySelector("#game-form");
       if (!form) return;
-      form.addEventListener("submit", () => {
+      form.addEventListener("ddd:save-success", () => {
         try {
           const minPlayers = readInt("#min-players");
           const maxPlayers = readInt("#player-seats");
