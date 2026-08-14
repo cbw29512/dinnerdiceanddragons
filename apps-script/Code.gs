@@ -27,6 +27,7 @@ function doPost(e) {
 
     if (action === "player.save") return json_(savePlayerProfile_(payload));
     if (action === "gm.save") return json_(saveGMProfile_(payload));
+    if (action === "venue.save") return json_(saveVenueProfile_(payload));
     if (action === "game.save") return json_(saveGame_(payload));
     if (action === "game.join") return json_(joinGame_(payload));
 
