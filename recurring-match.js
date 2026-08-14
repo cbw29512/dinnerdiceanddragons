@@ -6,6 +6,7 @@
     "seminar-brewing": ["2026-10-06"]
   };
 
+  const DAY_INDEX = Object.freeze({ Sunday:0, Monday:1, Tuesday:2, Wednesday:3, Thursday:4, Friday:5, Saturday:6 });
   let currentResults = [];
   let currentInput = null;
   let currentRule = null;
@@ -36,6 +37,33 @@
     } catch (error) {
       logError("Unable to format date", error);
       return dateKey(date);
+    }
+  }
+
+  function nextDateForDay(day) {
+    try {
+      const target = DAY_INDEX[day];
+      const date = new Date();
+      date.setHours(12, 0, 0, 0);
+      if (!Number.isInteger(target)) return date;
+      const difference = (target - date.getDay() + 7) % 7;
+      date.setDate(date.getDate() + difference);
+      return date;
+    } catch (error) {
+      logError("Unable to calculate next game date", error);
+      return new Date();
+    }
+  }
+
+  function syncAnchorDate(force = false) {
+    try {
+      const anchor = document.querySelector("#series-anchor");
+      const day = document.querySelector("#series-day")?.value;
+      if (!anchor || !day) return;
+      const todayKey = dateKey(new Date());
+      if (force || !anchor.value || anchor.value < todayKey) anchor.value = dateKey(nextDateForDay(day));
+    } catch (error) {
+      logError("Unable to set first recurring date", error);
     }
   }
 
@@ -88,14 +116,14 @@
     try {
       const key = dateKey(item.date);
       if (item.exception?.action === "skip") {
-        return `<div class="venue-schedule-row"><strong>${humanDate(item.date)}</strong><span>${item.playerCount} Players</span><span>○ Skipped by GM</span><span><div class="game-actions"><button type="button" data-series-action="restore" data-date="${key}" data-venue-id="${venueId}">Restore</button></div></span></div>`;
+        return `<div class="venue-schedule-row"><strong>${humanDate(item.date)}</strong><span>${item.playerCount} potential Players</span><span>○ Skipped</span><span><div class="game-actions"><button type="button" data-series-action="restore" data-date="${key}" data-venue-id="${venueId}">Restore Date</button></div></span></div>`;
       }
       if (item.exception?.action === "move_requested") {
-        return `<div class="venue-schedule-row"><strong>${humanDate(item.date)}</strong><span>${item.playerCount} Players</span><span>△ Move flagged</span><span><div class="game-actions"><button type="button" data-series-action="restore" data-date="${key}" data-venue-id="${venueId}">Restore</button></div></span></div>`;
+        return `<div class="venue-schedule-row"><strong>${humanDate(item.date)}</strong><span>${item.playerCount} potential Players</span><span>△ Move needed</span><span><div class="game-actions"><button type="button" data-series-action="restore" data-date="${key}" data-venue-id="${venueId}">Restore Date</button></div></span></div>`;
       }
-      const label = item.viable ? "✓ Viable" : item.blackout ? "✕ Venue conflict" : "✕ Not enough Players";
-      const action = item.viable ? "" : `<div class="game-actions"><button type="button" data-series-action="skip" data-date="${key}" data-venue-id="${venueId}">Skip</button><button type="button" data-series-action="move" data-date="${key}" data-venue-id="${venueId}">Flag Move</button></div>`;
-      return `<div class="venue-schedule-row"><strong>${humanDate(item.date)}</strong><span>${item.playerCount} Players</span><span>${label}</span><span>${action}</span></div>`;
+      const label = item.viable ? "✓ Looks good" : item.blackout ? "✕ Venue unavailable" : "✕ Needs more Players";
+      const action = item.viable ? "" : `<div class="game-actions"><button type="button" data-series-action="skip" data-date="${key}" data-venue-id="${venueId}">Skip This Date</button><button type="button" data-series-action="move" data-date="${key}" data-venue-id="${venueId}">Move This Date</button></div>`;
+      return `<div class="venue-schedule-row"><strong>${humanDate(item.date)}</strong><span>${item.playerCount} potential Players</span><span>${label}</span><span>${action}</span></div>`;
     } catch (error) {
       logError("Unable to render recurring occurrence", error);
       return "";
@@ -129,17 +157,16 @@
       window.location.href = "form-series.html";
     } catch (error) {
       logError("Unable to carry recurring match into series formation", error);
-      document.querySelector("#recurring-match-status").textContent = "Unable to open the series builder. Please try again.";
+      document.querySelector("#recurring-match-status").textContent = "We couldn’t open the campaign setup. Please try again.";
     }
   }
 
   function renderResult(result, input, rule) {
     try {
       const activeViable = result.occurrences.filter((item) => item.viable && !item.exception).length;
-      const percent = Math.round((activeViable / result.occurrences.length) * 100);
       const card = document.createElement("article");
       card.className = "panel";
-      card.innerHTML = `<p class="eyebrow">${activeViable === result.occurrences.length ? "STRONG RECURRING MATCH" : "RECOVERABLE SERIES"}</p><h3>${result.venue.name} · ${percent}% of next 6 dates viable</h3><p>${input.system} · ${patternSummary(input, rule)} · ${result.gmDistance.toFixed(1)} miles from GM · ${result.players.length} compatible Player signals</p><div>${result.occurrences.map((item) => occurrenceMarkup(item, result.venue.id)).join("")}</div><div class="next-step"><strong>${activeViable}/6 viable →</strong><button class="button primary form-series-button" type="button">Form This Series</button><a class="button secondary" href="venues.html">Try Another Venue</a></div>`;
+      card.innerHTML = `<p class="eyebrow">${activeViable === result.occurrences.length ? "ALL 6 DATES FIT" : "SOME DATES NEED ATTENTION"}</p><h3>${result.venue.name} · ${activeViable} of 6 dates look good</h3><p>${input.system} · ${patternSummary(input, rule)} · ${result.gmDistance.toFixed(1)} miles away · ${result.players.length} potential Player${result.players.length === 1 ? "" : "s"}</p><div>${result.occurrences.map((item) => occurrenceMarkup(item, result.venue.id)).join("")}</div><div class="next-step"><strong>Like this schedule?</strong><button class="button primary form-series-button" type="button">Continue With These Dates</button><a class="button secondary" href="venues.html">Review Venue Options</a></div>`;
       card.querySelector(".form-series-button")?.addEventListener("click", () => selectSeries(result, input, rule));
       return card;
     } catch (error) {
@@ -154,7 +181,7 @@
       if (!results || !currentInput || !currentRule) return;
       results.replaceChildren();
       currentResults.forEach((result) => results.appendChild(renderResult(result, currentInput, currentRule)));
-      if (!currentResults.length) results.innerHTML = '<div class="panel empty-state"><h3>No recurring venue match yet.</h3><p>Try another day, shorter session, or larger travel radius.</p></div>';
+      if (!currentResults.length) results.innerHTML = '<div class="panel empty-state"><h3>No venue fits all of those basics yet.</h3><p>Try another day, a shorter session, or a larger travel range.</p></div>';
     } catch (error) {
       logError("Unable to refresh recurring results", error);
     }
@@ -164,21 +191,26 @@
     try {
       const result = currentResults.find((item) => item.venue.id === venueId);
       const occurrence = result?.occurrences.find((item) => dateKey(item.date) === key);
-      if (!occurrence) throw new Error("Recurring occurrence not found.");
+      if (!occurrence) throw new Error("That game date could not be found.");
       if (action === "restore") occurrence.exception = null;
       if (action === "skip") occurrence.exception = { action: "skip" };
       if (action === "move") occurrence.exception = { action: "move_requested" };
       renderCurrentResults();
-      const verb = action === "restore" ? "Restored" : action === "skip" ? "Skipped" : "Move flagged for";
-      document.querySelector("#recurring-match-status").textContent = `${verb} ${key}. This exception will carry into the series builder without changing the recurrence rule.`;
+      const verb = action === "restore" ? "Restored" : action === "skip" ? "Skipped" : "Marked to move";
+      document.querySelector("#recurring-match-status").textContent = `${verb} ${humanDate(occurrence.date)}. Only this date is affected; the rest of your recurring schedule stays the same.`;
     } catch (error) {
       logError("Unable to update recurring occurrence", error);
-      document.querySelector("#recurring-match-status").textContent = error.message || "Unable to update that date.";
+      document.querySelector("#recurring-match-status").textContent = error.message || "We couldn’t update that date.";
     }
   }
 
   async function calculate() {
     try {
+      const form = document.querySelector("#recurring-match-form");
+      if (form && !form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
       const start = minutes(document.querySelector("#series-start").value);
       const duration = Number(document.querySelector("#series-duration").value);
       const input = {
@@ -201,18 +233,18 @@
       const dates = window.DDDRecurrence.nextDates(rule, 6, new Date());
       const status = document.querySelector("#recurring-match-status");
       if (!dates.length) {
-        status.textContent = "This recurrence needs a valid anchor date before it can be calculated.";
+        status.textContent = "Choose a valid first game date so we can build the schedule.";
         return;
       }
-      status.textContent = "Calculating recurring Player + GM + Venue overlap…";
+      status.textContent = "Checking Player interest and venue availability for your next six dates…";
       currentInput = input;
       currentRule = rule;
       currentResults = (await Promise.all((window.DDD_VENUES || []).map((venue) => evaluateVenue(venue, input, dates)))).filter(Boolean).sort((a, b) => b.viableCount - a.viableCount);
       renderCurrentResults();
-      status.textContent = `${currentResults.length} recurring venue option${currentResults.length === 1 ? "" : "s"} evaluated.`;
+      status.textContent = currentResults.length ? `${currentResults.length} venue option${currentResults.length === 1 ? "" : "s"} found for this recurring schedule.` : "No venue fits this recurring schedule yet. Try adjusting the day, session length, or travel range.";
     } catch (error) {
       logError("Unable to calculate recurring Table Match", error);
-      document.querySelector("#recurring-match-status").textContent = "Recurring match calculation failed. Please try again.";
+      document.querySelector("#recurring-match-status").textContent = "We couldn’t check that recurring schedule. Please try again.";
     }
   }
 
@@ -220,6 +252,7 @@
     try {
       const form = document.querySelector("#recurring-match-form");
       const pattern = document.querySelector("#series-pattern");
+      const day = document.querySelector("#series-day");
       if (!form || !pattern) return;
       const toggle = () => {
         const monthly = pattern.value === "monthly";
@@ -228,6 +261,7 @@
         document.querySelector("#month-interval-label").hidden = !monthly;
       };
       pattern.addEventListener("change", toggle);
+      day?.addEventListener("change", () => syncAnchorDate(true));
       form.addEventListener("submit", (event) => { event.preventDefault(); calculate(); });
       document.querySelector("#recurring-match-results")?.addEventListener("click", (event) => {
         const button = event.target.closest("[data-series-action]");
@@ -235,6 +269,7 @@
         applyOccurrenceAction(button.dataset.venueId, button.dataset.date, button.dataset.seriesAction);
       });
       toggle();
+      syncAnchorDate();
     } catch (error) {
       logError("Unable to initialize recurring Table Match", error);
     }
