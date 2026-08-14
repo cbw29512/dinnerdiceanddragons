@@ -33,6 +33,7 @@ function saveAvailabilityRules_(ownerType, ownerId, payload, now) {
     const anchors = pilotArray_(payload.availability_anchor_date);
     const ordinals = pilotArray_(payload.availability_monthly_ordinal);
     const monthIntervals = pilotArray_(payload.availability_month_interval);
+    let written = 0;
 
     days.forEach((day, index) => {
       const start = starts[index] || "";
@@ -56,8 +57,9 @@ function saveAvailabilityRules_(ownerType, ownerId, payload, now) {
         created_at: now,
         updated_at: now
       });
+      written += 1;
     });
-    return days.length;
+    return written;
   } catch (error) {
     console.error(`[DDD] saveAvailabilityRules_ failed for ${ownerType}`, error);
     throw error;
@@ -122,7 +124,7 @@ function saveGMSupplySignals_(gmId, payload, now) {
 function listDemandSummary_() {
   try {
     const activeSignals = dddRows_("PlayerDemandSignals").filter((row) => String(row.status) === "active");
-    const activeAvailability = dddRows_("AvailabilityRules").filter((row) => String(row.owner_type) === "player" && String(row.active).toLowerCase() !== "false" && String(row.active) !== "0");
+    const activeAvailability = dddRows_("AvailabilityRules").filter((row) => String(row.owner_type) === "player" && pilotActive_(row.active));
     const daysByPlayer = {};
     activeAvailability.forEach((rule) => {
       const playerId = String(rule.owner_id || "");
