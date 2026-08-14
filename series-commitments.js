@@ -29,14 +29,14 @@
 
   function defaultState(series) {
     try {
-      const core = ["Wendy", "Alex"].map((name, index) => ({ id: `core-${index + 1}`, name }));
-      const requests = ["Sarah", "Mike"].map((name, index) => ({ id: `req-${index + 1}`, name, status: "pending" }));
+      const core = [];
+      const requests = [];
       return {
         seriesId: series.id,
         venue: { name: series.venue, gmAccepted: false, venueConfirmed: false },
         corePlayers: core,
         playerRequests: requests,
-        intents: Object.fromEntries(series.sessions.map((session) => [session.id, Object.fromEntries(core.map((player) => [player.id, "yes"]))])),
+        intents: Object.fromEntries(series.sessions.map((session) => [session.id, {}])),
         guests: Object.fromEntries(series.sessions.map((session) => [session.id, 0])),
         waitlist: Object.fromEntries(series.sessions.map((session) => [session.id, 0]))
       };
@@ -103,8 +103,8 @@
       const summary = document.querySelector("#commitment-summary");
       if (!summary) return;
       const atRisk = series.sessions.filter((session) => sessionCounts(series, state, session).health === "at-risk").length;
-      const venueStatus = state.venue.gmAccepted ? (state.venue.venueConfirmed ? "Venue confirmed" : "GM accepted · awaiting venue") : "GM venue decision needed";
-      summary.innerHTML = `<p class="eyebrow">GM COORDINATED · ${series.status.toUpperCase()} SERIES</p><h2>${series.title}</h2><p>${series.system} · ${series.venue} · ${state.corePlayers.length} GM-approved core Players · ${series.sessions.length} planned sessions</p><div class="hub-metrics"><div><strong>${series.minPlayers}</strong><span>Minimum Players</span></div><div><strong>${state.playerRequests.filter((r) => r.status === "pending").length}</strong><span>Pending Player requests</span></div><div><strong>${atRisk}</strong><span>Sessions at risk</span></div><div><strong>${venueStatus}</strong><span>Venue status</span></div></div>`;
+      const venueStatus = state.venue.gmAccepted ? (state.venue.venueConfirmed ? "Venue confirmed" : "Venue chosen · confirmation pending") : "Choose venue";
+      summary.innerHTML = `<p class="eyebrow">FORMING RECURRING TABLE</p><h2>${series.title}</h2><p>${series.system} · ${series.venue} · ${state.corePlayers.length} approved Player${state.corePlayers.length === 1 ? "" : "s"} · ${series.sessions.length} planned game night${series.sessions.length === 1 ? "" : "s"}</p><div class="hub-metrics"><div><strong>${series.minPlayers}</strong><span>Players needed</span></div><div><strong>${state.playerRequests.filter((r) => r.status === "pending").length}</strong><span>Join requests</span></div><div><strong>${atRisk}</strong><span>Dates needing Players</span></div><div><strong>${venueStatus}</strong><span>Venue</span></div></div>`;
     } catch (error) {
       logError("Unable to render commitment summary", error);
     }
@@ -114,9 +114,9 @@
     try {
       const box = document.querySelector("#venue-approval");
       if (!box) return;
-      const gm = state.venue.gmAccepted ? "✓ GM accepted" : "Pending GM decision";
+      const gm = state.venue.gmAccepted ? "✓ You chose this venue" : "Choose whether to use this venue";
       const venue = state.venue.venueConfirmed ? "✓ Venue confirmed" : "Venue confirmation pending";
-      box.innerHTML = `<div class="panel"><h3>${state.venue.name}</h3><p>${gm} · ${venue}</p><div class="game-actions">${state.venue.gmAccepted ? '<button type="button" data-venue-action="change">Choose Another Venue</button>' : '<button class="interested" type="button" data-venue-action="accept">Accept This Venue</button>'}<button type="button" data-venue-action="confirm">${state.venue.venueConfirmed ? "Revoke Venue Confirmation" : "Simulate Venue Confirmation"}</button></div></div>`;
+      box.innerHTML = `<div class="panel"><h3>${state.venue.name}</h3><p>${gm} · ${venue}</p><div class="game-actions">${state.venue.gmAccepted ? '<button type="button" data-venue-action="change">Choose Another Venue</button>' : '<button class="interested" type="button" data-venue-action="accept">Use This Venue</button>'}<button type="button" data-venue-action="confirm">${state.venue.venueConfirmed ? "Mark Venue Pending" : "Mark Venue Confirmed"}</button></div></div>`;
     } catch (error) {
       logError("Unable to render venue approval", error);
     }
@@ -128,10 +128,10 @@
       if (!box) return;
       const pending = state.playerRequests.filter((request) => request.status === "pending");
       if (!pending.length) {
-        box.innerHTML = "<p>No pending Player requests.</p>";
+        box.innerHTML = "<p>No Player requests waiting for review.</p>";
         return;
       }
-      box.innerHTML = pending.map((request) => `<div class="venue-schedule-row"><strong>${request.name}</strong><span>Request to join</span><button class="button primary" type="button" data-request-action="approve" data-request-id="${request.id}">Accept</button><button class="button secondary" type="button" data-request-action="decline" data-request-id="${request.id}">Decline</button></div>`).join("");
+      box.innerHTML = pending.map((request) => `<div class="venue-schedule-row"><strong>${request.name}</strong><span>Wants to join</span><button class="button primary" type="button" data-request-action="approve" data-request-id="${request.id}">Accept</button><button class="button secondary" type="button" data-request-action="decline" data-request-id="${request.id}">Decline</button></div>`).join("");
     } catch (error) {
       logError("Unable to render Player requests", error);
     }
@@ -142,10 +142,10 @@
       const box = document.querySelector("#core-party");
       if (!box) return;
       if (!state.corePlayers.length) {
-        box.innerHTML = "<p>No GM-approved core Players yet.</p>";
+        box.innerHTML = "<p>No approved recurring Players yet.</p>";
         return;
       }
-      box.innerHTML = state.corePlayers.map((player) => `<div class="venue-schedule-row"><strong>${player.name}</strong><span>GM approved</span><span>Core member</span><button class="button secondary" type="button" data-remove-core="${player.id}">Remove</button></div>`).join("");
+      box.innerHTML = state.corePlayers.map((player) => `<div class="venue-schedule-row"><strong>${player.name}</strong><span>Approved</span><span>Recurring Player</span><button class="button secondary" type="button" data-remove-core="${player.id}">Remove</button></div>`).join("");
     } catch (error) {
       logError("Unable to render core party", error);
     }
@@ -157,7 +157,7 @@
       if (!box) return;
       box.innerHTML = series.sessions.map((session) => {
         const counts = sessionCounts(series, state, session);
-        const label = counts.health === "at-risk" ? `At risk · needs ${counts.deficit}` : counts.health === "open" ? `Viable · ${counts.openSeats} open` : "Full / healthy";
+        const label = counts.health === "at-risk" ? `Needs ${counts.deficit} more Player${counts.deficit === 1 ? "" : "s"}` : counts.health === "open" ? `Ready · ${counts.openSeats} seat${counts.openSeats === 1 ? "" : "s"} open` : "Full";
         return `<div class="venue-schedule-row"><strong>${humanDate(session.date)}</strong><span>${counts.expected}/${series.maxPlayers} expected</span><span>${label}</span><span>${Number(state.waitlist[session.id]) || 0} waiting</span></div>`;
       }).join("");
     } catch (error) {
@@ -170,16 +170,16 @@
       const box = document.querySelector("#commitment-matrix");
       if (!box) return;
       if (!state.corePlayers.length) {
-        box.innerHTML = "<p>Approve a Player request to begin tracking attendance intent.</p>";
+        box.innerHTML = "<p>Approve at least one Player to start tracking who can make each game night.</p>";
         return;
       }
       box.innerHTML = series.sessions.map((session) => {
         const playerRows = state.corePlayers.map((player) => {
           const value = state.intents[session.id]?.[player.id] || "unsure";
-          return `<label>${player.name}<select data-intent-session="${session.id}" data-intent-player="${player.id}"><option value="yes" ${value === "yes" ? "selected" : ""}>Yes</option><option value="unsure" ${value === "unsure" ? "selected" : ""}>Unsure</option><option value="no" ${value === "no" ? "selected" : ""}>Can't attend</option></select></label>`;
+          return `<label>${player.name}<select data-intent-session="${session.id}" data-intent-player="${player.id}"><option value="yes" ${value === "yes" ? "selected" : ""}>Can attend</option><option value="unsure" ${value === "unsure" ? "selected" : ""}>Not sure yet</option><option value="no" ${value === "no" ? "selected" : ""}>Can't attend</option></select></label>`;
         }).join("");
         const counts = sessionCounts(series, state, session);
-        return `<fieldset class="availability-entry"><legend>${humanDate(session.date)} · ${counts.expected} expected</legend>${playerRows}<label>GM-approved session guests<input type="number" min="0" max="${series.maxPlayers}" value="${Number(state.guests[session.id]) || 0}" data-guest-session="${session.id}"></label><label>Waitlist requests<input type="number" min="0" max="20" value="${Number(state.waitlist[session.id]) || 0}" data-waitlist-session="${session.id}"></label><p class="recurrence-summary microcopy">${counts.health === "at-risk" ? `At risk: GM should approve ${counts.deficit} compatible Player${counts.deficit === 1 ? "" : "s"}.` : counts.openSeats ? `${counts.openSeats} seat${counts.openSeats === 1 ? "" : "s"} still open for GM approval.` : "Session is full."}</p></fieldset>`;
+        return `<fieldset class="availability-entry"><legend>${humanDate(session.date)} · ${counts.expected} expected</legend>${playerRows}<label>Additional approved Players<input type="number" min="0" max="${series.maxPlayers}" value="${Number(state.guests[session.id]) || 0}" data-guest-session="${session.id}"></label><label>People waiting for a seat<input type="number" min="0" max="20" value="${Number(state.waitlist[session.id]) || 0}" data-waitlist-session="${session.id}"></label><p class="recurrence-summary microcopy">${counts.health === "at-risk" ? `This night still needs ${counts.deficit} Player${counts.deficit === 1 ? "" : "s"}.` : counts.openSeats ? `${counts.openSeats} seat${counts.openSeats === 1 ? "" : "s"} still open.` : "This game night is full."}</p></fieldset>`;
       }).join("");
     } catch (error) {
       logError("Unable to render commitment matrix", error);
@@ -205,7 +205,7 @@
     try {
       const request = state.playerRequests.find((item) => item.id === requestId);
       if (!request) throw new Error("Player request not found.");
-      if (state.corePlayers.length >= series.maxPlayers) throw new Error("Core party is already at maximum seats.");
+      if (state.corePlayers.length >= series.maxPlayers) throw new Error("Your recurring party is already at maximum seats.");
       request.status = "approved";
       const id = `core-${Date.now()}`;
       state.corePlayers.push({ id, name: request.name, sourceRequestId: request.id });
@@ -214,7 +214,7 @@
         state.intents[session.id][id] = "yes";
       });
       saveState(state);
-      rerender(series, state, `${request.name} accepted by the GM.`);
+      rerender(series, state, `${request.name} was added to the recurring table.`);
     } catch (error) {
       logError("Unable to approve Player", error);
       const status = document.querySelector("#commitment-status");
@@ -228,7 +228,7 @@
       if (!request) throw new Error("Player request not found.");
       request.status = "declined";
       saveState(state);
-      rerender(series, state, `${request.name} request declined. No public reputation effect is created.`);
+      rerender(series, state, `${request.name}'s request was declined. This does not create a public reputation penalty.`);
     } catch (error) {
       logError("Unable to decline Player", error);
     }
@@ -237,12 +237,12 @@
   function addRequest(series, state, name) {
     try {
       const trimmed = String(name || "").trim();
-      if (!trimmed) throw new Error("Player display name is required.");
+      if (!trimmed) throw new Error("Enter a sample Player display name.");
       const duplicate = [...state.corePlayers, ...state.playerRequests.filter((r) => r.status === "pending")].some((player) => player.name.toLowerCase() === trimmed.toLowerCase());
-      if (duplicate) throw new Error("That Player is already approved or pending.");
+      if (duplicate) throw new Error("That Player is already approved or waiting for review.");
       state.playerRequests.push({ id: `req-${Date.now()}`, name: trimmed, status: "pending" });
       saveState(state);
-      rerender(series, state, `${trimmed} requested to join. GM approval required.`);
+      rerender(series, state, `${trimmed} was added as a sample join request.`);
     } catch (error) {
       logError("Unable to add Player request", error);
       const status = document.querySelector("#commitment-status");
@@ -256,7 +256,7 @@
       state.corePlayers = state.corePlayers.filter((item) => item.id !== playerId);
       series.sessions.forEach((session) => { if (state.intents[session.id]) delete state.intents[session.id][playerId]; });
       saveState(state);
-      rerender(series, state, `${player?.name || "Player"} removed from the core party by the GM.`);
+      rerender(series, state, `${player?.name || "Player"} was removed from the recurring table.`);
     } catch (error) {
       logError("Unable to remove core Player", error);
     }
@@ -271,7 +271,7 @@
       }
       if (action === "confirm") state.venue.venueConfirmed = !state.venue.venueConfirmed;
       saveState(state);
-      const message = action === "accept" ? `${state.venue.name} accepted by the GM.` : action === "change" ? "Venue released. Choose another compatible venue." : `Venue confirmation ${state.venue.venueConfirmed ? "recorded" : "revoked"}.`;
+      const message = action === "accept" ? `${state.venue.name} selected for this recurring table.` : action === "change" ? "Venue cleared. Choose another compatible venue." : `Venue marked ${state.venue.venueConfirmed ? "confirmed" : "pending"}.`;
       rerender(series, state, message);
     } catch (error) {
       logError("Unable to update venue approval", error);
@@ -283,7 +283,7 @@
       const series = readSeries();
       const summary = document.querySelector("#commitment-summary");
       if (!series) {
-        if (summary) summary.innerHTML = '<h2>No forming series found.</h2><p>Create a recurring series first.</p><a class="button primary" href="form-series.html">Form a Series</a>';
+        if (summary) summary.innerHTML = '<h2>No recurring table found.</h2><p>Create your recurring table first, then come back here to review Players and venue readiness.</p><a class="button primary" href="form-series.html">Set Up a Recurring Table</a>';
         return;
       }
       const state = readState(series);
@@ -327,7 +327,7 @@
           const waitlist = event.target.closest("[data-waitlist-session]");
           if (waitlist) state.waitlist[waitlist.dataset.waitlistSession] = Math.max(0, Number(waitlist.value) || 0);
           saveState(state);
-          rerender(series, state, "Commitment plan updated. Planning ahead has no reputation penalty.");
+          rerender(series, state, "Attendance plan updated. Players can change plans responsibly before game night.");
         } catch (error) {
           logError("Unable to update commitment intent", error);
         }
