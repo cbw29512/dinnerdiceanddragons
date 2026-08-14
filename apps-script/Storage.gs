@@ -1,5 +1,10 @@
 function dddNow_() {
-  return new Date().toISOString();
+  try {
+    return new Date().toISOString();
+  } catch (error) {
+    console.error("[DDD] dddNow_ failed", error);
+    throw error;
+  }
 }
 
 function dddId_(prefix) {
@@ -54,6 +59,69 @@ function dddFindBy_(sheetName, field, value) {
     return dddRows_(sheetName).filter((row) => String(row[field]) === String(value));
   } catch (error) {
     console.error(`[DDD] Unable to filter ${sheetName}`, error);
+    throw error;
+  }
+}
+
+function dddUpsert_(sheetName, keyField, keyValue, rowObject) {
+  try {
+    const headers = DDD_SCHEMA[sheetName];
+    if (!headers) throw new Error(`Unknown schema: ${sheetName}`);
+    const keyIndex = headers.indexOf(keyField);
+    if (keyIndex < 0) throw new Error(`Unknown key ${keyField} for ${sheetName}`);
+
+    const sheet = dddSheet_(sheetName);
+    const values = sheet.getDataRange().getValues();
+    let targetRow = -1;
+    for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
+      if (String(values[rowIndex][keyIndex]) === String(keyValue)) {
+        targetRow = rowIndex + 1;
+        break;
+      }
+    }
+
+    if (targetRow < 0) return dddAppend_(sheetName, rowObject);
+
+    const existing = values[targetRow - 1];
+    const normalized = { ...rowObject };
+    const createdIndex = headers.indexOf("created_at");
+    if (createdIndex >= 0 && existing[createdIndex]) normalized.created_at = existing[createdIndex];
+    const row = headers.map((header, index) => normalized[header] ?? existing[index] ?? "");
+    sheet.getRange(targetRow, 1, 1, headers.length).setValues([row]);
+    return normalized;
+  } catch (error) {
+    console.error(`[DDD] Unable to upsert ${sheetName}`, error);
+    throw error;
+  }
+}
+
+function dddDeactivateBy_(sheetName, filters, updatedAt) {
+  try {
+    const headers = DDD_SCHEMA[sheetName];
+    if (!headers) throw new Error(`Unknown schema: ${sheetName}`);
+    const activeIndex = headers.indexOf("active");
+    if (activeIndex < 0) throw new Error(`${sheetName} has no active field`);
+    const updatedIndex = headers.indexOf("updated_at");
+    const filterIndexes = Object.entries(filters || {}).map(([field, value]) => {
+      const index = headers.indexOf(field);
+      if (index < 0) throw new Error(`Unknown filter ${field} for ${sheetName}`);
+      return { index, value };
+    });
+
+    const sheet = dddSheet_(sheetName);
+    const values = sheet.getDataRange().getValues();
+    let changed = 0;
+    for (let rowIndex = 1; rowIndex < values.length; rowIndex += 1) {
+      const matches = filterIndexes.every((filter) => String(values[rowIndex][filter.index]) === String(filter.value));
+      if (!matches) continue;
+      values[rowIndex][activeIndex] = false;
+      if (updatedIndex >= 0) values[rowIndex][updatedIndex] = updatedAt || dddNow_();
+      changed += 1;
+    }
+    if (changed > 0) sheet.getRange(1, 1, values.length, headers.length).setValues(values);
+    return changed;
+  } catch (error) {
+    console.error(`[DDD] Unable to deactivate rows in ${sheetName}`, error);
     throw error;
   }
 }
