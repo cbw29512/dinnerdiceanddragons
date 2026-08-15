@@ -1,7 +1,7 @@
 """Canonical display-name validation and normalization rules."""
 
-from dataclasses import dataclass
 import unicodedata
+from dataclasses import dataclass
 
 MAX_DISPLAY_NAME_LENGTH = 80
 
