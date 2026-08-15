@@ -21,12 +21,14 @@ Implemented:
 - JWT validation for signature, project issuer, audience, expiration, and required subject.
 - Safe first-login mapping from verified Supabase `sub` to one durable internal DDD User.
 - Idempotent repeat login, verified-email synchronization, and refusal of ambiguous email/provider collisions.
+- Centralized current-user and active-account policy dependencies.
+- Verified pending accounts safely activate; restricted, suspended, and banned accounts remain visible through `/me` but cannot enter protected participation/mutation flows.
+- CI guard requiring every future `/api/v1` POST/PUT/PATCH/DELETE route to depend on the active authenticated DDD account policy.
 - CI proof using a real confirmed local Supabase token, live JWKS, Uvicorn/FastAPI HTTP, Alembic migrations, and real PostgreSQL persistence.
 - Automated backend lint, formatting, unit, migration, Docker, Auth, browser, and Lighthouse tests.
 
 Not implemented yet:
 
-- account-status enforcement on authenticated requests
 - DDD role/resource authorization dependencies
 - production profile, matching, game, booking, registration, calendar, and Game Hub APIs
 
