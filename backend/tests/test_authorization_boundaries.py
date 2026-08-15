@@ -101,12 +101,8 @@ def test_two_distinct_users_cannot_borrow_roles_resources_or_venue_authority() -
             verified_at=datetime.now(UTC),
         )
         assert require_verified_venue_relationship(bob, relationship, venue_id) is bob
-        assert_forbidden(
-            lambda: require_verified_venue_relationship(alice, relationship, venue_id)
-        )
-        assert_forbidden(
-            lambda: require_verified_venue_relationship(bob, relationship, uuid4())
-        )
+        assert_forbidden(lambda: require_verified_venue_relationship(alice, relationship, venue_id))
+        assert_forbidden(lambda: require_verified_venue_relationship(bob, relationship, uuid4()))
 
         # Same-user ownership still works; isolation is not an accidental deny-all.
         assert require_profile_owner(alice, alice.id) is alice
