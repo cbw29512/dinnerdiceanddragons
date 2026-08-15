@@ -8,6 +8,7 @@ Implemented:
 
 - FastAPI application factory and versioned `/api/v1` route namespace.
 - Dependency-free `GET /api/v1/health` liveness endpoint.
+- Authenticated `GET /api/v1/me` endpoint with a safe response model.
 - Typed environment/settings model with secret redaction.
 - SQLAlchemy + Psycopg PostgreSQL engine/session layer.
 - Alembic migration infrastructure.
@@ -18,13 +19,13 @@ Implemented:
 - CI proof that unverified email cannot obtain an authenticated session.
 - Supabase JWT verification through asymmetric JWKS only (`ES256`, `RS256`, `EdDSA`).
 - JWT validation for signature, project issuer, audience, expiration, and required subject.
-- CI proof using a real confirmed local Supabase user token and the live local JWKS endpoint.
-- Automated backend lint, formatting, unit, migration, Docker, and Auth smoke tests.
+- Safe first-login mapping from verified Supabase `sub` to one durable internal DDD User.
+- Idempotent repeat login, verified-email synchronization, and refusal of ambiguous email/provider collisions.
+- CI proof using a real confirmed local Supabase token, live JWKS, Uvicorn/FastAPI HTTP, Alembic migrations, and real PostgreSQL persistence.
+- Automated backend lint, formatting, unit, migration, Docker, Auth, browser, and Lighthouse tests.
 
 Not implemented yet:
 
-- authenticated `GET /api/v1/me`
-- first-login creation/linking of the internal DDD User
 - account-status enforcement on authenticated requests
 - DDD role/resource authorization dependencies
 - production profile, matching, game, booking, registration, calendar, and Game Hub APIs
@@ -86,7 +87,7 @@ alembic -c alembic.ini heads
 alembic -c alembic.ini upgrade head --sql
 ```
 
-The repository CI additionally boots local Supabase Auth and verifies a real confirmed user JWT through `/.well-known/jwks.json`.
+The repository CI additionally boots local Supabase Auth, obtains a real confirmed user JWT, verifies it through `/.well-known/jwks.json`, calls the real `/api/v1/me` endpoint over HTTP, and proves exactly one durable DDD user is persisted in PostgreSQL for that provider subject.
 
 ## Architecture rule
 
