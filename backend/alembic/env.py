@@ -4,6 +4,7 @@ import logging
 from logging.config import fileConfig
 
 from alembic import context
+from app import models as _models
 from app.core.config import get_settings
 from app.db.base import Base
 from app.db.session import get_engine
