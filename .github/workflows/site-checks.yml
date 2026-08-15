@@ -190,10 +190,13 @@ jobs:
 
           health = json.loads(Path('/tmp/supabase-auth-health.json').read_text())
           settings = json.loads(Path('/tmp/supabase-auth-settings.json').read_text())
+          external = settings.get('external', {})
 
           assert health.get('name') == 'GoTrue', health
           assert settings.get('disable_signup') is False, settings
-          assert settings.get('autoconfirm') is False, settings
+          assert settings.get('mailer_autoconfirm') is False, settings
+          assert external.get('email') is True, settings
+          assert external.get('anonymous_users') is False, settings
           print('Local Supabase Auth health/config verification passed.')
           PY
 
