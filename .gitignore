@@ -17,3 +17,7 @@ backend/*.egg-info/
 backend/.env
 backend/.env.*
 !backend/.env.example
+
+# Supabase local runtime state
+supabase/.temp/
+supabase/.branches/
