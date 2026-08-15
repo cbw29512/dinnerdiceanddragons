@@ -217,6 +217,9 @@ jobs:
       - name: Verify confirmed user token through live Supabase JWKS
         run: bash backend/scripts/verify_supabase_jwks_token.sh
 
+      - name: Verify two authenticated users remain isolated
+        run: bash backend/scripts/verify_two_user_authorization.sh
+
       - name: Stop and reset local Supabase Auth
         if: always()
         run: npx --yes supabase@2.110.0 stop --no-backup || true
