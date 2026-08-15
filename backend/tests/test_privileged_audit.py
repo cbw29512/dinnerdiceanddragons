@@ -48,7 +48,9 @@ def test_active_privileged_role_records_narrow_audit_event(role: UserRoleType) -
         )
         session.commit()
 
-        stored = session.scalar(select(PrivilegedAuditEvent).where(PrivilegedAuditEvent.id == event.id))
+        stored = session.scalar(
+            select(PrivilegedAuditEvent).where(PrivilegedAuditEvent.id == event.id)
+        )
         assert stored is not None
         assert stored.actor_user_id == actor.id
         assert stored.actor_role == role.value
