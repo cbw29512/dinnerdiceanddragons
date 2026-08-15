@@ -21,6 +21,8 @@ class StubVerifier:
     """Small deterministic verifier used to test the HTTP authentication boundary."""
 
     def verify(self, token: str):
+        if token == "expired-test-token":
+            raise TokenVerificationError("expired test token")
         if token != "valid-test-token":
             raise TokenVerificationError("invalid test token")
         return {
@@ -71,16 +73,18 @@ def test_me_requires_bearer_authentication(client_and_factory) -> None:
     assert response.json() == {"detail": "Authentication required."}
 
 
-def test_me_rejects_invalid_token(client_and_factory) -> None:
+@pytest.mark.parametrize("token", ["invalid-test-token", "expired-test-token"])
+def test_me_rejects_invalid_or_expired_token(client_and_factory, token: str) -> None:
     client, _ = client_and_factory
     response = client.get(
         "/api/v1/me",
-        headers={"Authorization": "Bearer invalid-test-token"},
+        headers={"Authorization": f"Bearer {token}"},
     )
 
     assert response.status_code == 401
     assert response.headers["www-authenticate"] == "Bearer"
     assert response.json() == {"detail": "Invalid or expired access token."}
+    assert token not in response.text
 
 
 def test_me_creates_and_returns_durable_user_without_leaking_raw_claims(
