@@ -6,7 +6,7 @@ psql_scalar() {
 }
 
 revision="$(psql_scalar 'SELECT version_num FROM alembic_version')"
-test "$revision" = "0002_create_user_roles"
+test "$revision" = "0003_create_privileged_audit_events"
 
 id_type="$(psql_scalar "SELECT data_type FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='id'")"
 test "$id_type" = "uuid"
