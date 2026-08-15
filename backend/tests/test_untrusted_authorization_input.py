@@ -100,9 +100,7 @@ def test_client_cannot_borrow_another_users_id_or_role_to_gain_dm_access() -> No
     )
 
     assert response.status_code == 403
-    assert response.json() == {
-        "detail": "This account does not have permission for this action."
-    }
+    assert response.json() == {"detail": "This account does not have permission for this action."}
 
 
 def test_authorized_action_uses_authenticated_actor_not_requested_user_id() -> None:
