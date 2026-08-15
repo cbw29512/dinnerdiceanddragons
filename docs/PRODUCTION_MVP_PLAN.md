@@ -96,7 +96,7 @@ See `docs/DECISIONS.md`, Decision 016.
 - [x] Validate issuer, audience/project, signature, and expiration. Unit tests reject wrong signatures, wrong project issuers, wrong audiences, expired/missing expiration claims, and legacy `HS256` tokens.
 - [x] Add authenticated `GET /api/v1/me` endpoint. CI boots the real FastAPI/Uvicorn application and proves a confirmed Supabase bearer token reaches `/me` over HTTP and returns only the safe verified principal.
 - [x] First verified login safely creates/links the internal DDD User. Supabase `sub` is the binding key; repeated logins are idempotent, verified email changes stay on the same subject, different-subject email collisions are refused, administrative restrictions are not silently reset, and CI proves exactly one durable User row in real PostgreSQL.
-- [ ] Anonymous requests remain browse-only.
+- [x] Anonymous requests remain browse-only. Anonymous public health remains available, private identity returns `401`, missing credentials take precedence over auth-service configuration errors, and CI rejects any future `/api/v1` POST/PUT/PATCH/DELETE route that lacks verified Supabase authentication in its dependency chain.
 - [ ] Invalid/expired token tests.
 - [ ] Account-status enforcement tests.
 
