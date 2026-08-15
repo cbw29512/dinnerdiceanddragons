@@ -16,7 +16,7 @@ def test_alembic_configuration_discovers_current_head() -> None:
     script = ScriptDirectory.from_config(config)
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == ["0004_player_profile"]
+    assert script.get_heads() == ["0005_gm_profile"]
 
 
 def test_alembic_offline_upgrade_emits_current_foundation_tables_without_database() -> None:
@@ -50,3 +50,7 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert "uq_player_profiles_user_id" in result.stdout
     assert "ck_player_profiles_travel_radius_miles" in result.stdout
     assert "ck_player_profiles_preferred_format" in result.stdout
+    assert "CREATE TABLE gm_profiles" in result.stdout
+    assert "uq_gm_profiles_user_id" in result.stdout
+    assert "ck_gm_profiles_travel_radius_miles" in result.stdout
+    assert "ck_gm_profiles_gm_style_length" in result.stdout
