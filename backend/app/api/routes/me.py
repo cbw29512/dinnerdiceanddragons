@@ -1,20 +1,13 @@
 """Authenticated caller identity route."""
 
-from collections.abc import Mapping
-from typing import Annotated, Any
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
 
-from app.api.dependencies.auth import get_verified_supabase_claims
-from app.db.session import get_db_session
-from app.identity.user_linking import (
-    IdentityClaimsError,
-    IdentityLinkConflict,
-    get_or_create_verified_user,
-)
+from app.api.dependencies.current_user import get_current_user
+from app.models.user import User
 
 router = APIRouter(tags=["identity"])
 
@@ -36,24 +29,9 @@ class CurrentUser(BaseModel):
     summary="Get the authenticated caller",
 )
 def get_me(
-    claims: Annotated[Mapping[str, Any], Depends(get_verified_supabase_claims)],
-    session: Annotated[Session, Depends(get_db_session)],
+    user: Annotated[User, Depends(get_current_user)],
 ) -> CurrentUser:
-    """Return the caller's durable DDD identity after safe provider linking."""
-
-    try:
-        user = get_or_create_verified_user(session, claims)
-    except IdentityClaimsError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authenticated identity is incomplete.",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from exc
-    except IdentityLinkConflict as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="This sign-in could not be safely linked to a DDD account.",
-        ) from exc
+    """Return the caller's durable DDD identity, including account status."""
 
     return CurrentUser(
         ddd_user_id=user.id,
