@@ -26,6 +26,19 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e "./backend[dev]"
 
+      - name: Compile production API Python
+        run: python -m compileall -q backend/app backend/tests backend/alembic/env.py
+
+      - name: Lint production API with Ruff
+        run: ruff check backend
+
+      - name: Check production API formatting with Ruff
+        run: ruff format --check backend
+
+      - name: Validate Alembic revision tree
+        working-directory: backend
+        run: alembic -c alembic.ini heads
+
       - name: Test production API foundation
         run: pytest backend/tests
 
@@ -70,7 +83,14 @@ jobs:
         run: docker compose config --quiet
 
       - name: Build and start development stack
-        run: docker compose up --build --detach
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! docker compose up --build --detach; then
+            docker compose ps --all || true
+            docker compose logs api db || true
+            exit 1
+          fi
 
       - name: Wait for API container health
         shell: bash
