@@ -92,8 +92,8 @@ See `docs/DECISIONS.md`, Decision 016.
 ### 1C. Authentication — **IN PROGRESS**
 - [x] Configure Supabase development project/local environment. Local Auth configuration and pinned CLI startup are CI-verified.
 - [x] Require verified email before active participation. CI proves an unverified signup receives no authenticated session/token and password sign-in is rejected until confirmation.
-- [ ] Implement JWT verification against Supabase JWKS in FastAPI.
-- [ ] Validate issuer, audience/project, signature, and expiration.
+- [x] Implement JWT verification against Supabase JWKS in FastAPI. DDD accepts asymmetric `ES256`, `RS256`, or `EdDSA` user tokens and CI verifies a real confirmed local Supabase token through the live JWKS endpoint.
+- [x] Validate issuer, audience/project, signature, and expiration. Unit tests reject wrong signatures, wrong project issuers, wrong audiences, expired/missing expiration claims, and legacy `HS256` tokens.
 - [ ] Add authenticated `GET /api/v1/me` endpoint.
 - [ ] First verified login safely creates/links the internal DDD User.
 - [ ] Anonymous requests remain browse-only.
