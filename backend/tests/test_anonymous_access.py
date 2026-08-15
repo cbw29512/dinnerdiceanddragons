@@ -3,7 +3,10 @@
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
-from app.api.dependencies.auth import get_verified_supabase_claims
+from app.api.dependencies.auth import (
+    get_supabase_jwt_verifier,
+    get_verified_supabase_claims,
+)
 from app.main import create_app
 
 MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
@@ -39,7 +42,9 @@ def test_every_mutating_production_api_route_requires_verified_authentication() 
 
 
 def test_anonymous_request_can_reach_public_health_but_not_private_identity() -> None:
-    client = TestClient(create_app())
+    application = create_app()
+    application.dependency_overrides[get_supabase_jwt_verifier] = lambda: None
+    client = TestClient(application)
 
     health = client.get("/api/v1/health")
     identity = client.get("/api/v1/me")
@@ -47,3 +52,18 @@ def test_anonymous_request_can_reach_public_health_but_not_private_identity() ->
     assert health.status_code == 200
     assert identity.status_code == 401
     assert identity.headers["www-authenticate"] == "Bearer"
+    assert identity.json() == {"detail": "Authentication required."}
+
+
+def test_bearer_request_reports_unconfigured_auth_service_after_credentials_check() -> None:
+    application = create_app()
+    application.dependency_overrides[get_supabase_jwt_verifier] = lambda: None
+    client = TestClient(application)
+
+    response = client.get(
+        "/api/v1/me",
+        headers={"Authorization": "Bearer supplied-but-unverifiable"},
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Authentication service is not configured."}
