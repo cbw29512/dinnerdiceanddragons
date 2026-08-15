@@ -11,15 +11,15 @@ BACKEND_DIR = Path(__file__).resolve().parents[1]
 ALEMBIC_INI = BACKEND_DIR / "alembic.ini"
 
 
-def test_alembic_configuration_discovers_identity_revision() -> None:
+def test_alembic_configuration_discovers_current_head() -> None:
     config = Config(str(ALEMBIC_INI))
     script = ScriptDirectory.from_config(config)
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == ["0002_create_user_roles"]
+    assert script.get_heads() == ["0003_create_privileged_audit_events"]
 
 
-def test_alembic_offline_upgrade_emits_identity_tables_without_database() -> None:
+def test_alembic_offline_upgrade_emits_identity_and_audit_tables_without_database() -> None:
     result = subprocess.run(
         [
             sys.executable,
@@ -43,3 +43,6 @@ def test_alembic_offline_upgrade_emits_identity_tables_without_database() -> Non
     assert "auth_provider_user_id" in result.stdout
     assert "CREATE TABLE user_roles" in result.stdout
     assert "PRIMARY KEY (user_id, role)" in result.stdout
+    assert "CREATE TABLE privileged_audit_events" in result.stdout
+    assert "privileged_audit_events_append_only" in result.stdout
+    assert "deny_privileged_audit_event_mutation" in result.stdout
