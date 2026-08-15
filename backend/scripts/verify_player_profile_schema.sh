@@ -63,7 +63,7 @@ WHERE id = '00000000-0000-0000-0000-000000000120';
 SQL
 
 environment_contract="$(psql_scalar "SELECT environment_preferences::text FROM player_profiles WHERE id='00000000-0000-0000-0000-000000000120'")"
-test "$environment_contract" = '["quieter_venue", "well_lit"]'
+test "$environment_contract" = '["quieter_venue","well_lit"]'
 
 if docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd <<'SQL'
 INSERT INTO player_profiles (id, user_id, postal_code, travel_radius_miles)
