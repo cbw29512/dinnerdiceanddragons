@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Prove that the production verifier accepts a real confirmed Supabase user token
-# by fetching the local Auth server's asymmetric JWKS. No signing secret is
-# supplied to the application verifier.
+# Prove that the production verifier and `/api/v1/me` accept a real confirmed
+# Supabase user token by fetching the local Auth server's asymmetric JWKS. No
+# signing secret is supplied to the application verifier.
 
 eval "$(npx --yes supabase@2.110.0 status -o env)"
 
@@ -64,7 +64,10 @@ python - <<'PY'
 import os
 from pathlib import Path
 
+from fastapi.testclient import TestClient
+
 from app.auth.supabase_jwt import SupabaseJWTVerifier
+from app.main import create_app
 
 token = Path(os.environ["TOKEN_FILE"]).read_text()
 claims = SupabaseJWTVerifier().verify(token)
@@ -74,4 +77,17 @@ assert claims["aud"] == "authenticated", claims
 assert claims["role"] == "authenticated", claims
 assert claims["sub"], claims
 print("DDD verified a real Supabase user token through the live JWKS endpoint.")
+
+response = TestClient(create_app()).get(
+    "/api/v1/me",
+    headers={"Authorization": f"Bearer {token}"},
+)
+assert response.status_code == 200, response.text
+principal = response.json()
+assert principal == {
+    "auth_provider": "supabase",
+    "auth_provider_user_id": claims["sub"],
+    "email": os.environ["EXPECTED_EMAIL"],
+}, principal
+print("DDD /api/v1/me accepted the real verified Supabase user token.")
 PY
