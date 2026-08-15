@@ -20,7 +20,13 @@ bearer_scheme = HTTPBearer(auto_error=False)
 def get_supabase_jwt_verifier() -> SupabaseJWTVerifier:
     """Return the process-level verifier without constructing it at import time."""
 
-    return SupabaseJWTVerifier()
+    try:
+        return SupabaseJWTVerifier()
+    except AuthenticationConfigurationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Authentication service is not configured.",
+        ) from exc
 
 
 def get_verified_supabase_claims(
@@ -46,9 +52,4 @@ def get_verified_supabase_claims(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired access token.",
             headers={"WWW-Authenticate": "Bearer"},
-        ) from exc
-    except AuthenticationConfigurationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Authentication service is not configured.",
         ) from exc
