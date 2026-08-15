@@ -103,7 +103,7 @@ See `docs/DECISIONS.md`, Decision 016.
 ### 1D. Authorization — **IN PROGRESS**
 - [x] Server-side role dependencies for Player, DM, Venue Manager, Moderator, Admin. Each dependency requires an active DDD account and checks the durable `user_roles` table; multi-role accounts are supported and no implicit role inheritance is assumed.
 - [x] Never trust client-supplied role/user IDs for authorization. Attack tests prove forged request-body user IDs/roles and forged provider/user metadata role claims cannot grant DDD permissions; authorization is derived only from the verified caller's durable DDD identity and server-side `user_roles` rows.
-- [ ] Resource ownership helpers for profiles, games, registrations, venue operations, and messages.
+- [x] Resource ownership helpers for profiles, games, registrations, venue operations, and messages. Reusable helpers enforce server-loaded ownership facts for profile `user_id`, GM-owned game/event identity, Player-owned registration identity, VenueManager identity, and message `sender_user_id`; same-owner access passes and cross-user access is rejected. Venue verification and Game Hub membership remain separate later checks rather than being overclaimed here.
 - [ ] Venue Manager operational permissions require verified venue relationship.
 - [ ] Privileged moderation/admin actions are auditable.
 - [ ] Authorization-negative tests prove cross-user access is rejected.
