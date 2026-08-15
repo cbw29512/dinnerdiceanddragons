@@ -200,6 +200,9 @@ jobs:
           print('Local Supabase Auth health/config verification passed.')
           PY
 
+      - name: Prove unverified email cannot authenticate
+        run: bash backend/scripts/verify_supabase_email_confirmation.sh
+
       - name: Stop and reset local Supabase Auth
         if: always()
         run: npx --yes supabase@2.110.0 stop --no-backup || true
