@@ -140,7 +140,10 @@ def test_same_user_can_hold_player_and_gm_profiles() -> None:
         session.add_all([player_profile, gm_profile])
         session.commit()
 
-        assert session.scalar(select(PlayerProfile).where(PlayerProfile.user_id == user.id)) is not None
+        assert (
+            session.scalar(select(PlayerProfile).where(PlayerProfile.user_id == user.id))
+            is not None
+        )
         stored_gm = session.scalar(select(GMProfile).where(GMProfile.user_id == user.id))
         assert stored_gm is not None
         assert stored_gm.beginner_friendly is True
