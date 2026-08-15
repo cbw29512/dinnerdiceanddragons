@@ -67,7 +67,7 @@ See `docs/DECISIONS.md`, Decision 016.
 
 # Production execution ladder
 
-## STEP 1 — Identity, authentication, and backend foundation — **IN PROGRESS**
+## STEP 1 — Identity, authentication, and backend foundation — **COMPLETE**
 
 ### 1A. Architecture and tracking — **COMPLETE**
 - [x] Select production authentication provider.
@@ -100,15 +100,15 @@ See `docs/DECISIONS.md`, Decision 016.
 - [x] Invalid/expired token tests. Cryptographic verifier tests reject wrong signatures, issuer, audience, expired/missing-expiration and legacy signing; HTTP tests prove invalid and expired Bearer credentials return controlled `401` responses with `WWW-Authenticate: Bearer` and never echo token contents.
 - [x] Account-status enforcement tests. Verified pending accounts safely become active; restricted, suspended, and banned accounts remain authenticated for self-service `/me` visibility but reusable `require_active_user` policy rejects participation with `403`; future production mutations are CI-guarded to require that active-account policy.
 
-### 1D. Authorization — **IN PROGRESS**
+### 1D. Authorization — **COMPLETE**
 - [x] Server-side role dependencies for Player, DM, Venue Manager, Moderator, Admin. Each dependency requires an active DDD account and checks the durable `user_roles` table; multi-role accounts are supported and no implicit role inheritance is assumed.
 - [x] Never trust client-supplied role/user IDs for authorization. Attack tests prove forged request-body user IDs/roles and forged provider/user metadata role claims cannot grant DDD permissions; authorization is derived only from the verified caller's durable DDD identity and server-side `user_roles` rows.
 - [x] Resource ownership helpers for profiles, games, registrations, venue operations, and messages. Reusable helpers enforce server-loaded ownership facts for profile `user_id`, GM-owned game/event identity, Player-owned registration identity, VenueManager identity, and message `sender_user_id`; same-owner access passes and cross-user access is rejected. Venue verification and Game Hub membership remain separate later checks rather than being overclaimed here.
 - [x] Venue Manager operational permissions require verified venue relationship. The policy requires a server-loaded VenueManager relationship matching both the authenticated DDD user and the exact target venue, with non-null `verified_at`; another user's relationship, an unverified relationship, or verification for a different venue is rejected. Venue/VenueManager persistence remains correctly scheduled for Step 2.
 - [x] Privileged moderation/admin actions are auditable. Durable `privileged_audit_events` record actor, verified Moderator/Admin role, action, target identifiers, outcome, reason code, and timestamp without raw sensitive payloads. The recorder re-validates active server-side privilege, PostgreSQL prevents UPDATE/DELETE through an append-only trigger, actor deletion is restricted while evidence exists, and CI proves the migration and immutability contract against real PostgreSQL.
-- [ ] Authorization-negative tests prove cross-user access is rejected.
+- [x] Authorization-negative tests prove cross-user access is rejected. Integrated two-user tests prove distinct active DDD users cannot borrow each other's durable roles, profile/game/registration/message/venue ownership, or verified Venue Manager relationship. CI additionally creates two real confirmed Supabase users, obtains separate JWTs, calls the live `/api/v1/me` endpoint for both, maps them to distinct DDD IDs, assigns Alice Player + DM and Bob Venue Manager roles in real PostgreSQL, and proves cross-user protected actions are rejected.
 
-**Step 1 Definition of Done:** two different real authenticated users can access `/me`, hold different/multiple DDD roles, and server-side tests prove they cannot perform each other's protected actions. Anonymous browsing still works.
+**Step 1 Definition of Done: MET.** Two different real authenticated users can access `/me`, hold different/multiple DDD roles, and server-side tests prove they cannot perform each other's protected actions. Anonymous browsing still works.
 
 ## STEP 2 — Production profiles and structured availability — NOT STARTED
 
