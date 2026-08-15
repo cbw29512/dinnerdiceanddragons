@@ -131,6 +131,9 @@ jobs:
       - name: Verify durable identity constraints in PostgreSQL
         run: bash backend/scripts/verify_identity_schema.sh
 
+      - name: Verify PlayerProfile persistence in PostgreSQL
+        run: bash backend/scripts/verify_player_profile_schema.sh
+
       - name: Verify privileged audit immutability in PostgreSQL
         run: bash backend/scripts/verify_privileged_audit_schema.sh
 
