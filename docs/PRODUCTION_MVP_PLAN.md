@@ -94,7 +94,7 @@ See `docs/DECISIONS.md`, Decision 016.
 - [x] Require verified email before active participation. CI proves an unverified signup receives no authenticated session/token and password sign-in is rejected until confirmation.
 - [x] Implement JWT verification against Supabase JWKS in FastAPI. DDD accepts asymmetric `ES256`, `RS256`, or `EdDSA` user tokens and CI verifies a real confirmed local Supabase token through the live JWKS endpoint.
 - [x] Validate issuer, audience/project, signature, and expiration. Unit tests reject wrong signatures, wrong project issuers, wrong audiences, expired/missing expiration claims, and legacy `HS256` tokens.
-- [ ] Add authenticated `GET /api/v1/me` endpoint.
+- [x] Add authenticated `GET /api/v1/me` endpoint. CI boots the real FastAPI/Uvicorn application and proves a confirmed Supabase bearer token reaches `/me` over HTTP and returns only the safe verified principal.
 - [ ] First verified login safely creates/links the internal DDD User.
 - [ ] Anonymous requests remain browse-only.
 - [ ] Invalid/expired token tests.
