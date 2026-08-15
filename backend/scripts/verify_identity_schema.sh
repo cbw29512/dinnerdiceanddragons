@@ -6,7 +6,7 @@ psql_scalar() {
 }
 
 revision="$(psql_scalar 'SELECT version_num FROM alembic_version')"
-test "$revision" = "0001_create_users"
+test "$revision" = "0002_create_user_roles"
 
 id_type="$(psql_scalar "SELECT data_type FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='id'")"
 test "$id_type" = "uuid"
@@ -19,6 +19,12 @@ test "$auth_subject_unique_count" = "1"
 
 display_name_unique_count="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.users'::regclass AND contype='u' AND conname='uq_users_display_name_normalized'")"
 test "$display_name_unique_count" = "1"
+
+user_roles_primary_key_count="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.user_roles'::regclass AND contype='p' AND conname='pk_user_roles'")"
+test "$user_roles_primary_key_count" = "1"
+
+user_roles_check_count="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.user_roles'::regclass AND contype='c' AND conname='ck_user_roles_role'")"
+test "$user_roles_check_count" = "1"
 
 docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd <<'SQL'
 INSERT INTO users (id, auth_provider_user_id, email)
@@ -85,5 +91,34 @@ fi
 
 display_name_rows="$(psql_scalar "SELECT COUNT(*) FROM users WHERE display_name_normalized='chris'")"
 test "$display_name_rows" = "1"
+
+docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd <<'SQL'
+INSERT INTO user_roles (user_id, role)
+VALUES
+  ('00000000-0000-0000-0000-000000000001', 'player'),
+  ('00000000-0000-0000-0000-000000000001', 'gm'),
+  ('00000000-0000-0000-0000-000000000001', 'venue_manager');
+SQL
+
+multi_role_count="$(psql_scalar "SELECT COUNT(*) FROM user_roles WHERE user_id='00000000-0000-0000-0000-000000000001'")"
+test "$multi_role_count" = "3"
+
+if docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd <<'SQL'
+INSERT INTO user_roles (user_id, role)
+VALUES ('00000000-0000-0000-0000-000000000001', 'player');
+SQL
+then
+  echo "ERROR: duplicate user role was accepted" >&2
+  exit 1
+fi
+
+if docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd <<'SQL'
+INSERT INTO user_roles (user_id, role)
+VALUES ('00000000-0000-0000-0000-000000000001', 'superuser');
+SQL
+then
+  echo "ERROR: invalid user role was accepted" >&2
+  exit 1
+fi
 
 echo "Identity schema verification passed."
