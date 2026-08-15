@@ -122,6 +122,22 @@ jobs:
           echo "API did not become healthy in the expected window."
           exit 1
 
+      - name: Apply production database migrations
+        run: docker compose exec -T api alembic -c alembic.ini upgrade head
+
+      - name: Verify durable users table in PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          revision="$(docker compose exec -T db psql -U ddd -d ddd -tAc 'SELECT version_num FROM alembic_version')"
+          test "$revision" = "0001_create_users"
+
+          id_type="$(docker compose exec -T db psql -U ddd -d ddd -tAc "SELECT data_type FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='id'")"
+          test "$id_type" = "uuid"
+
+          primary_key_count="$(docker compose exec -T db psql -U ddd -d ddd -tAc "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.users'::regclass AND contype='p'")"
+          test "$primary_key_count" = "1"
+
       - name: Verify HTTP health endpoint
         run: |
           curl --fail --silent --show-error http://127.0.0.1:8000/api/v1/health \
