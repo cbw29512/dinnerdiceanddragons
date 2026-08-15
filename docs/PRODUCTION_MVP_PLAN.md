@@ -95,7 +95,7 @@ See `docs/DECISIONS.md`, Decision 016.
 - [x] Implement JWT verification against Supabase JWKS in FastAPI. DDD accepts asymmetric `ES256`, `RS256`, or `EdDSA` user tokens and CI verifies a real confirmed local Supabase token through the live JWKS endpoint.
 - [x] Validate issuer, audience/project, signature, and expiration. Unit tests reject wrong signatures, wrong project issuers, wrong audiences, expired/missing expiration claims, and legacy `HS256` tokens.
 - [x] Add authenticated `GET /api/v1/me` endpoint. CI boots the real FastAPI/Uvicorn application and proves a confirmed Supabase bearer token reaches `/me` over HTTP and returns only the safe verified principal.
-- [ ] First verified login safely creates/links the internal DDD User.
+- [x] First verified login safely creates/links the internal DDD User. Supabase `sub` is the binding key; repeated logins are idempotent, verified email changes stay on the same subject, different-subject email collisions are refused, administrative restrictions are not silently reset, and CI proves exactly one durable User row in real PostgreSQL.
 - [ ] Anonymous requests remain browse-only.
 - [ ] Invalid/expired token tests.
 - [ ] Account-status enforcement tests.
