@@ -26,6 +26,15 @@ test "$users_status_check_count" = "1"
 status_default_count="$(psql_scalar "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='status' AND column_default LIKE '%pending_verification%'")"
 test "$status_default_count" = "1"
 
+created_at_contract="$(psql_scalar "SELECT data_type || ':' || is_nullable || ':' || CASE WHEN column_default IS NULL THEN 'no-default' ELSE 'default' END FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='created_at'")"
+test "$created_at_contract" = "timestampwithtimezone:NO:default"
+
+updated_at_contract="$(psql_scalar "SELECT data_type || ':' || is_nullable || ':' || CASE WHEN column_default IS NULL THEN 'no-default' ELSE 'default' END FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='updated_at'")"
+test "$updated_at_contract" = "timestampwithtimezone:NO:default"
+
+last_login_at_contract="$(psql_scalar "SELECT data_type || ':' || is_nullable || ':' || CASE WHEN column_default IS NULL THEN 'no-default' ELSE 'default' END FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='last_login_at'")"
+test "$last_login_at_contract" = "timestampwithtimezone:YES:no-default"
+
 user_roles_primary_key_count="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.user_roles'::regclass AND contype='p' AND conname='pk_user_roles'")"
 test "$user_roles_primary_key_count" = "1"
 
@@ -43,6 +52,23 @@ SQL
 
 initial_status="$(psql_scalar "SELECT status FROM users WHERE id='00000000-0000-0000-0000-000000000001'")"
 test "$initial_status" = "pending_verification"
+
+created_at_present="$(psql_scalar "SELECT COUNT(*) FROM users WHERE id='00000000-0000-0000-0000-000000000001' AND created_at IS NOT NULL")"
+test "$created_at_present" = "1"
+
+updated_at_present="$(psql_scalar "SELECT COUNT(*) FROM users WHERE id='00000000-0000-0000-0000-000000000001' AND updated_at IS NOT NULL")"
+test "$updated_at_present" = "1"
+
+last_login_initially_null="$(psql_scalar "SELECT COUNT(*) FROM users WHERE id='00000000-0000-0000-0000-000000000001' AND last_login_at IS NULL")"
+test "$last_login_initially_null" = "1"
+
+docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd <<'SQL'
+UPDATE users SET last_login_at = CURRENT_TIMESTAMP
+WHERE id = '00000000-0000-0000-0000-000000000001';
+SQL
+
+last_login_present="$(psql_scalar "SELECT COUNT(*) FROM users WHERE id='00000000-0000-0000-0000-000000000001' AND last_login_at IS NOT NULL")"
+test "$last_login_present" = "1"
 
 if docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd <<'SQL'
 INSERT INTO users (id, auth_provider_user_id, email)
