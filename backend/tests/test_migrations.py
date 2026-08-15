@@ -1,12 +1,11 @@
 """Alembic infrastructure tests that do not require a live PostgreSQL server."""
 
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 
 from alembic.config import Config
 from alembic.script import ScriptDirectory
-
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 ALEMBIC_INI = BACKEND_DIR / "alembic.ini"
