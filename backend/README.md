@@ -6,23 +6,28 @@ This directory is the production FastAPI backend. It is intentionally separate f
 
 Implemented:
 
-- FastAPI application factory.
-- Versioned `/api/v1` route namespace.
+- FastAPI application factory and versioned `/api/v1` route namespace.
 - Dependency-free `GET /api/v1/health` liveness endpoint.
 - Typed environment/settings model with secret redaction.
 - SQLAlchemy + Psycopg PostgreSQL engine/session layer.
 - Alembic migration infrastructure.
-- Docker image for the FastAPI service.
-- Docker Compose development stack with PostgreSQL 18 + API health checks.
-- CI smoke test that builds the stack, waits for healthy containers, and verifies the HTTP health endpoint.
-- Automated backend tests in the repository quality workflow.
+- Durable `users` and `user_roles` identity schema with stable DDD IDs.
+- Unique normalized display-name policy, account statuses, and multi-role identity support.
+- Docker image and Docker Compose development stack with PostgreSQL + health checks.
+- Local Supabase Auth development configuration with email confirmation required.
+- CI proof that unverified email cannot obtain an authenticated session.
+- Supabase JWT verification through asymmetric JWKS only (`ES256`, `RS256`, `EdDSA`).
+- JWT validation for signature, project issuer, audience, expiration, and required subject.
+- CI proof using a real confirmed local Supabase user token and the live local JWKS endpoint.
+- Automated backend lint, formatting, unit, migration, Docker, and Auth smoke tests.
 
 Not implemented yet:
 
-- first production identity migration (`users` / `user_roles`)
-- Supabase JWT authentication
-- DDD User/UserRole application models
-- production domain APIs
+- authenticated `GET /api/v1/me`
+- first-login creation/linking of the internal DDD User
+- account-status enforcement on authenticated requests
+- DDD role/resource authorization dependencies
+- production profile, matching, game, booking, registration, calendar, and Game Hub APIs
 
 The authoritative implementation order is `../docs/PRODUCTION_MVP_PLAN.md`.
 
@@ -80,6 +85,8 @@ cd backend
 alembic -c alembic.ini heads
 alembic -c alembic.ini upgrade head --sql
 ```
+
+The repository CI additionally boots local Supabase Auth and verifies a real confirmed user JWT through `/.well-known/jwks.json`.
 
 ## Architecture rule
 
