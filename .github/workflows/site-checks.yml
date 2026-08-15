@@ -131,6 +131,9 @@ jobs:
       - name: Verify durable identity constraints in PostgreSQL
         run: bash backend/scripts/verify_identity_schema.sh
 
+      - name: Verify privileged audit immutability in PostgreSQL
+        run: bash backend/scripts/verify_privileged_audit_schema.sh
+
       - name: Verify HTTP health endpoint
         run: |
           curl --fail --silent --show-error http://127.0.0.1:8000/api/v1/health \
