@@ -16,10 +16,10 @@ def test_alembic_configuration_discovers_identity_revision() -> None:
     script = ScriptDirectory.from_config(config)
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == ["0001_create_users"]
+    assert script.get_heads() == ["0002_create_user_roles"]
 
 
-def test_alembic_offline_upgrade_emits_users_table_without_database() -> None:
+def test_alembic_offline_upgrade_emits_identity_tables_without_database() -> None:
     result = subprocess.run(
         [
             sys.executable,
@@ -41,3 +41,5 @@ def test_alembic_offline_upgrade_emits_users_table_without_database() -> None:
     assert "CREATE TABLE users" in result.stdout
     assert "PRIMARY KEY (id)" in result.stdout
     assert "auth_provider_user_id" in result.stdout
+    assert "CREATE TABLE user_roles" in result.stdout
+    assert "PRIMARY KEY (user_id, role)" in result.stdout
