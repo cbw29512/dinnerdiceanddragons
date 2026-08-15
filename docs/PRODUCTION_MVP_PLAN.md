@@ -113,7 +113,7 @@ See `docs/DECISIONS.md`, Decision 016.
 ## STEP 2 — Production profiles and structured availability — **IN PROGRESS**
 
 - [x] PlayerProfile persistence. One private PlayerProfile per durable DDD user persists bio, ZIP/postal code, travel radius, preferred format, willingness to learn new systems, structured environment preferences, and private accessibility notes. PostgreSQL enforces one-profile-per-user ownership, 5-character postal codes, 1–100 mile travel radius, canonical format values, defaults/JSON storage, and cascading profile cleanup when the owning User is deleted.
-- [ ] GMProfile persistence.
+- [x] GMProfile persistence. One private GMProfile per durable DDD user persists bio, ZIP/postal code, DM travel radius, beginner-friendly status, and required DM style. PostgreSQL enforces one-GM-profile-per-user ownership, 5-character postal codes, 1–100 mile travel radius, nonblank bounded DM-style text, defaults, and cascading cleanup. Tests explicitly prove one human may hold both PlayerProfile and GMProfile simultaneously with different role-specific travel preferences.
 - [ ] Venue / VenueManager persistence.
 - [ ] GameSystem catalog.
 - [ ] PlayerSystemExperience persistence.
