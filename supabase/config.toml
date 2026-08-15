@@ -31,7 +31,8 @@ otp_expiry = 3600
 [inbucket]
 enabled = true
 port = 54324
-smtp_port = 54325
-pop3_port = 54326
+# External SMTP/POP3 host ports are intentionally not exposed. Supabase Auth
+# reaches the local mail-capture service internally; DDD tests only need the
+# web UI port if captured email inspection is required.
 admin_email = "admin@dinnerdiceanddragons.local"
 sender_name = "Dinner, Dice & Dragons"
