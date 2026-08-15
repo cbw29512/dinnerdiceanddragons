@@ -27,9 +27,7 @@ class Settings(BaseSettings):
 
     app_env: EnvironmentName = "local"
     log_level: LogLevel = "INFO"
-    database_url: SecretStr = SecretStr(
-        "postgresql+psycopg://ddd:ddd@localhost:5432/ddd"
-    )
+    database_url: SecretStr = SecretStr("postgresql+psycopg://ddd:ddd@localhost:5432/ddd")
     supabase_url: AnyHttpUrl | None = None
     supabase_jwt_audience: str = "authenticated"
 
