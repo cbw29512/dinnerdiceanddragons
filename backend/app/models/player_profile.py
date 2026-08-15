@@ -4,11 +4,11 @@ from enum import StrEnum
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     CheckConstraint,
     ForeignKey,
     Integer,
-    JSON,
     String,
     Text,
     UniqueConstraint,
