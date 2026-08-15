@@ -86,7 +86,7 @@ See `docs/DECISIONS.md`, Decision 016.
 - [x] Create normalized unique display-name policy and reserved-name list.
 - [x] Create `user_roles` table supporting Player + DM + Venue Manager on one account.
 - [x] Add account statuses: pending verification / active / restricted / suspended / banned.
-- [ ] Add created/updated/last-login timestamps.
+- [x] Add created/updated/last-login timestamps.
 - [ ] Migration tests prove uniqueness and multi-role behavior.
 
 ### 1C. Authentication
