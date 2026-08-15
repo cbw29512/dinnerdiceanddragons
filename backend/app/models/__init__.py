@@ -10,6 +10,7 @@ from app.models.player_profile import PlayerProfile, PreferredGameFormat
 from app.models.privileged_audit_event import PrivilegedAuditEvent
 from app.models.user import AccountStatus, User
 from app.models.user_role import UserRole, UserRoleType
+from app.models.venue import Venue, VenueManager, VenueManagerRole, VenueType
 
 metadata = Base.metadata
 
@@ -22,5 +23,9 @@ __all__ = [
     "User",
     "UserRole",
     "UserRoleType",
+    "Venue",
+    "VenueManager",
+    "VenueManagerRole",
+    "VenueType",
     "metadata",
 ]
