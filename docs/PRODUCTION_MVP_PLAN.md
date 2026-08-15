@@ -104,7 +104,7 @@ See `docs/DECISIONS.md`, Decision 016.
 - [x] Server-side role dependencies for Player, DM, Venue Manager, Moderator, Admin. Each dependency requires an active DDD account and checks the durable `user_roles` table; multi-role accounts are supported and no implicit role inheritance is assumed.
 - [x] Never trust client-supplied role/user IDs for authorization. Attack tests prove forged request-body user IDs/roles and forged provider/user metadata role claims cannot grant DDD permissions; authorization is derived only from the verified caller's durable DDD identity and server-side `user_roles` rows.
 - [x] Resource ownership helpers for profiles, games, registrations, venue operations, and messages. Reusable helpers enforce server-loaded ownership facts for profile `user_id`, GM-owned game/event identity, Player-owned registration identity, VenueManager identity, and message `sender_user_id`; same-owner access passes and cross-user access is rejected. Venue verification and Game Hub membership remain separate later checks rather than being overclaimed here.
-- [ ] Venue Manager operational permissions require verified venue relationship.
+- [x] Venue Manager operational permissions require verified venue relationship. The policy requires a server-loaded VenueManager relationship matching both the authenticated DDD user and the exact target venue, with non-null `verified_at`; another user's relationship, an unverified relationship, or verification for a different venue is rejected. Venue/VenueManager persistence remains correctly scheduled for Step 2.
 - [ ] Privileged moderation/admin actions are auditable.
 - [ ] Authorization-negative tests prove cross-user access is rejected.
 
