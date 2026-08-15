@@ -82,7 +82,7 @@ See `docs/DECISIONS.md`, Decision 016.
 
 ### 1B. Durable identity schema — **IN PROGRESS**
 - [x] Create `users` table with immutable internal DDD ID.
-- [ ] Store Supabase Auth subject as `auth_provider_user_id` with uniqueness constraint.
+- [x] Store Supabase Auth subject as `auth_provider_user_id` with uniqueness constraint.
 - [ ] Create normalized unique display-name policy and reserved-name list.
 - [ ] Create `user_roles` table supporting Player + DM + Venue Manager on one account.
 - [ ] Add account statuses: pending verification / active / restricted / suspended / banned.
