@@ -70,6 +70,7 @@ def make_client(
     application = FastAPI()
 
     for path, _role, dependency in ROLE_CASES:
+
         def make_endpoint(role_dependency: RoleDependency):
             def endpoint(
                 authorized_user: Annotated[User, Depends(role_dependency)],
@@ -126,9 +127,7 @@ def test_missing_database_role_is_forbidden(
     response = client.get(f"/{path}")
 
     assert response.status_code == 403
-    assert response.json() == {
-        "detail": "This account does not have permission for this action."
-    }
+    assert response.json() == {"detail": "This account does not have permission for this action."}
 
 
 def test_one_user_can_hold_multiple_independent_roles() -> None:
