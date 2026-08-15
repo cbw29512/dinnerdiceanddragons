@@ -6,7 +6,9 @@ psql_scalar() {
 }
 
 revision="$(psql_scalar 'SELECT version_num FROM alembic_version')"
-test "$revision" = "0003_priv_audit"
+expected_revision="$(docker compose exec -T api alembic -c alembic.ini heads | awk '{print $1}')"
+test -n "$expected_revision"
+test "$revision" = "$expected_revision"
 
 id_type="$(psql_scalar "SELECT data_type FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='id'")"
 test "$id_type" = "uuid"
