@@ -90,8 +90,8 @@ See `docs/DECISIONS.md`, Decision 016.
 - [x] Migration tests prove uniqueness and multi-role behavior.
 
 ### 1C. Authentication — **IN PROGRESS**
-- [ ] Configure Supabase development project/local environment.
-- [ ] Require verified email before active participation.
+- [x] Configure Supabase development project/local environment. Local Auth configuration and pinned CLI startup are CI-verified.
+- [x] Require verified email before active participation. CI proves an unverified signup receives no authenticated session/token and password sign-in is rejected until confirmation.
 - [ ] Implement JWT verification against Supabase JWKS in FastAPI.
 - [ ] Validate issuer, audience/project, signature, and expiration.
 - [ ] Add authenticated `GET /api/v1/me` endpoint.
