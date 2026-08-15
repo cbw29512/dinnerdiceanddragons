@@ -29,6 +29,9 @@ jobs:
       - name: Compile production API Python
         run: python -m compileall -q backend/app backend/tests backend/alembic/env.py
 
+      - name: Check backend shell-script syntax
+        run: bash -n backend/scripts/*.sh
+
       - name: Lint production API with Ruff
         run: ruff check backend
 
