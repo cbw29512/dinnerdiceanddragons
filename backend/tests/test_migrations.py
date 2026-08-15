@@ -16,10 +16,10 @@ def test_alembic_configuration_discovers_current_head() -> None:
     script = ScriptDirectory.from_config(config)
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == ["0003_priv_audit"]
+    assert script.get_heads() == ["0004_player_profile"]
 
 
-def test_alembic_offline_upgrade_emits_identity_and_audit_tables_without_database() -> None:
+def test_alembic_offline_upgrade_emits_current_foundation_tables_without_database() -> None:
     result = subprocess.run(
         [
             sys.executable,
@@ -46,3 +46,7 @@ def test_alembic_offline_upgrade_emits_identity_and_audit_tables_without_databas
     assert "CREATE TABLE privileged_audit_events" in result.stdout
     assert "privileged_audit_events_append_only" in result.stdout
     assert "deny_privileged_audit_event_mutation" in result.stdout
+    assert "CREATE TABLE player_profiles" in result.stdout
+    assert "uq_player_profiles_user_id" in result.stdout
+    assert "ck_player_profiles_travel_radius_miles" in result.stdout
+    assert "ck_player_profiles_preferred_format" in result.stdout
