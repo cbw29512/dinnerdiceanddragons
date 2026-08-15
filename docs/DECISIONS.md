@@ -150,6 +150,30 @@ Authentication answers **who the user is**. The DDD application database answers
 - Provider/service secrets are server-only and never committed or shipped to the browser.
 - Auth/provider migration must preserve the internal DDD User ID and application relationships.
 
+## Decision 017 — Display names use canonical comparison while preserving chosen presentation
+
+**Status:** Accepted for production identity implementation
+
+A DDD display name is public presentation data, not the user's durable identity or authentication identifier. Display-name changes must never change `User.id` or any ownership/history relationships.
+
+**Policy:**
+
+- User-facing spelling is Unicode-normalized with NFKC and surrounding/repeated whitespace is collapsed before storage.
+- A cleaned display name must contain at least one character and no more than 80 Unicode code points.
+- Non-printable non-whitespace characters are rejected so invisible/control characters cannot be used to create misleading names.
+- `display_name_normalized` is derived from the cleaned name with Unicode `casefold()` and is globally unique in PostgreSQL.
+- Case-only and Unicode compatibility variants therefore cannot claim separate identities.
+- A separate reservation key removes spacing/punctuation from the canonical form for platform-name checks, preventing trivial variants such as `A-d-m-i-n` from bypassing the reserved list.
+- Reserved names are limited to platform/impersonation-sensitive terms such as admin, moderator, support, staff, system, official, and Dinner, Dice & Dragons brand variants. Ordinary RPG names and character names are not broadly reserved.
+- The reserved list is maintained server-side and may be expanded as abuse patterns are observed.
+
+**Consequences:**
+
+- The API must use one shared display-name preparation function for account creation and display-name changes.
+- The database unique constraint on `display_name_normalized` remains the final concurrency-safe uniqueness guarantee.
+- UI availability checks are advisory; a transaction can still lose a race and must surface a useful “name already taken” response.
+- Email addresses and auth-provider IDs are not substitutes for public display names.
+
 ---
 
 ## How to add decisions
