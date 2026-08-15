@@ -110,9 +110,9 @@ See `docs/DECISIONS.md`, Decision 016.
 
 **Step 1 Definition of Done: MET.** Two different real authenticated users can access `/me`, hold different/multiple DDD roles, and server-side tests prove they cannot perform each other's protected actions. Anonymous browsing still works.
 
-## STEP 2 — Production profiles and structured availability — NOT STARTED
+## STEP 2 — Production profiles and structured availability — **IN PROGRESS**
 
-- [ ] PlayerProfile persistence.
+- [x] PlayerProfile persistence. One private PlayerProfile per durable DDD user persists bio, ZIP/postal code, travel radius, preferred format, willingness to learn new systems, structured environment preferences, and private accessibility notes. PostgreSQL enforces one-profile-per-user ownership, 5-character postal codes, 1–100 mile travel radius, canonical format values, defaults/JSON storage, and cascading profile cleanup when the owning User is deleted.
 - [ ] GMProfile persistence.
 - [ ] Venue / VenueManager persistence.
 - [ ] GameSystem catalog.
