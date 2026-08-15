@@ -137,6 +137,9 @@ jobs:
       - name: Verify GMProfile persistence in PostgreSQL
         run: bash backend/scripts/verify_gm_profile_schema.sh
 
+      - name: Verify Venue persistence in PostgreSQL
+        run: bash backend/scripts/verify_venue_schema.sh
+
       - name: Verify privileged audit immutability in PostgreSQL
         run: bash backend/scripts/verify_privileged_audit_schema.sh
 
