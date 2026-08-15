@@ -157,6 +157,14 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install production API auth dependencies
+        run: python -m pip install -e ./backend
+
       - name: Verify pinned Supabase CLI
         run: npx --yes supabase@2.110.0 --version
 
@@ -202,6 +210,9 @@ jobs:
 
       - name: Prove unverified email cannot authenticate
         run: bash backend/scripts/verify_supabase_email_confirmation.sh
+
+      - name: Verify confirmed user token through live Supabase JWKS
+        run: bash backend/scripts/verify_supabase_jwks_token.sh
 
       - name: Stop and reset local Supabase Auth
         if: always()
