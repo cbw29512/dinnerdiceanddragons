@@ -17,16 +17,18 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 
 @lru_cache
-def get_supabase_jwt_verifier() -> SupabaseJWTVerifier:
-    """Return the process-level verifier without constructing it at import time."""
+def get_supabase_jwt_verifier() -> SupabaseJWTVerifier | None:
+    """Return the process-level verifier, or ``None`` when auth is unconfigured."""
 
     try:
         return SupabaseJWTVerifier()
-    except AuthenticationConfigurationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Authentication service is not configured.",
-        ) from exc
+    except AuthenticationConfigurationError:
+        # Do not turn an anonymous request into a 503 merely because the
+        # authenticated service is not configured. The caller's credentials
+        # must be evaluated first so missing Bearer auth consistently returns
+        # 401. A supplied Bearer token with no verifier is handled below as a
+        # genuine service-configuration failure.
+        return None
 
 
 def get_verified_supabase_claims(
@@ -34,7 +36,10 @@ def get_verified_supabase_claims(
         HTTPAuthorizationCredentials | None,
         Security(bearer_scheme),
     ],
-    verifier: Annotated[SupabaseJWTVerifier, Depends(get_supabase_jwt_verifier)],
+    verifier: Annotated[
+        SupabaseJWTVerifier | None,
+        Depends(get_supabase_jwt_verifier),
+    ],
 ) -> Mapping[str, Any]:
     """Require and verify a Supabase user bearer token."""
 
@@ -43,6 +48,12 @@ def get_verified_supabase_claims(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required.",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if verifier is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Authentication service is not configured.",
         )
 
     try:
