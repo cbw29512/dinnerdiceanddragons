@@ -34,10 +34,16 @@ import sys
 from pathlib import Path
 
 payload = json.loads(Path(sys.argv[1]).read_text())
-assert payload.get("user", {}).get("email"), payload
-assert payload.get("access_token") in (None, ""), payload
-assert payload.get("session") in (None, {}), payload
-print("Unverified signup returned no authenticated session.")
+user = payload.get("user") if isinstance(payload.get("user"), dict) else payload
+metadata = user.get("user_metadata") or {}
+
+assert user.get("email"), payload
+assert metadata.get("email_verified") is not True, payload
+assert user.get("confirmation_sent_at"), payload
+assert not payload.get("access_token"), payload
+assert not payload.get("refresh_token"), payload
+assert not payload.get("session"), payload
+print("Unverified signup created a pending user without an authenticated session.")
 PY
 
 signin_status="$(
