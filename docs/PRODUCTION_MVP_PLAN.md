@@ -101,7 +101,7 @@ See `docs/DECISIONS.md`, Decision 016.
 - [x] Account-status enforcement tests. Verified pending accounts safely become active; restricted, suspended, and banned accounts remain authenticated for self-service `/me` visibility but reusable `require_active_user` policy rejects participation with `403`; future production mutations are CI-guarded to require that active-account policy.
 
 ### 1D. Authorization — **IN PROGRESS**
-- [ ] Server-side role dependencies for Player, DM, Venue Manager, Moderator, Admin.
+- [x] Server-side role dependencies for Player, DM, Venue Manager, Moderator, Admin. Each dependency requires an active DDD account and checks the durable `user_roles` table; multi-role accounts are supported and no implicit role inheritance is assumed.
 - [ ] Never trust client-supplied role/user IDs for authorization.
 - [ ] Resource ownership helpers for profiles, games, registrations, venue operations, and messages.
 - [ ] Venue Manager operational permissions require verified venue relationship.
