@@ -143,6 +143,64 @@ jobs:
         if: always()
         run: docker compose down --volumes --remove-orphans
 
+  supabase-auth-smoke:
+    name: Local Supabase Auth development smoke test
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Verify pinned Supabase CLI
+        run: npx --yes supabase@2.110.0 --version
+
+      - name: Start local Supabase Auth stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes supabase@2.110.0 start \
+            -x realtime,storage-api,imgproxy,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      - name: Verify local Supabase Auth health and configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          eval "$(npx --yes supabase@2.110.0 status -o env)"
+          test -n "${ANON_KEY:-}"
+
+          curl --fail --silent --show-error \
+            -H "apikey: ${ANON_KEY}" \
+            http://127.0.0.1:54321/auth/v1/health \
+            > /tmp/supabase-auth-health.json
+
+          curl --fail --silent --show-error \
+            -H "apikey: ${ANON_KEY}" \
+            http://127.0.0.1:54321/auth/v1/settings \
+            > /tmp/supabase-auth-settings.json
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          health = json.loads(Path('/tmp/supabase-auth-health.json').read_text())
+          settings = json.loads(Path('/tmp/supabase-auth-settings.json').read_text())
+
+          assert health.get('name') == 'GoTrue', health
+          assert settings.get('disable_signup') is False, settings
+          assert settings.get('autoconfirm') is False, settings
+          print('Local Supabase Auth health/config verification passed.')
+          PY
+
+      - name: Stop and reset local Supabase Auth
+        if: always()
+        run: npx --yes supabase@2.110.0 stop --no-backup || true
+
   browser-smoke:
     name: Browser, accessibility, reflow, and runtime tests
     needs: validate
