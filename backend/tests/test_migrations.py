@@ -11,15 +11,15 @@ BACKEND_DIR = Path(__file__).resolve().parents[1]
 ALEMBIC_INI = BACKEND_DIR / "alembic.ini"
 
 
-def test_alembic_configuration_discovers_revision_tree() -> None:
+def test_alembic_configuration_discovers_identity_revision() -> None:
     config = Config(str(ALEMBIC_INI))
     script = ScriptDirectory.from_config(config)
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == []
+    assert script.get_heads() == ["0001_create_users"]
 
 
-def test_alembic_offline_upgrade_imports_environment_without_database() -> None:
+def test_alembic_offline_upgrade_emits_users_table_without_database() -> None:
     result = subprocess.run(
         [
             sys.executable,
@@ -38,4 +38,6 @@ def test_alembic_offline_upgrade_imports_environment_without_database() -> None:
     )
 
     assert result.returncode == 0, result.stderr
-    assert "CREATE TABLE alembic_version" not in result.stdout
+    assert "CREATE TABLE users" in result.stdout
+    assert "PRIMARY KEY (id)" in result.stdout
+    assert "auth_provider_user_id" in result.stdout
