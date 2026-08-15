@@ -20,6 +20,12 @@ test "$auth_subject_unique_count" = "1"
 display_name_unique_count="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.users'::regclass AND contype='u' AND conname='uq_users_display_name_normalized'")"
 test "$display_name_unique_count" = "1"
 
+users_status_check_count="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.users'::regclass AND contype='c' AND conname='ck_users_status'")"
+test "$users_status_check_count" = "1"
+
+status_default_count="$(psql_scalar "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='status' AND column_default LIKE '%pending_verification%'")"
+test "$status_default_count" = "1"
+
 user_roles_primary_key_count="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.user_roles'::regclass AND contype='p' AND conname='pk_user_roles'")"
 test "$user_roles_primary_key_count" = "1"
 
@@ -34,6 +40,9 @@ VALUES (
   'identity-one@example.test'
 );
 SQL
+
+initial_status="$(psql_scalar "SELECT status FROM users WHERE id='00000000-0000-0000-0000-000000000001'")"
+test "$initial_status" = "pending_verification"
 
 if docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd <<'SQL'
 INSERT INTO users (id, auth_provider_user_id, email)
@@ -120,5 +129,30 @@ then
   echo "ERROR: invalid user role was accepted" >&2
   exit 1
 fi
+
+docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd <<'SQL'
+UPDATE users SET status = 'active'
+WHERE id = '00000000-0000-0000-0000-000000000001';
+UPDATE users SET status = 'restricted'
+WHERE id = '00000000-0000-0000-0000-000000000001';
+UPDATE users SET status = 'suspended'
+WHERE id = '00000000-0000-0000-0000-000000000001';
+UPDATE users SET status = 'banned'
+WHERE id = '00000000-0000-0000-0000-000000000001';
+UPDATE users SET status = 'pending_verification'
+WHERE id = '00000000-0000-0000-0000-000000000001';
+SQL
+
+if docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd <<'SQL'
+UPDATE users SET status = 'disabled'
+WHERE id = '00000000-0000-0000-0000-000000000001';
+SQL
+then
+  echo "ERROR: invalid account status was accepted" >&2
+  exit 1
+fi
+
+final_status="$(psql_scalar "SELECT status FROM users WHERE id='00000000-0000-0000-0000-000000000001'")"
+test "$final_status" = "pending_verification"
 
 echo "Identity schema verification passed."
