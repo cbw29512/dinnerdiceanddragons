@@ -1,8 +1,8 @@
 """SQLAlchemy engine/session lifecycle for PostgreSQL."""
 
+import logging
 from collections.abc import Generator
 from functools import lru_cache
-import logging
 
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -45,7 +45,7 @@ def get_session_factory() -> sessionmaker[Session]:
     )
 
 
-def get_db_session() -> Generator[Session, None, None]:
+def get_db_session() -> Generator[Session]:
     """FastAPI dependency that safely scopes one database session per request."""
 
     session = get_session_factory()()
