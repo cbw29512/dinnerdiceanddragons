@@ -14,9 +14,7 @@ def make_settings(database_url: str) -> Settings:
 
 
 def test_build_engine_uses_postgresql_psycopg_without_connecting() -> None:
-    settings = make_settings(
-        "postgresql+psycopg://ddd:top-secret@db.example.test:5432/ddd"
-    )
+    settings = make_settings("postgresql+psycopg://ddd:top-secret@db.example.test:5432/ddd")
 
     engine = build_engine(settings)
 
@@ -32,9 +30,7 @@ def test_build_engine_uses_postgresql_psycopg_without_connecting() -> None:
 def test_session_factory_can_bind_to_lazy_engine() -> None:
     from sqlalchemy.orm import Session, sessionmaker
 
-    settings = make_settings(
-        "postgresql+psycopg://ddd:secret@db.example.test:5432/ddd"
-    )
+    settings = make_settings("postgresql+psycopg://ddd:secret@db.example.test:5432/ddd")
     engine = build_engine(settings)
     factory = sessionmaker(
         bind=engine,
