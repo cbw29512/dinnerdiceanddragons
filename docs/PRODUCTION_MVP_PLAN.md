@@ -89,18 +89,18 @@ See `docs/DECISIONS.md`, Decision 016.
 - [x] Add created/updated/last-login timestamps.
 - [x] Migration tests prove uniqueness and multi-role behavior.
 
-### 1C. Authentication — **IN PROGRESS**
+### 1C. Authentication — **COMPLETE**
 - [x] Configure Supabase development project/local environment. Local Auth configuration and pinned CLI startup are CI-verified.
 - [x] Require verified email before active participation. CI proves an unverified signup receives no authenticated session/token and password sign-in is rejected until confirmation.
 - [x] Implement JWT verification against Supabase JWKS in FastAPI. DDD accepts asymmetric `ES256`, `RS256`, or `EdDSA` user tokens and CI verifies a real confirmed local Supabase token through the live JWKS endpoint.
 - [x] Validate issuer, audience/project, signature, and expiration. Unit tests reject wrong signatures, wrong project issuers, wrong audiences, expired/missing expiration claims, and legacy `HS256` tokens.
 - [x] Add authenticated `GET /api/v1/me` endpoint. CI boots the real FastAPI/Uvicorn application and proves a confirmed Supabase bearer token reaches `/me` over HTTP and returns only the safe verified principal.
 - [x] First verified login safely creates/links the internal DDD User. Supabase `sub` is the binding key; repeated logins are idempotent, verified email changes stay on the same subject, different-subject email collisions are refused, administrative restrictions are not silently reset, and CI proves exactly one durable User row in real PostgreSQL.
-- [x] Anonymous requests remain browse-only. Anonymous public health remains available, private identity returns `401`, missing credentials take precedence over auth-service configuration errors, and CI rejects any future `/api/v1` POST/PUT/PATCH/DELETE route that lacks verified Supabase authentication in its dependency chain.
+- [x] Anonymous requests remain browse-only. Anonymous public health remains available, private identity returns `401`, missing credentials take precedence over auth-service configuration errors, and CI rejects any future `/api/v1` POST/PUT/PATCH/DELETE route that lacks an active authenticated DDD account dependency.
 - [x] Invalid/expired token tests. Cryptographic verifier tests reject wrong signatures, issuer, audience, expired/missing-expiration and legacy signing; HTTP tests prove invalid and expired Bearer credentials return controlled `401` responses with `WWW-Authenticate: Bearer` and never echo token contents.
-- [ ] Account-status enforcement tests.
+- [x] Account-status enforcement tests. Verified pending accounts safely become active; restricted, suspended, and banned accounts remain authenticated for self-service `/me` visibility but reusable `require_active_user` policy rejects participation with `403`; future production mutations are CI-guarded to require that active-account policy.
 
-### 1D. Authorization
+### 1D. Authorization — **IN PROGRESS**
 - [ ] Server-side role dependencies for Player, DM, Venue Manager, Moderator, Admin.
 - [ ] Never trust client-supplied role/user IDs for authorization.
 - [ ] Resource ownership helpers for profiles, games, registrations, venue operations, and messages.
