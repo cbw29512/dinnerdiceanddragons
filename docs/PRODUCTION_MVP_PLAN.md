@@ -69,18 +69,18 @@ See `docs/DECISIONS.md`, Decision 016.
 
 ## STEP 1 — Identity, authentication, and backend foundation — **IN PROGRESS**
 
-### 1A. Architecture and tracking
+### 1A. Architecture and tracking — **COMPLETE**
 - [x] Select production authentication provider.
 - [x] Record auth/provider decision and consequences.
 - [x] Establish this production-MVP master checklist.
 - [x] Create FastAPI production backend skeleton.
- [x] Add environment/settings model with safe secret handling.
+- [x] Add environment/settings model with safe secret handling.
 - [x] Add PostgreSQL connection/session layer.
 - [x] Add Alembic migrations.
 - [x] Add Docker development runtime and health check.
-- [ ] Add backend CI tests/lint/syntax gate.
+- [x] Add backend CI tests/lint/syntax gate.
 
-### 1B. Durable identity schema
+### 1B. Durable identity schema — **IN PROGRESS**
 - [ ] Create `users` table with immutable internal DDD ID.
 - [ ] Store Supabase Auth subject as `auth_provider_user_id` with uniqueness constraint.
 - [ ] Create normalized unique display-name policy and reserved-name list.
