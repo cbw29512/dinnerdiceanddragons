@@ -16,7 +16,7 @@ def test_alembic_configuration_discovers_current_head() -> None:
     script = ScriptDirectory.from_config(config)
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == ["0003_create_privileged_audit_events"]
+    assert script.get_heads() == ["0003_priv_audit"]
 
 
 def test_alembic_offline_upgrade_emits_identity_and_audit_tables_without_database() -> None:
