@@ -134,6 +134,60 @@ def test_repeated_me_request_reuses_same_durable_user(client_and_factory) -> Non
         assert len(users) == 1
 
 
+def test_pending_account_becomes_active_after_verified_login(client_and_factory) -> None:
+    client, factory = client_and_factory
+    with factory() as session:
+        session.add(
+            User(
+                auth_provider_user_id=SUBJECT,
+                email="player@example.com",
+                status=AccountStatus.PENDING_VERIFICATION.value,
+            )
+        )
+        session.commit()
+
+    response = client.get(
+        "/api/v1/me",
+        headers={"Authorization": "Bearer valid-test-token"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == AccountStatus.ACTIVE.value
+
+
+@pytest.mark.parametrize(
+    "account_status",
+    [AccountStatus.RESTRICTED, AccountStatus.SUSPENDED, AccountStatus.BANNED],
+)
+def test_non_active_user_can_view_own_account_status(
+    client_and_factory,
+    account_status: AccountStatus,
+) -> None:
+    client, factory = client_and_factory
+    with factory() as session:
+        session.add(
+            User(
+                auth_provider_user_id=SUBJECT,
+                email="player@example.com",
+                status=account_status.value,
+            )
+        )
+        session.commit()
+
+    response = client.get(
+        "/api/v1/me",
+        headers={"Authorization": "Bearer valid-test-token"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == account_status.value
+
+    with factory() as session:
+        persisted = session.scalar(select(User).where(User.auth_provider_user_id == SUBJECT))
+        assert persisted is not None
+        assert persisted.status == account_status.value
+
+
 def test_me_refuses_email_collision_with_different_provider_subject(client_and_factory) -> None:
     client, factory = client_and_factory
     with factory() as session:
