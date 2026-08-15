@@ -69,9 +69,7 @@ def test_one_player_profile_per_user_is_enforced() -> None:
 def test_travel_radius_outside_supported_range_is_rejected(radius: int) -> None:
     with make_session() as session:
         user = add_active_user(session, f"radius-{radius}")
-        session.add(
-            PlayerProfile(user_id=user.id, postal_code="29501", travel_radius_miles=radius)
-        )
+        session.add(PlayerProfile(user_id=user.id, postal_code="29501", travel_radius_miles=radius))
         with pytest.raises(IntegrityError):
             session.commit()
 
