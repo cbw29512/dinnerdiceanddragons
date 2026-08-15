@@ -1,6 +1,6 @@
 """create privileged audit events table
 
-Revision ID: 0003_create_privileged_audit_events
+Revision ID: 0003_priv_audit
 Revises: 0002_create_user_roles
 Create Date: 2026-08-15
 """
@@ -10,7 +10,7 @@ from collections.abc import Sequence
 from alembic import op
 import sqlalchemy as sa
 
-revision: str = "0003_create_privileged_audit_events"
+revision: str = "0003_priv_audit"
 down_revision: str | Sequence[str] | None = "0002_create_user_roles"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
