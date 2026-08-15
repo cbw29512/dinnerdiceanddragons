@@ -3,10 +3,8 @@
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
-from app.api.dependencies.auth import (
-    get_supabase_jwt_verifier,
-    get_verified_supabase_claims,
-)
+from app.api.dependencies.auth import get_supabase_jwt_verifier
+from app.api.dependencies.current_user import require_active_user
 from app.main import create_app
 
 MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
@@ -25,7 +23,7 @@ def _dependency_calls(route: APIRoute) -> set[object]:
     return calls
 
 
-def test_every_mutating_production_api_route_requires_verified_authentication() -> None:
+def test_every_mutating_production_api_route_requires_active_account() -> None:
     application = create_app()
 
     for route in application.routes:
@@ -35,9 +33,9 @@ def test_every_mutating_production_api_route_requires_verified_authentication() 
         if not mutating:
             continue
 
-        assert get_verified_supabase_claims in _dependency_calls(route), (
+        assert require_active_user in _dependency_calls(route), (
             f"{sorted(mutating)} {route.path} would allow a production mutation "
-            "without the verified Supabase authentication dependency."
+            "without an active authenticated DDD account dependency."
         )
 
 
