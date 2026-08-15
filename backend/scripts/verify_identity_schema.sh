@@ -17,6 +17,9 @@ test "$primary_key_count" = "1"
 auth_subject_unique_count="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.users'::regclass AND contype='u' AND conname='uq_users_auth_provider_user_id'")"
 test "$auth_subject_unique_count" = "1"
 
+email_unique_count="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.users'::regclass AND contype='u' AND conname='uq_users_email'")"
+test "$email_unique_count" = "1"
+
 display_name_unique_count="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.users'::regclass AND contype='u' AND conname='uq_users_display_name_normalized'")"
 test "$display_name_unique_count" = "1"
 
@@ -40,6 +43,9 @@ test "$user_roles_primary_key_count" = "1"
 
 user_roles_check_count="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.user_roles'::regclass AND contype='c' AND conname='ck_user_roles_role'")"
 test "$user_roles_check_count" = "1"
+
+user_roles_fk_count="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.user_roles'::regclass AND contype='f' AND conname='fk_user_roles_user_id_users' AND confdeltype='c'")"
+test "$user_roles_fk_count" = "1"
 
 docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd <<'SQL'
 INSERT INTO users (id, auth_provider_user_id, email)
@@ -85,6 +91,22 @@ fi
 
 auth_subject_rows="$(psql_scalar "SELECT COUNT(*) FROM users WHERE auth_provider_user_id='supabase-subject-001'")"
 test "$auth_subject_rows" = "1"
+
+if docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd <<'SQL'
+INSERT INTO users (id, auth_provider_user_id, email)
+VALUES (
+  '00000000-0000-0000-0000-000000000005',
+  'supabase-subject-005',
+  'identity-one@example.test'
+);
+SQL
+then
+  echo "ERROR: duplicate email was accepted" >&2
+  exit 1
+fi
+
+email_rows="$(psql_scalar "SELECT COUNT(*) FROM users WHERE email='identity-one@example.test'")"
+test "$email_rows" = "1"
 
 docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd <<'SQL'
 INSERT INTO users (
@@ -180,5 +202,13 @@ fi
 
 final_status="$(psql_scalar "SELECT status FROM users WHERE id='00000000-0000-0000-0000-000000000001'")"
 test "$final_status" = "pending_verification"
+
+docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd <<'SQL'
+DELETE FROM users
+WHERE id = '00000000-0000-0000-0000-000000000001';
+SQL
+
+cascaded_roles="$(psql_scalar "SELECT COUNT(*) FROM user_roles WHERE user_id='00000000-0000-0000-0000-000000000001'")"
+test "$cascaded_roles" = "0"
 
 echo "Identity schema verification passed."
