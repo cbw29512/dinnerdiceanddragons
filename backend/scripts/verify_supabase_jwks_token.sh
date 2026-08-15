@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Prove that the production verifier and `/api/v1/me` accept a real confirmed
-# Supabase user token by fetching the local Auth server's asymmetric JWKS. No
-# signing secret is supplied to the application verifier.
+# Supabase user token, then safely create/reuse one durable DDD User in real
+# PostgreSQL. No signing secret is supplied to the application verifier.
 
 eval "$(npx --yes supabase@2.110.0 status -o env)"
 
@@ -12,11 +12,14 @@ test -n "${SERVICE_ROLE_KEY:-}"
 
 email="verified-jwks-$(date +%s)-${RANDOM}@example.com"
 password="DDD-jwks-test-${RANDOM}-Aa1!"
+database_url="postgresql+psycopg://postgres:postgres@127.0.0.1:54322/postgres"
 create_body="$(mktemp)"
 signin_body="$(mktemp)"
 token_file="$(mktemp)"
 subject_file="$(mktemp)"
 me_body="$(mktemp)"
+second_me_body="$(mktemp)"
+ddd_user_id_file="$(mktemp)"
 api_log="$(mktemp)"
 api_pid=""
 
@@ -25,7 +28,15 @@ cleanup() {
     kill "$api_pid" 2>/dev/null || true
     wait "$api_pid" 2>/dev/null || true
   fi
-  rm -f "$create_body" "$signin_body" "$token_file" "$subject_file" "$me_body" "$api_log"
+  rm -f \
+    "$create_body" \
+    "$signin_body" \
+    "$token_file" \
+    "$subject_file" \
+    "$me_body" \
+    "$second_me_body" \
+    "$ddd_user_id_file" \
+    "$api_log"
 }
 trap cleanup EXIT
 
@@ -90,11 +101,13 @@ Path(os.environ["SUBJECT_FILE"]).write_text(str(claims["sub"]))
 print("DDD verified a real Supabase user token through the live JWKS endpoint.")
 PY
 
-# Exercise the actual ASGI application through a real local HTTP server using
-# only production dependencies. This avoids making the production smoke test
-# depend on Starlette's in-process TestClient package requirements.
+# Use the local Supabase PostgreSQL instance as the managed-Postgres analogue
+# for this identity integration test, then apply the portable DDD migrations.
+DATABASE_URL="$database_url" alembic -c backend/alembic.ini upgrade head
+
 SUPABASE_URL="http://127.0.0.1:54321" \
 SUPABASE_JWT_AUDIENCE="authenticated" \
+DATABASE_URL="$database_url" \
 uvicorn app.main:app --host 127.0.0.1 --port 8011 >"$api_log" 2>&1 &
 api_pid=$!
 
@@ -129,17 +142,86 @@ test "$me_status" = "200"
 EXPECTED_EMAIL="$email" \
 SUBJECT_FILE="$subject_file" \
 ME_BODY="$me_body" \
+DDD_USER_ID_FILE="$ddd_user_id_file" \
 python - <<'PY'
 import json
 import os
 from pathlib import Path
+from uuid import UUID
 
 principal = json.loads(Path(os.environ["ME_BODY"]).read_text())
 expected_subject = Path(os.environ["SUBJECT_FILE"]).read_text()
+ddd_user_id = principal.get("ddd_user_id")
+UUID(ddd_user_id)
 assert principal == {
+    "ddd_user_id": ddd_user_id,
     "auth_provider": "supabase",
     "auth_provider_user_id": expected_subject,
     "email": os.environ["EXPECTED_EMAIL"],
+    "display_name": None,
+    "status": "active",
 }, principal
-print("DDD /api/v1/me accepted the real verified Supabase user token over HTTP.")
+Path(os.environ["DDD_USER_ID_FILE"]).write_text(ddd_user_id)
+print("First /api/v1/me request created or linked the durable DDD user.")
+PY
+
+second_me_status="$(
+  curl --silent --show-error \
+    --output "$second_me_body" \
+    --write-out '%{http_code}' \
+    --header "Authorization: Bearer ${token}" \
+    http://127.0.0.1:8011/api/v1/me
+)"
+
+test "$second_me_status" = "200"
+
+ME_BODY="$me_body" SECOND_ME_BODY="$second_me_body" python - <<'PY'
+import json
+import os
+from pathlib import Path
+
+first = json.loads(Path(os.environ["ME_BODY"]).read_text())
+second = json.loads(Path(os.environ["SECOND_ME_BODY"]).read_text())
+assert second["ddd_user_id"] == first["ddd_user_id"], (first, second)
+assert second["email"] == first["email"], (first, second)
+print("Repeated /api/v1/me request reused the same durable DDD user.")
+PY
+
+DATABASE_URL="$database_url" \
+SUBJECT_FILE="$subject_file" \
+DDD_USER_ID_FILE="$ddd_user_id_file" \
+EXPECTED_EMAIL="$email" \
+python - <<'PY'
+import os
+from pathlib import Path
+from uuid import UUID
+
+from sqlalchemy import create_engine, func, select
+from sqlalchemy.orm import Session
+
+from app.models.user import User
+
+engine = create_engine(os.environ["DATABASE_URL"])
+try:
+    with Session(engine) as session:
+        expected_subject = Path(os.environ["SUBJECT_FILE"]).read_text()
+        expected_id = UUID(Path(os.environ["DDD_USER_ID_FILE"]).read_text())
+        user = session.scalar(
+            select(User).where(User.auth_provider_user_id == expected_subject)
+        )
+        assert user is not None
+        assert user.id == expected_id
+        assert user.email == os.environ["EXPECTED_EMAIL"]
+        assert user.status == "active"
+        assert user.email_verified_at is not None
+        assert user.last_login_at is not None
+        count = session.scalar(
+            select(func.count()).select_from(User).where(
+                User.auth_provider_user_id == expected_subject
+            )
+        )
+        assert count == 1, count
+        print("PostgreSQL contains exactly one durable DDD user for the Supabase subject.")
+finally:
+    engine.dispose()
 PY
