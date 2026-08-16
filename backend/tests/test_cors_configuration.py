@@ -47,12 +47,8 @@ def test_allowed_github_pages_origin_can_preflight_bearer_put(monkeypatch) -> No
                 },
             )
             assert response.status_code == 200
-            assert response.headers["access-control-allow-origin"] == (
-                "https://cbw29512.github.io"
-            )
-            assert "authorization" in response.headers[
-                "access-control-allow-headers"
-            ].lower()
+            assert response.headers["access-control-allow-origin"] == ("https://cbw29512.github.io")
+            assert "authorization" in response.headers["access-control-allow-headers"].lower()
     finally:
         get_settings.cache_clear()
 
