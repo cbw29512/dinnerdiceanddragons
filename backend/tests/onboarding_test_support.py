@@ -75,7 +75,11 @@ def build_onboarding_client():
         ):
             table.create(engine)
 
-        factory = sessionmaker(bind=engine, class_=Session, expire_on_commit=False)
+        factory = sessionmaker(
+            bind=engine,
+            class_=Session,
+            expire_on_commit=False,
+        )
         with factory() as session:
             session.add_all(
                 [
