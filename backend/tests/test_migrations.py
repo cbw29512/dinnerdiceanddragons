@@ -16,7 +16,7 @@ def test_alembic_configuration_discovers_current_head() -> None:
     script = ScriptDirectory.from_config(config)
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == ["0010_recurring_availability_rule"]
+    assert script.get_heads() == ["0011_profile_availability_windows"]
 
 
 def test_alembic_offline_upgrade_emits_current_foundation_tables_without_database() -> None:
@@ -76,3 +76,7 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert "CREATE TABLE recurring_availability_rules" in result.stdout
     assert "ck_recurring_availability_rules_pattern_fields" in result.stdout
     assert "ck_recurring_availability_rules_timezone_length" in result.stdout
+    assert "CREATE TABLE player_availability_windows" in result.stdout
+    assert "uq_player_availability_windows_recurring_rule_id" in result.stdout
+    assert "CREATE TABLE gm_availability_windows" in result.stdout
+    assert "uq_gm_availability_windows_recurring_rule_id" in result.stdout
