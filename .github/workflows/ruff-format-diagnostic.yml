@@ -1,0 +1,44 @@
+name: Ruff Format Diagnostic
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ruff-format-diagnostic:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install backend development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e "./backend[dev]"
+
+      - name: Show exact Ruff formatting patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          ruff format backend
+          if git diff --quiet -- backend; then
+            echo "Ruff formatting is clean." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          {
+            echo "### Ruff formatter patch"
+            echo
+            echo '```diff'
+            git diff -- backend
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
