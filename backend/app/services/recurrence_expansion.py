@@ -25,7 +25,9 @@ class OccurrenceWindow:
     def duration_minutes(self) -> int:
         """Return the real elapsed duration, including any DST offset change."""
 
-        return int((self.end_at.astimezone(UTC) - self.start_at.astimezone(UTC)).total_seconds() / 60)
+        return int(
+            (self.end_at.astimezone(UTC) - self.start_at.astimezone(UTC)).total_seconds() / 60
+        )
 
 
 def expand_occurrences(
