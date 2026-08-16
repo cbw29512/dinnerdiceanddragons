@@ -6,6 +6,7 @@ from uuid import uuid4
 import pytest
 from fastapi import HTTPException
 from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.api.dependencies.availability_access import (
@@ -114,8 +115,24 @@ def test_missing_parent_profile_returns_not_found() -> None:
             player_profile_id=uuid4(),
             recurring_rule_id=uuid4(),
         )
-
         with pytest.raises(HTTPException) as exc_info:
             require_player_availability_owner(actor, window, session)
-
         assert exc_info.value.status_code == 404
+
+
+def test_database_lookup_failure_returns_controlled_server_error(monkeypatch) -> None:
+    with make_session() as session:
+        actor = add_user(session, "db-error")
+        window = PlayerAvailabilityWindow(
+            player_profile_id=uuid4(),
+            recurring_rule_id=uuid4(),
+        )
+
+        def fail_scalar(*_args, **_kwargs):
+            raise SQLAlchemyError("simulated ownership lookup failure")
+
+        monkeypatch.setattr(session, "scalar", fail_scalar)
+        with pytest.raises(HTTPException) as exc_info:
+            require_player_availability_owner(actor, window, session)
+        assert exc_info.value.status_code == 500
+        assert exc_info.value.detail == "Availability ownership could not be verified."
