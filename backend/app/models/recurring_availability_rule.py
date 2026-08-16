@@ -1,4 +1,4 @@
-"""Reusable recurring availability rules for Players, GMs, and Venues."""
+"""Reusable recurring schedule rules for availability and game-series recurrence."""
 
 from datetime import date, datetime, time
 from enum import StrEnum
@@ -19,14 +19,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
-
-
-class AvailabilityOwnerType(StrEnum):
-    """Typed owner categories resolved by the later availability-window tables."""
-
-    PLAYER = "player"
-    GM = "gm"
-    VENUE = "venue"
 
 
 class AvailabilityDay(StrEnum):
@@ -59,14 +51,10 @@ class MonthlyOrdinal(StrEnum):
 
 
 class RecurringAvailabilityRule(Base):
-    """A reusable recurring opportunity window, not guaranteed attendance."""
+    """A reusable schedule value object; typed parent records own the rule."""
 
     __tablename__ = "recurring_availability_rules"
     __table_args__ = (
-        CheckConstraint(
-            "owner_type IN ('player', 'gm', 'venue')",
-            name="ck_recurring_availability_rules_owner_type",
-        ),
         CheckConstraint(
             "day_of_week IN ('monday', 'tuesday', 'wednesday', 'thursday', "
             "'friday', 'saturday', 'sunday')",
@@ -109,8 +97,6 @@ class RecurringAvailabilityRule(Base):
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    owner_type: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
-    owner_id: Mapped[UUID] = mapped_column(Uuid, nullable=False, index=True)
     day_of_week: Mapped[str] = mapped_column(String(16), nullable=False)
     start_time: Mapped[time] = mapped_column(Time(timezone=False), nullable=False)
     end_time: Mapped[time] = mapped_column(Time(timezone=False), nullable=False)
