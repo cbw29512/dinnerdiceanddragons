@@ -43,11 +43,14 @@ def test_matching_inputs_require_authentication(matching_context) -> None:
 
 def test_player_cannot_forge_profile_or_user_ownership(matching_context) -> None:
     client, _ = matching_context
-    assert client.put(
-        "/api/v1/onboarding/player",
-        json=player_payload(),
-        headers=auth(),
-    ).status_code == 200
+    assert (
+        client.put(
+            "/api/v1/onboarding/player",
+            json=player_payload(),
+            headers=auth(),
+        ).status_code
+        == 200
+    )
 
     payload = player_demand_payload()
     payload["player_profile_id"] = "00000000-0000-0000-0000-000000000999"
@@ -69,12 +72,18 @@ def test_player_lists_do_not_cross_user_boundary(matching_context) -> None:
     bob_payload["display_name"] = "Bob Adventurer"
     bob_payload["postal_code"] = "29505"
 
-    assert client.put(
-        "/api/v1/onboarding/player", json=alice_payload, headers=auth("alice-token")
-    ).status_code == 200
-    assert client.put(
-        "/api/v1/onboarding/player", json=bob_payload, headers=auth("bob-token")
-    ).status_code == 200
+    assert (
+        client.put(
+            "/api/v1/onboarding/player", json=alice_payload, headers=auth("alice-token")
+        ).status_code
+        == 200
+    )
+    assert (
+        client.put(
+            "/api/v1/onboarding/player", json=bob_payload, headers=auth("bob-token")
+        ).status_code
+        == 200
+    )
 
     alice_demand = client.post(
         "/api/v1/matching/player-demands",
@@ -89,23 +98,22 @@ def test_player_lists_do_not_cross_user_boundary(matching_context) -> None:
     assert alice_demand.status_code == 201
     assert bob_demand.status_code == 201
 
-    alice_list = client.get(
-        "/api/v1/matching/player-demands", headers=auth("alice-token")
-    ).json()
-    bob_list = client.get(
-        "/api/v1/matching/player-demands", headers=auth("bob-token")
-    ).json()
+    alice_list = client.get("/api/v1/matching/player-demands", headers=auth("alice-token")).json()
+    bob_list = client.get("/api/v1/matching/player-demands", headers=auth("bob-token")).json()
     assert [item["id"] for item in alice_list] == [alice_demand.json()["id"]]
     assert [item["id"] for item in bob_list] == [bob_demand.json()["id"]]
 
 
 def test_gm_cannot_offer_system_missing_from_capability_profile(matching_context) -> None:
     client, _ = matching_context
-    assert client.put(
-        "/api/v1/onboarding/gm",
-        json=gm_payload(),
-        headers=auth(),
-    ).status_code == 200
+    assert (
+        client.put(
+            "/api/v1/onboarding/gm",
+            json=gm_payload(),
+            headers=auth(),
+        ).status_code
+        == 200
+    )
 
     payload = gm_supply_payload()
     payload["system_slug"] = "pathfinder-2e"
@@ -120,11 +128,14 @@ def test_gm_cannot_offer_system_missing_from_capability_profile(matching_context
 
 def test_gm_impossible_player_range_is_rejected_before_database(matching_context) -> None:
     client, _ = matching_context
-    assert client.put(
-        "/api/v1/onboarding/gm",
-        json=gm_payload(),
-        headers=auth(),
-    ).status_code == 200
+    assert (
+        client.put(
+            "/api/v1/onboarding/gm",
+            json=gm_payload(),
+            headers=auth(),
+        ).status_code
+        == 200
+    )
 
     payload = gm_supply_payload()
     payload["minimum_players"] = 6
@@ -204,9 +215,7 @@ def test_venue_window_body_cannot_override_path_venue(matching_context) -> None:
     venue_id = UUID(venue_created.json()["venue_id"])
 
     with factory() as session:
-        manager = session.scalar(
-            select(VenueManager).where(VenueManager.venue_id == venue_id)
-        )
+        manager = session.scalar(select(VenueManager).where(VenueManager.venue_id == venue_id))
         assert manager is not None
         manager.verified_at = datetime.now(UTC)
         session.commit()
