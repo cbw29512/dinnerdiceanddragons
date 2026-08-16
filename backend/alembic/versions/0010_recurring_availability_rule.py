@@ -73,7 +73,7 @@ def upgrade() -> None:
             "AND week_interval BETWEEN 1 AND 4 "
             "AND monthly_ordinal IS NULL "
             "AND month_interval IS NULL "
-            "AND (week_interval = 1 "
+            "AND ((week_interval = 1 AND anchor_date IS NULL) "
             "OR (week_interval BETWEEN 2 AND 4 AND anchor_date IS NOT NULL))) "
             "OR (pattern_type = 'monthly_ordinal_weekday' "
             "AND week_interval IS NULL "
@@ -81,7 +81,7 @@ def upgrade() -> None:
             "AND monthly_ordinal IN ('first', 'second', 'third', 'fourth', 'last') "
             "AND month_interval IS NOT NULL "
             "AND month_interval BETWEEN 1 AND 3 "
-            "AND (month_interval = 1 "
+            "AND ((month_interval = 1 AND anchor_date IS NULL) "
             "OR (month_interval BETWEEN 2 AND 3 AND anchor_date IS NOT NULL)))",
             name="ck_recurring_availability_rules_pattern_fields",
         ),
