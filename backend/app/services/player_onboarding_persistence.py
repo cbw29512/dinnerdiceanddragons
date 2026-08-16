@@ -6,10 +6,11 @@ from sqlalchemy import delete, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.models.availability_window import PlayerAvailabilityWindow
+from app.models.availability_window import GMAvailabilityWindow, PlayerAvailabilityWindow
 from app.models.game_system import GameSystem
 from app.models.player_profile import PlayerProfile
 from app.models.player_system_experience import PlayerSystemExperience
+from app.models.recurring_availability_rule import RecurringAvailabilityRule
 from app.models.user import User
 from app.schemas.player_onboarding import PlayerOnboardingRequest
 from app.services.onboarding_common import recurring_rule_from_input
@@ -89,14 +90,38 @@ def replace_player_availability(
     profile: PlayerProfile,
     payload: PlayerOnboardingRequest,
 ) -> None:
-    """Replace typed Player windows without deleting owner-neutral rule rows."""
+    """Replace typed Player windows and remove superseded unshared rules."""
 
     try:
+        old_rule_ids = list(
+            session.scalars(
+                select(PlayerAvailabilityWindow.recurring_rule_id).where(
+                    PlayerAvailabilityWindow.player_profile_id == profile.id
+                )
+            ).all()
+        )
         session.execute(
             delete(PlayerAvailabilityWindow).where(
                 PlayerAvailabilityWindow.player_profile_id == profile.id
             )
         )
+
+        if old_rule_ids:
+            gm_shared_rule_ids = set(
+                session.scalars(
+                    select(GMAvailabilityWindow.recurring_rule_id).where(
+                        GMAvailabilityWindow.recurring_rule_id.in_(old_rule_ids)
+                    )
+                ).all()
+            )
+            removable_rule_ids = set(old_rule_ids) - gm_shared_rule_ids
+            if removable_rule_ids:
+                session.execute(
+                    delete(RecurringAvailabilityRule).where(
+                        RecurringAvailabilityRule.id.in_(removable_rule_ids)
+                    )
+                )
+
         for item in payload.availability:
             rule = recurring_rule_from_input(item)
             session.add(rule)
