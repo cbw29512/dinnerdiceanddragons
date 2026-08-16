@@ -24,9 +24,7 @@ def auth() -> dict[str, str]:
     return {"Authorization": "Bearer alice-token"}
 
 
-def test_second_submission_replaces_player_slice_without_new_profile(
-    onboarding_context,
-) -> None:
+def test_second_submission_replaces_player_slice_without_new_profile(onboarding_context) -> None:
     client, factory = onboarding_context
     first = client.put("/api/v1/onboarding/player", json=player_payload(), headers=auth())
     assert first.status_code == 200
