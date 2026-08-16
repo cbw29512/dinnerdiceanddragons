@@ -30,9 +30,10 @@
 
   function syncProfileEmails(session) {
     const email = session?.user?.email || "";
+    const signedIn = Boolean(session?.access_token);
     document.querySelectorAll('#player-form [name="email"], #gm-form [name="email"]').forEach((input) => {
-      input.value = email;
-      input.readOnly = true;
+      if (signedIn) input.value = email;
+      input.readOnly = signedIn;
     });
   }
 
