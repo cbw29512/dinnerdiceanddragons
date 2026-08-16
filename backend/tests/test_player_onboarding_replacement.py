@@ -3,7 +3,8 @@
 from uuid import UUID
 
 import pytest
-from onboarding_test_support import build_onboarding_client, player_payload
+from onboarding_test_support import build_onboarding_client
+from player_onboarding_test_data import player_payload
 from sqlalchemy import func, select
 
 from app.models.availability_window import PlayerAvailabilityWindow
