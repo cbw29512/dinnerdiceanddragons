@@ -62,7 +62,9 @@ def test_player_onboarding_persists_server_owned_state(onboarding_context) -> No
         assert profile.postal_code == "29501"
         assert profile.environment_preferences == ["quieter venue"]
         player_role_count = session.scalar(
-            select(func.count()).select_from(UserRole).where(
+            select(func.count())
+            .select_from(UserRole)
+            .where(
                 UserRole.user_id == user.id,
                 UserRole.role == "player",
             )
