@@ -10,7 +10,7 @@ from app.models.player_profile import PlayerProfile
 from app.models.player_system_experience import PlayerSystemExperience
 from app.models.user import User
 from app.models.user_role import UserRole
-from tests.onboarding_test_support import ALICE_SUBJECT, build_onboarding_client, player_payload
+from onboarding_test_support import ALICE_SUBJECT, build_onboarding_client, player_payload
 
 
 @pytest.fixture()
