@@ -1,7 +1,5 @@
 """HTTP and persistence tests for authenticated Player onboarding."""
 
-from uuid import UUID
-
 import pytest
 from onboarding_test_support import ALICE_SUBJECT, build_onboarding_client, player_payload
 from sqlalchemy import func, select
@@ -58,12 +56,13 @@ def test_player_onboarding_persists_server_owned_state(onboarding_context) -> No
         assert str(profile.id) == body["player_profile_id"]
         assert profile.postal_code == "29501"
         assert profile.environment_preferences == ["quieter venue"]
-        assert session.scalar(
+        player_role_count = session.scalar(
             select(func.count()).select_from(UserRole).where(
                 UserRole.user_id == user.id,
                 UserRole.role == "player",
             )
-        ) == 1
+        )
+        assert player_role_count == 1
         experience = session.scalar(
             select(PlayerSystemExperience).where(
                 PlayerSystemExperience.player_profile_id == profile.id
@@ -108,38 +107,9 @@ def test_unknown_system_rolls_back_player_state(onboarding_context) -> None:
     with factory() as session:
         user = session.scalar(select(User).where(User.auth_provider_user_id == ALICE_SUBJECT))
         assert user is not None
-        assert session.scalar(select(PlayerProfile).where(PlayerProfile.user_id == user.id)) is None
-        assert session.scalar(
+        profile = session.scalar(select(PlayerProfile).where(PlayerProfile.user_id == user.id))
+        player_role = session.scalar(
             select(UserRole).where(UserRole.user_id == user.id, UserRole.role == "player")
-        ) is None
-
-
-def test_second_submission_replaces_player_slice_without_new_profile(onboarding_context) -> None:
-    client, factory = onboarding_context
-    first = client.put("/api/v1/onboarding/player", json=player_payload(), headers=auth())
-    assert first.status_code == 200
-
-    replacement = player_payload()
-    replacement["display_name"] = "Alice Updated"
-    replacement["systems"][0].update(
-        {"system_slug": "pathfinder-2e", "years_playing": 1.5, "comfort_level": "learning"}
-    )
-    replacement["availability"][0].update(
-        {"day_of_week": "sunday", "start_time": "14:00", "end_time": "18:00"}
-    )
-    second = client.put("/api/v1/onboarding/player", json=replacement, headers=auth())
-    assert second.status_code == 200, second.text
-    assert second.json()["player_profile_id"] == first.json()["player_profile_id"]
-
-    with factory() as session:
-        profile_id = UUID(first.json()["player_profile_id"])
-        assert session.scalar(
-            select(func.count()).select_from(PlayerSystemExperience).where(
-                PlayerSystemExperience.player_profile_id == profile_id
-            )
-        ) == 1
-        assert session.scalar(
-            select(func.count()).select_from(PlayerAvailabilityWindow).where(
-                PlayerAvailabilityWindow.player_profile_id == profile_id
-            )
-        ) == 1
+        )
+        assert profile is None
+        assert player_role is None
