@@ -17,6 +17,12 @@ from app.models.gm_system_experience import (
 from app.models.player_profile import PlayerProfile, PreferredGameFormat
 from app.models.player_system_experience import PlayerComfortLevel, PlayerSystemExperience
 from app.models.privileged_audit_event import PrivilegedAuditEvent
+from app.models.recurring_availability_rule import (
+    AvailabilityDay,
+    AvailabilityPatternType,
+    MonthlyOrdinal,
+    RecurringAvailabilityRule,
+)
 from app.models.user import AccountStatus, User
 from app.models.user_role import UserRole, UserRoleType
 from app.models.venue import Venue, VenueManager, VenueManagerRole, VenueType
@@ -25,18 +31,22 @@ metadata = Base.metadata
 
 __all__ = [
     "AccountStatus",
+    "AvailabilityDay",
+    "AvailabilityPatternType",
     "GameSystem",
     "GMComfortLevel",
     "GMGameFormat",
     "GMProfile",
     "GMSystemExperience",
     "GMSystemFormat",
+    "MonthlyOrdinal",
     "PlayerComfortLevel",
     "PlayerProfile",
     "PlayerSystemExperience",
     "PreferredGameFormat",
     "PreferredPlayerExperience",
     "PrivilegedAuditEvent",
+    "RecurringAvailabilityRule",
     "User",
     "UserRole",
     "UserRoleType",

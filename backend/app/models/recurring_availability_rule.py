@@ -1,21 +1,24 @@
-"""Reusable recurring availability rules for Players, GMs, and Venues."""
+"""Reusable recurring schedule rules for availability and game-series recurrence."""
 
 from datetime import date, datetime, time
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, SmallInteger, String, Time, Uuid, func, text
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Date,
+    DateTime,
+    SmallInteger,
+    String,
+    Time,
+    Uuid,
+    func,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
-
-
-class AvailabilityOwnerType(StrEnum):
-    """Typed owner categories resolved by the later availability-window tables."""
-
-    PLAYER = "player"
-    GM = "gm"
-    VENUE = "venue"
 
 
 class AvailabilityDay(StrEnum):
@@ -48,16 +51,13 @@ class MonthlyOrdinal(StrEnum):
 
 
 class RecurringAvailabilityRule(Base):
-    """A reusable recurring opportunity window, not a guaranteed attendance record."""
+    """A reusable schedule value object; typed parent records own the rule."""
 
     __tablename__ = "recurring_availability_rules"
     __table_args__ = (
         CheckConstraint(
-            "owner_type IN ('player', 'gm', 'venue')",
-            name="ck_recurring_availability_rules_owner_type",
-        ),
-        CheckConstraint(
-            "day_of_week IN ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')",
+            "day_of_week IN ('monday', 'tuesday', 'wednesday', 'thursday', "
+            "'friday', 'saturday', 'sunday')",
             name="ck_recurring_availability_rules_day_of_week",
         ),
         CheckConstraint(
@@ -78,6 +78,7 @@ class RecurringAvailabilityRule(Base):
         ),
         CheckConstraint(
             "(pattern_type = 'weekly_interval' "
+            "AND week_interval IS NOT NULL "
             "AND week_interval BETWEEN 1 AND 4 "
             "AND monthly_ordinal IS NULL "
             "AND month_interval IS NULL "
@@ -85,7 +86,9 @@ class RecurringAvailabilityRule(Base):
             "OR (week_interval BETWEEN 2 AND 4 AND anchor_date IS NOT NULL))) "
             "OR (pattern_type = 'monthly_ordinal_weekday' "
             "AND week_interval IS NULL "
+            "AND monthly_ordinal IS NOT NULL "
             "AND monthly_ordinal IN ('first', 'second', 'third', 'fourth', 'last') "
+            "AND month_interval IS NOT NULL "
             "AND month_interval BETWEEN 1 AND 3 "
             "AND ((month_interval = 1 AND anchor_date IS NULL) "
             "OR (month_interval BETWEEN 2 AND 3 AND anchor_date IS NOT NULL)))",
@@ -94,8 +97,6 @@ class RecurringAvailabilityRule(Base):
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    owner_type: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
-    owner_id: Mapped[UUID] = mapped_column(Uuid, nullable=False, index=True)
     day_of_week: Mapped[str] = mapped_column(String(16), nullable=False)
     start_time: Mapped[time] = mapped_column(Time(timezone=False), nullable=False)
     end_time: Mapped[time] = mapped_column(Time(timezone=False), nullable=False)

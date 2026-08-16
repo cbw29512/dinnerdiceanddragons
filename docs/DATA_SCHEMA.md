@@ -55,11 +55,9 @@ Formats: `learn_to_play`, `one_shot`, `short_campaign`, `long_campaign`, `organi
 ## Availability and demand
 
 ### RecurringAvailabilityRule
-Reusable schedule rule referenced by Player, GM, or Venue availability.
+Reusable temporal rule referenced by an owning Player, GM, Venue, or later GameSeries record. The rule itself does **not** store a polymorphic `owner_type`/`owner_id`; ownership is expressed by typed foreign keys on the referencing records so PostgreSQL can enforce referential integrity.
 
-`id`, `owner_type`, `owner_id`, `day_of_week`, `start_time`, `end_time`, `pattern_type`, `week_interval` nullable, `anchor_date` nullable, `monthly_ordinal` nullable, `month_interval` nullable, `timezone`, `starts_on` nullable, `ends_on` nullable, `active`, `created_at`, `updated_at`
-
-Owner types: `player`, `gm`, `venue`
+`id`, `day_of_week`, `start_time`, `end_time`, `pattern_type`, `week_interval` nullable, `anchor_date` nullable, `monthly_ordinal` nullable, `month_interval` nullable, `timezone`, `starts_on` nullable, `ends_on` nullable, `active`, `created_at`, `updated_at`
 
 Pattern types:
 - `weekly_interval` — every N weeks on a weekday; `week_interval` is 1–4
@@ -68,14 +66,19 @@ Pattern types:
 Rules:
 - `week_interval > 1` requires `anchor_date` so alternating cycles are deterministic.
 - `monthly_ordinal_weekday` requires `monthly_ordinal` and `month_interval`.
-- Multiple rules per owner are allowed and combined as an OR set. Example: every other Wednesday **or** the last Saturday of every month.
+- Multiple availability windows per Player, GM, or Venue are allowed and combined as an OR set. Example: every other Wednesday **or** the last Saturday of every month.
 - Availability rules describe recurring opportunity windows, not guaranteed attendance for every occurrence.
+- Create/update/delete recurrence rules through their owning typed resource; do not expose a generic public recurrence-rule mutation that accepts an arbitrary owner UUID.
 
 ### PlayerAvailabilityWindow
 `id`, `player_profile_id`, `recurring_rule_id`, `active`
 
+Ownership is enforced by the `player_profile_id` foreign key. The recurrence row contains schedule data only.
+
 ### GMAvailabilityWindow
 `id`, `gm_profile_id`, `recurring_rule_id`, `active`
+
+Ownership is enforced by the `gm_profile_id` foreign key. The recurrence row contains schedule data only.
 
 ### PlayerDemandSignal
 `id`, `player_profile_id`, `game_system_id`, `preferred_format`, `preferred_cadence`, `minimum_age_preference`, `table_style_preferences`, `environment_preferences`, `status`, `created_at`, `updated_at`
@@ -97,6 +100,8 @@ Status: `active`, `paused`, `matched`, `expired`
 
 ### VenueTableWindow
 `id`, `venue_id`, `recurring_rule_id`, `table_count`, `max_people_per_table`, `purchase_policy`, `approval_required`, `environment_notes`, `active`
+
+Venue ownership is enforced by the `venue_id` foreign key; the linked recurrence row contains schedule data only.
 
 ## Table Match
 
@@ -131,7 +136,7 @@ Status: `requested`, `question`, `approved`, `declined`, `cancelled`
 ### GameSeries
 `id`, `table_match_id` nullable, `title`, `gm_profile_id`, `game_system_id`, `venue_id`, `recurring_rule_id` nullable, `expected_sessions`, `starts_on`, `ends_on` nullable, `active`
 
-A recurring GameSeries may reuse a `RecurringAvailabilityRule`, but generated Events remain independent records so an individual occurrence can be cancelled/rescheduled without destroying the series.
+A recurring GameSeries may reference the same recurrence-rule model used by availability windows, but generated Events remain independent records so an individual occurrence can be cancelled/rescheduled without destroying the series.
 
 ### Event
 `id`, `game_series_id` nullable, `table_match_id` nullable, `slug`, `title`, `description`, `gm_profile_id`, `game_system_id`, `venue_id`, `event_type`, `join_mode`, `status`, `starts_at`, `ends_at`, `min_players`, `max_players`, `minimum_age`, `beginner_friendly`, timestamps
@@ -237,15 +242,16 @@ Reports are never automatic public penalties.
 2. A Table Match must reference a GM supply signal, venue window, system, proposed time, and explainable compatibility information.
 3. Player compatibility must respect availability and travel radius without exposing private home locations.
 4. Recurring schedule matching must resolve the actual occurrence dates from each rule, including anchor dates and ordinal weekdays.
-5. Missing reputation history never reduces Table Match eligibility or fit score.
-6. Reputation may not be used as a hard requirement for ordinary table discovery unless a narrowly defined safety/moderation restriction applies.
-7. Event feedback requires eligible participation in that Event.
-8. Public reputation is derived from verified ReputationEvents and minimum sample thresholds.
-9. Reports remain private and separate from reputation.
-10. An Event cannot become Confirmed until venue approval requirements and minimum Player commitment are satisfied.
-11. Venue capacity cannot be double-booked.
-12. Expected headcount updates when registrations change.
-13. Private email/home-address data is never exposed as a messaging identifier.
-14. Self-described experience is never presented as platform-verified expertise.
-15. Store timestamps timezone-aware and preserve venue timezone for display/scheduling.
-16. Stable IDs survive migration between pilot and production storage.
+5. Recurring rule ownership is expressed through typed Player/GM/Venue/GameSeries foreign keys; recurrence rows do not contain an unchecked polymorphic owner UUID.
+6. Missing reputation history never reduces Table Match eligibility or fit score.
+7. Reputation may not be used as a hard requirement for ordinary table discovery unless a narrowly defined safety/moderation restriction applies.
+8. Event feedback requires eligible participation in that Event.
+9. Public reputation is derived from verified ReputationEvents and minimum sample thresholds.
+10. Reports remain private and separate from reputation.
+11. An Event cannot become Confirmed until venue approval requirements and minimum Player commitment are satisfied.
+12. Venue capacity cannot be double-booked.
+13. Expected headcount updates when registrations change.
+14. Private email/home-address data is never exposed as a messaging identifier.
+15. Self-described experience is never presented as platform-verified expertise.
+16. Store timestamps timezone-aware and preserve venue timezone for display/scheduling.
+17. Stable IDs survive migration between pilot and production storage.
