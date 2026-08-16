@@ -3,23 +3,40 @@
 import logging
 from collections.abc import Generator
 from functools import lru_cache
+from typing import Any
 
 from sqlalchemy import Engine, create_engine
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import NullPool
 
 from app.core.config import Settings, get_settings
 
 LOGGER = logging.getLogger(__name__)
 
 
+def _engine_options(database_url: str) -> dict[str, Any]:
+    """Return safe pool settings for the configured PostgreSQL endpoint."""
+
+    url = make_url(database_url)
+    host = url.host or ""
+    if host.endswith(".pooler.supabase.com") and url.port == 6543:
+        return {
+            "poolclass": NullPool,
+            "connect_args": {"prepare_threshold": None},
+        }
+    return {"pool_pre_ping": True}
+
+
 def build_engine(settings: Settings) -> Engine:
     """Create a lazy SQLAlchemy engine without opening a DB connection yet."""
 
     try:
+        database_url = settings.database_url.get_secret_value()
         return create_engine(
-            settings.database_url.get_secret_value(),
-            pool_pre_ping=True,
+            database_url,
             hide_parameters=True,
+            **_engine_options(database_url),
         )
     except Exception:
         LOGGER.exception("Failed to construct database engine")
