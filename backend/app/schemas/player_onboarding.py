@@ -60,7 +60,9 @@ class PlayerOnboardingRequest(BaseModel):
 
         slugs = [item.system_slug for item in self.systems]
         if len(slugs) != len(set(slugs)):
-            raise ValueError("Each game system may appear only once in Player onboarding.")
+            raise ValueError(
+                "Each game system may appear only once in Player onboarding."
+            )
         return self
 
 
