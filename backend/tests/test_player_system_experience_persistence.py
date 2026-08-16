@@ -156,6 +156,8 @@ def test_profile_delete_cascades_experience_but_system_delete_is_restricted() ->
         )
         session.add(experience)
         session.commit()
+        experience_id = experience.id
+        system_id = system.id
 
         session.delete(system)
         with pytest.raises(IntegrityError):
@@ -166,5 +168,5 @@ def test_profile_delete_cascades_experience_but_system_delete_is_restricted() ->
         assert profile is not None
         session.delete(profile)
         session.commit()
-        assert session.get(PlayerSystemExperience, experience.id) is None
-        assert session.get(GameSystem, system.id) is not None
+        assert session.get(PlayerSystemExperience, experience_id) is None
+        assert session.get(GameSystem, system_id) is not None
