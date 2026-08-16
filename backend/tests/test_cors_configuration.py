@@ -10,8 +10,7 @@ from app.main import create_app
 def test_cors_origins_are_normalized_and_deduplicated() -> None:
     settings = Settings(
         cors_allowed_origins=(
-            "https://cbw29512.github.io/, http://localhost:8080, "
-            "https://cbw29512.github.io"
+            "https://cbw29512.github.io/, http://localhost:8080, https://cbw29512.github.io"
         )
     )
 
@@ -30,7 +29,7 @@ def test_cors_origin_rejects_paths_queries_and_fragments() -> None:
     )
 
     for value in invalid_values:
-        with pytest.raises(ValueError, match="complete HTTP\(S\) origins"):
+        with pytest.raises(ValueError, match=r"complete HTTP\(S\) origins"):
             Settings(cors_allowed_origins=value).cors_origins()
 
 
