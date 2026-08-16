@@ -16,7 +16,7 @@ def test_alembic_configuration_discovers_current_head() -> None:
     script = ScriptDirectory.from_config(config)
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == ["0006_venue_manager"]
+    assert script.get_heads() == ["0007_game_system"]
 
 
 def test_alembic_offline_upgrade_emits_current_foundation_tables_without_database() -> None:
@@ -60,3 +60,6 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert "CREATE TABLE venue_managers" in result.stdout
     assert "uq_venue_managers_venue_id_user_id" in result.stdout
     assert "ck_venue_managers_role" in result.stdout
+    assert "CREATE TABLE game_systems" in result.stdout
+    assert "uq_game_systems_slug" in result.stdout
+    assert "ck_game_systems_slug_lowercase" in result.stdout
