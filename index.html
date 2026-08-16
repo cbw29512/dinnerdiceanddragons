@@ -12,6 +12,7 @@
   <meta property="og:description" content="Players find games. DMs find Players and places to run. Venues fill open tables with organized groups. Dinner, Dice & Dragons brings all three together.">
   <meta property="og:url" content="https://cbw29512.github.io/dinnerdiceanddragons/">
   <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="global-auth-ui.css">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Dinner, Dice & Dragons","url":"https://cbw29512.github.io/dinnerdiceanddragons/","description":"A local tabletop RPG platform helping Players, Dungeon Masters, and public venues turn compatible schedules and interests into real game nights."}</script>
 </head>
 <body data-homepage="true">
@@ -20,9 +21,6 @@
   <div class="shell nav">
     <a class="brand" href="index.html"><span aria-hidden="true">🎲</span><span>Dinner, Dice &amp; Dragons</span></a>
     <nav class="nav-right" aria-label="Primary navigation">
-      <a class="header-link" href="#players">Players</a>
-      <a class="header-link" href="#dms">DMs</a>
-      <a class="header-link" href="#venues">Venues</a>
       <a class="header-link" href="#how-it-works">How It Works</a>
       <a class="header-link" href="conduct.html">Safety</a>
     </nav>
@@ -35,7 +33,7 @@
       <p class="eyebrow">LOCAL D&amp;D GAME NIGHTS</p>
       <h1 id="hero-title">Play more D&amp;D. Spend less time finding a table.</h1>
       <p class="hero-lede">Players find games that fit. DMs find Players and places to run. Venues bring organized groups to open tables. <strong>Dinner, Dice &amp; Dragons brings all three together.</strong></p>
-      <p class="muted">Use one role or several. A DM can also look for a game as a Player, and a venue owner can play too.</p>
+      <p class="muted">Choose Player, DM, or Venue from the top of the site at any time. One DDD account can hold more than one role.</p>
     </div>
 
     <div class="role-door-grid" aria-label="Choose how Dinner, Dice & Dragons can help you">
@@ -179,6 +177,9 @@
 </main>
 
 <footer><div class="shell footer-row"><span>Dinner, Dice &amp; Dragons · More D&amp;D. Less searching, scheduling, and organizing.</span><span><a href="#players">Players</a> · <a href="#dms">DMs</a> · <a href="#venues">Venues</a> · <a href="#how-it-works">How It Works</a> · <a href="conduct.html">Safety</a></span></div></footer>
+<script src="production-api-client.js"></script>
+<script src="production-auth.js"></script>
+<script src="global-auth-ui.js"></script>
 <script src="api-config.js"></script>
 <script src="api-client.js"></script>
 <script src="shared-registration.js"></script>
