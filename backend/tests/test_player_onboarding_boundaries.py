@@ -36,7 +36,8 @@ def test_invalid_timezone_is_rejected_before_persistence(onboarding_context) -> 
     assert "valid IANA timezone" in response.text
 
     with factory() as session:
-        assert session.scalar(select(func.count()).select_from(PlayerProfile)) == 0
+        profile_count = session.scalar(select(func.count()).select_from(PlayerProfile))
+        assert profile_count == 0
 
 
 def test_display_name_conflict_does_not_create_second_player(onboarding_context) -> None:
@@ -61,12 +62,14 @@ def test_display_name_conflict_does_not_create_second_player(onboarding_context)
     with factory() as session:
         bob_user = session.scalar(select(User).where(User.email == "bob@example.com"))
         assert bob_user is not None
-        assert session.scalar(
+        bob_profile = session.scalar(
             select(PlayerProfile).where(PlayerProfile.user_id == bob_user.id)
-        ) is None
-        assert session.scalar(
+        )
+        bob_role = session.scalar(
             select(UserRole).where(UserRole.user_id == bob_user.id, UserRole.role == "player")
-        ) is None
+        )
+        assert bob_profile is None
+        assert bob_role is None
 
 
 def test_two_users_receive_independent_player_profiles(onboarding_context) -> None:
