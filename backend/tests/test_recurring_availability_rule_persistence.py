@@ -83,6 +83,7 @@ def test_invalid_common_fields_are_rejected(overrides: dict[str, object]) -> Non
         {"week_interval": None},
         {"week_interval": 0},
         {"week_interval": 5},
+        {"week_interval": 1, "anchor_date": date(2026, 8, 15)},
         {"week_interval": 2, "anchor_date": None},
         {"monthly_ordinal": MonthlyOrdinal.FIRST.value},
         {"month_interval": 1},
@@ -111,6 +112,7 @@ def test_alternating_weekly_rule_accepts_anchor_date() -> None:
     [
         (None, MonthlyOrdinal.FIRST.value, None),
         (1, None, None),
+        (1, MonthlyOrdinal.FIRST.value, date(2026, 8, 1)),
         (4, MonthlyOrdinal.FIRST.value, date(2026, 8, 1)),
         (2, MonthlyOrdinal.FIRST.value, None),
     ],
