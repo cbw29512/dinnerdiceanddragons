@@ -14,6 +14,33 @@ test("homepage gives Players, DMs, and Venues equal clear entry points", async (
   await expect(page.locator("#player").getByRole("heading", { name: /Find a D&D table that fits/i })).toBeVisible();
 });
 
+test("global header exposes role entry and account access without scrolling", async ({ page }) => {
+  await page.goto("/index.html");
+
+  const header = page.locator("header");
+  await expect(header.getByRole("link", { name: "Find a Game" })).toBeVisible();
+  await expect(header.getByRole("link", { name: "Run a Game" })).toBeVisible();
+  await expect(header.getByRole("link", { name: "For Venues" })).toBeVisible();
+  await expect(header.getByRole("button", { name: "Sign In" })).toBeVisible();
+
+  await header.getByRole("button", { name: "Sign In" }).click();
+  const dialog = page.getByRole("dialog", { name: /One login\. Every way you play\./i });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("button", { name: /Player Find a table/i })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: /DM Run a game/i })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: /Venue Host tables/i })).toBeVisible();
+  await expect(dialog.getByLabel("Email address")).toBeVisible();
+  await expect(dialog.getByLabel("Password")).toBeVisible();
+});
+
+test("Join page keeps account access in the header instead of a buried account section", async ({ page }) => {
+  await page.goto("/join.html#player");
+
+  await expect(page.locator("#account")).toHaveCount(0);
+  await expect(page.locator("header").getByRole("button", { name: "Sign In" })).toBeVisible();
+  await expect(page.locator("#player").getByRole("heading", { name: /Find a D&D table that fits/i })).toBeVisible();
+});
+
 test("Player can add and remove preferences, save, and continue", async ({ page }) => {
   await page.goto("/join.html#player");
   const form = page.locator("#player-form");
@@ -46,6 +73,7 @@ test("homepage remains usable at a phone-sized viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/index.html");
 
+  await expect(page.locator("header").getByRole("button", { name: "Sign In" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Find My Table" }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Form My Table" }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Fill My Tables" }).first()).toBeVisible();
