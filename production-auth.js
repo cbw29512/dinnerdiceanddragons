@@ -203,7 +203,7 @@
   }
 
   async function signUp(email, password) {
-    const redirectTo = `${window.location.origin}${window.location.pathname}`;
+    const redirectTo = new URL("join.html", window.location.href).toString();
     const payload = await authRequest("signup", {
       redirectTo,
       body: {
