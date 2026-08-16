@@ -17,6 +17,9 @@ dependencies = [
   "uvicorn[standard]==0.51.0",
 ]
 
+[project.scripts]
+app = "app.main:app"
+
 [project.optional-dependencies]
 dev = [
   "httpx==0.28.1",
