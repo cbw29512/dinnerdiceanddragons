@@ -1,7 +1,8 @@
 """Negative and cross-user boundary tests for Player onboarding."""
 
 import pytest
-from onboarding_test_support import build_onboarding_client, player_payload
+from onboarding_test_support import build_onboarding_client
+from player_onboarding_test_data import player_payload
 from sqlalchemy import func, select
 
 from app.models.player_profile import PlayerProfile
