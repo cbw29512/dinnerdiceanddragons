@@ -78,7 +78,9 @@ def test_one_user_can_hold_independent_player_and_gm_availability() -> None:
         gm_rule = add_rule(session, "saturday", 17)
         session.add_all(
             [
-                PlayerAvailabilityWindow(player_profile_id=player.id, recurring_rule_id=player_rule.id),
+                PlayerAvailabilityWindow(
+                    player_profile_id=player.id, recurring_rule_id=player_rule.id
+                ),
                 GMAvailabilityWindow(gm_profile_id=gm.id, recurring_rule_id=gm_rule.id),
             ]
         )
@@ -112,7 +114,9 @@ def test_same_rule_cannot_be_reused_in_same_window_type(window_type: str) -> Non
         rule = add_rule(session, "tuesday", 18)
         if window_type == "player":
             first = PlayerAvailabilityWindow(player_profile_id=player.id, recurring_rule_id=rule.id)
-            second = PlayerAvailabilityWindow(player_profile_id=player.id, recurring_rule_id=rule.id)
+            second = PlayerAvailabilityWindow(
+                player_profile_id=player.id, recurring_rule_id=rule.id
+            )
         else:
             first = GMAvailabilityWindow(gm_profile_id=gm.id, recurring_rule_id=rule.id)
             second = GMAvailabilityWindow(gm_profile_id=gm.id, recurring_rule_id=rule.id)
