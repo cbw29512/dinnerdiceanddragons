@@ -1,0 +1,73 @@
+name: Supabase RLS PostgreSQL Contract
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/alembic/**"
+      - "backend/scripts/verify_supabase_rls_hardening.sh"
+      - ".github/workflows/supabase-rls-postgres.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/alembic/**"
+      - "backend/scripts/verify_supabase_rls_hardening.sh"
+      - ".github/workflows/supabase-rls-postgres.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  supabase-rls-postgres-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+
+      - name: Build and start PostgreSQL API stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! docker compose up --build --detach; then
+            docker compose ps --all || true
+            docker compose logs api db || true
+            exit 1
+          fi
+
+      - name: Wait for API health
+        shell: bash
+        run: |
+          set -euo pipefail
+          api_id="$(docker compose ps --quiet api)"
+          test -n "$api_id"
+
+          for attempt in {1..30}; do
+            status="$(docker inspect --format '{{.State.Health.Status}}' "$api_id")"
+            echo "API health attempt ${attempt}: ${status}"
+            if [[ "$status" == "healthy" ]]; then
+              exit 0
+            fi
+            if [[ "$status" == "unhealthy" ]]; then
+              docker compose logs api db
+              exit 1
+            fi
+            sleep 2
+          done
+
+          docker compose logs api db
+          echo "API did not become healthy in the expected window."
+          exit 1
+
+      - name: Apply all migrations
+        run: docker compose exec -T api alembic -c alembic.ini upgrade head
+
+      - name: Verify Supabase RLS hardening in PostgreSQL
+        run: bash backend/scripts/verify_supabase_rls_hardening.sh
+
+      - name: Tear down contract stack
+        if: always()
+        run: docker compose down --volumes --remove-orphans
