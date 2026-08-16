@@ -20,7 +20,7 @@ def test_alembic_configuration_discovers_current_head() -> None:
     script = load_script_directory()
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == ["0011_profile_availability"]
+    assert script.get_heads() == ["0012_seed_game_systems"]
 
 
 def test_revision_ids_fit_alembic_version_column() -> None:
@@ -91,3 +91,11 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert "uq_player_availability_windows_recurring_rule_id" in result.stdout
     assert "CREATE TABLE gm_availability_windows" in result.stdout
     assert "uq_gm_availability_windows_recurring_rule_id" in result.stdout
+    assert "INSERT INTO game_systems" in result.stdout
+    assert "dnd-5e-2014" in result.stdout
+    assert "dnd-5e-2024" in result.stdout
+    assert "pathfinder-2e" in result.stdout
+    assert "call-of-cthulhu" in result.stdout
+    assert "cyberpunk-red" in result.stdout
+    assert "shadowrun" in result.stdout
+    assert "other-rpg" in result.stdout
