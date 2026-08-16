@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from app.api.routes.health import router as health_router
 from app.api.routes.me import router as me_router
+from app.api.routes.onboarding import router as onboarding_router
 
 LOGGER = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ def create_app() -> FastAPI:
         )
         application.include_router(health_router, prefix="/api/v1")
         application.include_router(me_router, prefix="/api/v1")
+        application.include_router(onboarding_router, prefix="/api/v1")
         return application
     except Exception:
         LOGGER.exception("Failed to construct FastAPI application")
