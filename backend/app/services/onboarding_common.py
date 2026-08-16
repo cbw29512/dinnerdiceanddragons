@@ -1,9 +1,11 @@
 """Shared server-side policy helpers for authenticated onboarding writes."""
 
+import logging
 from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.identity.display_names import DisplayName, DisplayNameValidationError, prepare_display_name
@@ -12,6 +14,8 @@ from app.models.recurring_availability_rule import RecurringAvailabilityRule
 from app.models.user import User
 from app.models.user_role import UserRole, UserRoleType
 from app.schemas.availability import AvailabilityWindowInput
+
+LOGGER = logging.getLogger(__name__)
 
 
 class OnboardingValidationError(ValueError):
@@ -38,9 +42,14 @@ def prepare_available_display_name(
     except DisplayNameValidationError as exc:
         raise OnboardingValidationError(str(exc)) from exc
 
-    existing_owner = session.scalar(
-        select(User.id).where(User.display_name_normalized == prepared.normalized)
-    )
+    try:
+        existing_owner = session.scalar(
+            select(User.id).where(User.display_name_normalized == prepared.normalized)
+        )
+    except SQLAlchemyError:
+        LOGGER.exception("Failed to check display-name ownership for user %s", user.id)
+        raise
+
     if existing_owner is not None and existing_owner != user.id:
         raise OnboardingConflictError("That display name is already in use.")
     return prepared
@@ -53,7 +62,8 @@ def ensure_user_role(session: Session, user_id: UUID, role: UserRoleType) -> Non
         existing = session.get(UserRole, (user_id, role.value))
         if existing is None:
             session.add(UserRole(user_id=user_id, role=role.value))
-    except Exception:
+    except SQLAlchemyError:
+        LOGGER.exception("Failed to ensure role %s for user %s", role.value, user_id)
         raise
 
 
@@ -70,7 +80,8 @@ def resolve_active_game_systems(
                 GameSystem.active.is_(True),
             )
         ).all()
-    except Exception:
+    except SQLAlchemyError:
+        LOGGER.exception("Failed to resolve onboarding GameSystem slugs")
         raise
 
     by_slug = {system.slug: system for system in systems}
@@ -100,5 +111,6 @@ def recurring_rule_from_input(item: AvailabilityWindowInput) -> RecurringAvailab
             ends_on=item.ends_on,
             active=True,
         )
-    except Exception:
-        raise
+    except (TypeError, ValueError) as exc:
+        LOGGER.exception("Failed to translate validated availability input")
+        raise OnboardingValidationError("Availability could not be persisted.") from exc
