@@ -16,7 +16,7 @@ def test_alembic_configuration_discovers_current_head() -> None:
     script = ScriptDirectory.from_config(config)
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == ["0008_player_system_experience"]
+    assert script.get_heads() == ["0009_gm_system_experience"]
 
 
 def test_alembic_offline_upgrade_emits_current_foundation_tables_without_database() -> None:
@@ -67,3 +67,9 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert "uq_player_system_experiences_profile_system" in result.stdout
     assert "ck_player_system_experiences_years_playing" in result.stdout
     assert "ck_player_system_experiences_comfort_level" in result.stdout
+    assert "CREATE TABLE gm_system_experiences" in result.stdout
+    assert "uq_gm_system_experiences_profile_system" in result.stdout
+    assert "ck_gm_system_experiences_years_gming" in result.stdout
+    assert "ck_gm_system_experiences_preferred_player_experience" in result.stdout
+    assert "CREATE TABLE gm_system_formats" in result.stdout
+    assert "ck_gm_system_formats_format" in result.stdout
