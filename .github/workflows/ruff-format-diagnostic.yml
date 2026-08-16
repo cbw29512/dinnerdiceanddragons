@@ -34,7 +34,8 @@ jobs:
             exit 0
           fi
 
-          changed_files="$(git diff --name-only -- backend | tr '\n' ' ')"
-          patch_b64="$(git diff -- backend | base64 -w0)"
-          echo "::error title=Ruff would reformat ${changed_files}::${patch_b64}"
+          while IFS= read -r file; do
+            patch_b64="$(git diff -- "$file" | base64 -w0)"
+            echo "::error file=${file},title=Ruff would reformat ${file}::${patch_b64}"
+          done < <(git diff --name-only -- backend)
           exit 1
