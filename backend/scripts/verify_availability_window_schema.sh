@@ -10,11 +10,17 @@ for table in player_availability_windows gm_availability_windows; do
   test "$table_count" = "1"
 done
 
-player_profile_fk="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.player_availability_windows'::regclass AND conname='fk_player_availability_windows_player_profile_id_player_profiles' AND confdeltype='c'")"
+player_profile_fk="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.player_availability_windows'::regclass AND conname='fk_player_avail_profile' AND confdeltype='c'")"
 test "$player_profile_fk" = "1"
 
-gm_profile_fk="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.gm_availability_windows'::regclass AND conname='fk_gm_availability_windows_gm_profile_id_gm_profiles' AND confdeltype='c'")"
+player_rule_fk="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.player_availability_windows'::regclass AND conname='fk_player_avail_rule' AND confdeltype='c'")"
+test "$player_rule_fk" = "1"
+
+gm_profile_fk="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.gm_availability_windows'::regclass AND conname='fk_gm_avail_profile' AND confdeltype='c'")"
 test "$gm_profile_fk" = "1"
+
+gm_rule_fk="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.gm_availability_windows'::regclass AND conname='fk_gm_avail_rule' AND confdeltype='c'")"
+test "$gm_rule_fk" = "1"
 
 player_rule_unique="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.player_availability_windows'::regclass AND conname='uq_player_availability_windows_recurring_rule_id'")"
 test "$player_rule_unique" = "1"
