@@ -64,12 +64,20 @@ assert_rejected \
   "INSERT INTO recurring_availability_rules (id,day_of_week,start_time,end_time,pattern_type,timezone) VALUES ('00000000-0000-0000-0000-000000000812','friday','18:00','22:00','weekly_interval','America/New_York')"
 
 assert_rejected \
+  "every-week rule with unnecessary anchor_date" \
+  "INSERT INTO recurring_availability_rules (id,day_of_week,start_time,end_time,pattern_type,week_interval,anchor_date,timezone) VALUES ('00000000-0000-0000-0000-000000000817','friday','18:00','22:00','weekly_interval',1,'2026-08-15','America/New_York')"
+
+assert_rejected \
   "alternating weekly rule without anchor_date" \
   "INSERT INTO recurring_availability_rules (id,day_of_week,start_time,end_time,pattern_type,week_interval,timezone) VALUES ('00000000-0000-0000-0000-000000000813','friday','18:00','22:00','weekly_interval',2,'America/New_York')"
 
 assert_rejected \
   "monthly rule without ordinal" \
   "INSERT INTO recurring_availability_rules (id,day_of_week,start_time,end_time,pattern_type,month_interval,timezone) VALUES ('00000000-0000-0000-0000-000000000814','monday','18:00','21:00','monthly_ordinal_weekday',1,'America/New_York')"
+
+assert_rejected \
+  "every-month rule with unnecessary anchor_date" \
+  "INSERT INTO recurring_availability_rules (id,day_of_week,start_time,end_time,pattern_type,monthly_ordinal,month_interval,anchor_date,timezone) VALUES ('00000000-0000-0000-0000-000000000818','monday','18:00','21:00','monthly_ordinal_weekday','first',1,'2026-08-01','America/New_York')"
 
 assert_rejected \
   "blank timezone" \
