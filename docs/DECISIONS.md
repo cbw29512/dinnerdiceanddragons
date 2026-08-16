@@ -174,6 +174,37 @@ A DDD display name is public presentation data, not the user's durable identity 
 - UI availability checks are advisory; a transaction can still lose a race and must surface a useful “name already taken” response.
 - Email addresses and auth-provider IDs are not substitutes for public display names.
 
+## Decision 018 — Production onboarding writes follow domain boundaries, not pilot form boundaries
+
+**Status:** Accepted
+
+The validation prototype intentionally combines several future concepts into a small number of browser forms. Production persistence must not copy those form boundaries into the relational model when the fields belong to different lifecycle domains.
+
+**Consequences:**
+
+- Supabase/Auth-derived identity remains authoritative for email and the current DDD User. Production onboarding does not accept a client-supplied `user_id`, profile owner ID, or authoritative email.
+- Step 2 Player onboarding persists the public display name, PlayerProfile fields, PlayerSystemExperience rows, and typed recurring Player availability windows.
+- Step 2 GM onboarding persists the public display name, GMProfile fields, GMSystemExperience/GMSystemFormat rows, and typed recurring GM availability windows.
+- Player table-style/demand preferences remain future `PlayerDemandSignal` data in Step 3 rather than being forced into PlayerProfile.
+- GM cadence/supply preferences remain future `GMSupplySignal` data in Step 3 rather than being forced into GMProfile.
+- Venue identity/manager data remains separate from venue table inventory. Day/time/capacity/purchase/approval fields remain future `VenueTableWindow` data in Step 3.
+- Table-specific expectations remain attached to future games/events rather than being stored as permanent GMProfile data.
+- During the migration, the UI must clearly distinguish account-saved production data from any still-local preview data; it must not claim that unsaved future-step fields are already available to production matching.
+
+## Decision 019 — The MVP GameSystem catalog is migration-seeded with stable IDs and slugs
+
+**Status:** Accepted
+
+System experience records must reference canonical GameSystem rows. The production database therefore needs the same initial catalog in every environment before authenticated onboarding can persist Player or GM system selections.
+
+**Consequences:**
+
+- Alembic seeds the validated MVP system choices with deterministic UUIDs and stable lowercase slugs.
+- Browser/API contracts use canonical slugs; clients do not invent or persist database UUIDs.
+- The initial catalog contains D&D 5e (2014), D&D 5e (2024), Pathfinder 2e, Call of Cthulhu, Cyberpunk RED, Shadowrun, and a temporary `other-rpg` catch-all matching the current validated UI.
+- `other-rpg` is not treated as a substitute for a future custom-system/catalog workflow. It is only a compatibility choice until that workflow is explicitly designed.
+- Catalog rows are reference data, not user-owned profile data, and remain independently administrable after seeding.
+
 ---
 
 ## How to add decisions
