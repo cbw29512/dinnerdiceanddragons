@@ -1,5 +1,7 @@
 """HTTP and persistence tests for authenticated Player onboarding."""
 
+from uuid import UUID
+
 import pytest
 from sqlalchemy import func, select
 
@@ -130,7 +132,7 @@ def test_second_submission_replaces_player_slice_without_new_profile(onboarding_
     assert second.json()["player_profile_id"] == first.json()["player_profile_id"]
 
     with factory() as session:
-        profile_id = first.json()["player_profile_id"]
+        profile_id = UUID(first.json()["player_profile_id"])
         assert session.scalar(
             select(func.count()).select_from(PlayerSystemExperience).where(
                 PlayerSystemExperience.player_profile_id == profile_id
