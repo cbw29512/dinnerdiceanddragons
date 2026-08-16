@@ -16,7 +16,7 @@ def test_alembic_configuration_discovers_current_head() -> None:
     script = ScriptDirectory.from_config(config)
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == ["0009_gm_system_experience"]
+    assert script.get_heads() == ["0010_recurring_availability_rule"]
 
 
 def test_alembic_offline_upgrade_emits_current_foundation_tables_without_database() -> None:
@@ -73,3 +73,7 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert "ck_gm_system_experiences_preferred_player_experience" in result.stdout
     assert "CREATE TABLE gm_system_formats" in result.stdout
     assert "ck_gm_system_formats_format" in result.stdout
+    assert "CREATE TABLE recurring_availability_rules" in result.stdout
+    assert "ck_recurring_availability_rules_pattern_fields" in result.stdout
+    assert "ix_recurring_availability_rules_owner_type" in result.stdout
+    assert "ix_recurring_availability_rules_owner_id" in result.stdout
