@@ -3,7 +3,17 @@
 const assert = require("node:assert/strict");
 
 global.window = globalThis;
+if (!global.localStorage) {
+  const authStorage = new Map();
+  global.localStorage = {
+    getItem(key) { return authStorage.has(key) ? authStorage.get(key) : null; },
+    setItem(key, value) { authStorage.set(key, String(value)); },
+    removeItem(key) { authStorage.delete(key); },
+    clear() { authStorage.clear(); }
+  };
+}
 require("../production-api-client.js");
+require("../production-auth.js");
 
 let failures = 0;
 
@@ -26,6 +36,12 @@ function jsonResponse(status, payload) {
       return payload === null ? "" : JSON.stringify(payload);
     }
   };
+}
+
+function fakeJwt(payload) {
+  const header = Buffer.from(JSON.stringify({ alg: "ES256", typ: "JWT" })).toString("base64url");
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  return `${header}.${body}.signature`;
 }
 
 async function run() {
@@ -149,12 +165,92 @@ async function run() {
     );
   });
 
+  await test("production auth signs in with the public Supabase key and stores the session", async () => {
+    localStorage.clear();
+    const now = Math.floor(Date.now() / 1000);
+    const token = fakeJwt({
+      aud: "authenticated",
+      exp: now + 3600,
+      sub: "auth-user-1",
+      email: "player@example.com",
+      role: "authenticated"
+    });
+    let captured = null;
+    global.fetch = async (url, options) => {
+      captured = { url, options };
+      return jsonResponse(200, {
+        access_token: token,
+        refresh_token: "refresh-one",
+        expires_in: 3600,
+        user: { id: "auth-user-1", email: "player@example.com" }
+      });
+    };
+
+    const session = await DDDProductionAuth.signIn("player@example.com", "test-password");
+
+    assert.match(captured.url, /\/auth\/v1\/token\?grant_type=password$/);
+    assert.match(captured.options.headers.apikey, /^sb_publishable_/);
+    assert.deepEqual(JSON.parse(captured.options.body), {
+      email: "player@example.com",
+      password: "test-password"
+    });
+    assert.equal(session.user.email, "player@example.com");
+    assert.equal(await DDDProductionAuth.getAccessToken(), token);
+    assert.ok(localStorage.getItem("ddd-production-auth-session"));
+  });
+
+  await test("production auth refreshes an expired access token before API use", async () => {
+    localStorage.clear();
+    const now = Math.floor(Date.now() / 1000);
+    const expiredToken = fakeJwt({
+      aud: "authenticated",
+      exp: now - 10,
+      sub: "auth-user-2",
+      email: "gm@example.com",
+      role: "authenticated"
+    });
+    const freshToken = fakeJwt({
+      aud: "authenticated",
+      exp: now + 3600,
+      sub: "auth-user-2",
+      email: "gm@example.com",
+      role: "authenticated"
+    });
+    let call = 0;
+    let refreshRequest = null;
+    global.fetch = async (url, options) => {
+      call += 1;
+      if (call === 1) {
+        return jsonResponse(200, {
+          access_token: expiredToken,
+          refresh_token: "refresh-old",
+          expires_in: 1
+        });
+      }
+      refreshRequest = { url, options };
+      return jsonResponse(200, {
+        access_token: freshToken,
+        refresh_token: "refresh-rotated",
+        expires_in: 3600
+      });
+    };
+
+    await DDDProductionAuth.signIn("gm@example.com", "test-password");
+    const token = await DDDProductionAuth.getAccessToken();
+
+    assert.equal(token, freshToken);
+    assert.match(refreshRequest.url, /\/auth\/v1\/token\?grant_type=refresh_token$/);
+    assert.deepEqual(JSON.parse(refreshRequest.options.body), { refresh_token: "refresh-old" });
+    const stored = JSON.parse(localStorage.getItem("ddd-production-auth-session"));
+    assert.equal(stored.refresh_token, "refresh-rotated");
+  });
+
   if (failures) {
-    console.error(`\n${failures} production API client test${failures === 1 ? "" : "s"} failed.`);
+    console.error(`\n${failures} production API/auth test${failures === 1 ? "" : "s"} failed.`);
     process.exit(1);
   }
 
-  console.log("\nAll production API client tests passed.");
+  console.log("\nAll production API and browser-auth tests passed.");
 }
 
 run().catch((error) => {
