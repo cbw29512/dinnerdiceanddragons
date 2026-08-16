@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from app.models.player_profile import PlayerProfile
 from app.models.user import User
 from app.models.user_role import UserRole
-from tests.onboarding_test_support import build_onboarding_client, player_payload
+from onboarding_test_support import build_onboarding_client, player_payload
 
 
 @pytest.fixture()
