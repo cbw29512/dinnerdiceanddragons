@@ -152,6 +152,9 @@ jobs:
       - name: Verify RecurringAvailabilityRule persistence in PostgreSQL
         run: bash backend/scripts/verify_recurring_availability_schema.sh
 
+      - name: Verify Player and GM availability windows in PostgreSQL
+        run: bash backend/scripts/verify_availability_window_schema.sh
+
       - name: Verify privileged audit immutability in PostgreSQL
         run: bash backend/scripts/verify_privileged_audit_schema.sh
 
