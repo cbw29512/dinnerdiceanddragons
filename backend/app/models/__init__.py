@@ -19,7 +19,6 @@ from app.models.player_system_experience import PlayerComfortLevel, PlayerSystem
 from app.models.privileged_audit_event import PrivilegedAuditEvent
 from app.models.recurring_availability_rule import (
     AvailabilityDay,
-    AvailabilityOwnerType,
     AvailabilityPatternType,
     MonthlyOrdinal,
     RecurringAvailabilityRule,
@@ -33,7 +32,6 @@ metadata = Base.metadata
 __all__ = [
     "AccountStatus",
     "AvailabilityDay",
-    "AvailabilityOwnerType",
     "AvailabilityPatternType",
     "GameSystem",
     "GMComfortLevel",
