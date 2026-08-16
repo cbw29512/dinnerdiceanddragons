@@ -1,6 +1,6 @@
 """Trust-boundary attacks for authenticated Step 3 matching inputs."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 import pytest
@@ -182,7 +182,7 @@ def test_venue_manager_cannot_operate_another_managers_venue(matching_context) -
             select(VenueManager).where(VenueManager.venue_id == alice_venue_id)
         )
         assert alice_manager is not None
-        alice_manager.verified_at = datetime.now(timezone.utc)
+        alice_manager.verified_at = datetime.now(UTC)
         session.commit()
 
     response = client.post(
@@ -208,7 +208,7 @@ def test_venue_window_body_cannot_override_path_venue(matching_context) -> None:
             select(VenueManager).where(VenueManager.venue_id == venue_id)
         )
         assert manager is not None
-        manager.verified_at = datetime.now(timezone.utc)
+        manager.verified_at = datetime.now(UTC)
         session.commit()
 
     payload = venue_table_window_payload()
