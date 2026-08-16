@@ -17,13 +17,11 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    """Create reusable recurring schedule rules for Player, GM, and Venue owners."""
+    """Create owner-neutral recurring schedule value objects."""
 
     op.create_table(
         "recurring_availability_rules",
         sa.Column("id", sa.Uuid(), nullable=False),
-        sa.Column("owner_type", sa.String(length=16), nullable=False),
-        sa.Column("owner_id", sa.Uuid(), nullable=False),
         sa.Column("day_of_week", sa.String(length=16), nullable=False),
         sa.Column("start_time", sa.Time(timezone=False), nullable=False),
         sa.Column("end_time", sa.Time(timezone=False), nullable=False),
@@ -47,10 +45,6 @@ def upgrade() -> None:
             sa.DateTime(timezone=True),
             server_default=sa.func.now(),
             nullable=False,
-        ),
-        sa.CheckConstraint(
-            "owner_type IN ('player', 'gm', 'venue')",
-            name="ck_recurring_availability_rules_owner_type",
         ),
         sa.CheckConstraint(
             "day_of_week IN ('monday', 'tuesday', 'wednesday', 'thursday', "
@@ -93,29 +87,9 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id", name="pk_recurring_availability_rules"),
     )
-    op.create_index(
-        "ix_recurring_availability_rules_owner_type",
-        "recurring_availability_rules",
-        ["owner_type"],
-        unique=False,
-    )
-    op.create_index(
-        "ix_recurring_availability_rules_owner_id",
-        "recurring_availability_rules",
-        ["owner_id"],
-        unique=False,
-    )
 
 
 def downgrade() -> None:
     """Remove recurring availability rule persistence."""
 
-    op.drop_index(
-        "ix_recurring_availability_rules_owner_id",
-        table_name="recurring_availability_rules",
-    )
-    op.drop_index(
-        "ix_recurring_availability_rules_owner_type",
-        table_name="recurring_availability_rules",
-    )
     op.drop_table("recurring_availability_rules")
