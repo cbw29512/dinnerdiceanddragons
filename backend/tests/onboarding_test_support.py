@@ -20,6 +20,7 @@ from app.models.player_system_experience import PlayerSystemExperience
 from app.models.recurring_availability_rule import RecurringAvailabilityRule
 from app.models.user import User
 from app.models.user_role import UserRole
+from app.models.venue import Venue, VenueManager
 
 ALICE_SUBJECT = "11111111-1111-1111-1111-111111111111"
 BOB_SUBJECT = "22222222-2222-2222-2222-222222222222"
@@ -71,6 +72,8 @@ def build_onboarding_client():
             UserRole.__table__,
             PlayerProfile.__table__,
             GMProfile.__table__,
+            Venue.__table__,
+            VenueManager.__table__,
             GameSystem.__table__,
             PlayerSystemExperience.__table__,
             GMSystemExperience.__table__,
