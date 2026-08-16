@@ -11,8 +11,10 @@ from app.api.dependencies.auth import get_supabase_jwt_verifier
 from app.auth.supabase_jwt import TokenVerificationError
 from app.db.session import get_db_session
 from app.main import create_app
-from app.models.availability_window import PlayerAvailabilityWindow
+from app.models.availability_window import GMAvailabilityWindow, PlayerAvailabilityWindow
 from app.models.game_system import GameSystem
+from app.models.gm_profile import GMProfile
+from app.models.gm_system_experience import GMSystemExperience, GMSystemFormat
 from app.models.player_profile import PlayerProfile
 from app.models.player_system_experience import PlayerSystemExperience
 from app.models.recurring_availability_rule import RecurringAvailabilityRule
@@ -47,7 +49,7 @@ class StubVerifier:
 
 
 def build_onboarding_client():
-    """Build an isolated API client and session factory with required tables."""
+    """Build an isolated API client and session factory with the Step 2 schema."""
 
     try:
         engine = create_engine(
@@ -68,10 +70,14 @@ def build_onboarding_client():
             User.__table__,
             UserRole.__table__,
             PlayerProfile.__table__,
+            GMProfile.__table__,
             GameSystem.__table__,
             PlayerSystemExperience.__table__,
+            GMSystemExperience.__table__,
+            GMSystemFormat.__table__,
             RecurringAvailabilityRule.__table__,
             PlayerAvailabilityWindow.__table__,
+            GMAvailabilityWindow.__table__,
         ):
             table.create(engine)
 
