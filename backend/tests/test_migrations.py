@@ -20,7 +20,7 @@ def test_alembic_configuration_discovers_current_head() -> None:
     script = load_script_directory()
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == ["0013_table_match_signals"]
+    assert script.get_heads() == ["0014_supabase_rls_hardening"]
 
 
 def test_revision_ids_fit_alembic_version_column() -> None:
@@ -105,3 +105,6 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert "cyberpunk-red" in result.stdout
     assert "shadowrun" in result.stdout
     assert "other-rpg" in result.stdout
+    assert "ENABLE ROW LEVEL SECURITY" in result.stdout
+    assert "deny_privileged_audit_event_mutation" in result.stdout
+    assert "search_path = pg_catalog" in result.stdout
