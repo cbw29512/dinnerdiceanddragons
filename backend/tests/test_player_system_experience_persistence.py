@@ -5,7 +5,6 @@ from uuid import uuid4
 
 import pytest
 from sqlalchemy import create_engine, event, select
-from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
