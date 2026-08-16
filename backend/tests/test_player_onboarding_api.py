@@ -47,11 +47,15 @@ def test_player_onboarding_persists_server_owned_state(onboarding_context) -> No
     assert "email" not in body and "user_id" not in body
 
     with factory() as session:
-        user = session.scalar(select(User).where(User.auth_provider_user_id == ALICE_SUBJECT))
+        user = session.scalar(
+            select(User).where(User.auth_provider_user_id == ALICE_SUBJECT)
+        )
         assert user is not None
         assert user.email == "alice@example.com"
         assert user.display_name_normalized == "alice adventurer"
-        profile = session.scalar(select(PlayerProfile).where(PlayerProfile.user_id == user.id))
+        profile = session.scalar(
+            select(PlayerProfile).where(PlayerProfile.user_id == user.id)
+        )
         assert profile is not None
         assert str(profile.id) == body["player_profile_id"]
         assert profile.postal_code == "29501"
@@ -105,9 +109,13 @@ def test_unknown_system_rolls_back_player_state(onboarding_context) -> None:
     assert "missing-system" in response.text
 
     with factory() as session:
-        user = session.scalar(select(User).where(User.auth_provider_user_id == ALICE_SUBJECT))
+        user = session.scalar(
+            select(User).where(User.auth_provider_user_id == ALICE_SUBJECT)
+        )
         assert user is not None
-        profile = session.scalar(select(PlayerProfile).where(PlayerProfile.user_id == user.id))
+        profile = session.scalar(
+            select(PlayerProfile).where(PlayerProfile.user_id == user.id)
+        )
         player_role = session.scalar(
             select(UserRole).where(UserRole.user_id == user.id, UserRole.role == "player")
         )
