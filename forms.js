@@ -141,13 +141,49 @@
     }
   }
 
+  async function saveProductionForm(type, rawValues, status, form) {
+    try {
+      if (status) status.textContent = "Saving to your DDD account…";
+      const saved = await window.DDDProductionOnboarding.save(type, rawValues);
+      announce(status, "Saved to your DDD account. Your information is ready for the production matching flow.", true);
+      form.dispatchEvent(new CustomEvent("ddd:save-success", {
+        detail: {
+          type,
+          shared: true,
+          production: true,
+          result: saved.result,
+          values: rawValues,
+          payload: saved.payload,
+          deferred: saved.deferred
+        }
+      }));
+      return true;
+    } catch (error) {
+      if (error?.name === "ProductionAuthRequiredError") {
+        announce(status, "Saved on this device as a draft. Sign in above to save it to your DDD account.", true);
+        return true;
+      }
+
+      logError(`Unable to save ${type} to production`, error);
+      const message = error?.message ? ` ${error.message}` : "";
+      announce(status, `Online save failed.${message} Your draft is still saved on this device.`, false);
+      return true;
+    }
+  }
+
   async function saveForm(form) {
     try {
       const type = form.dataset.profileType || "Profile";
-      const values = window.DDDFormPilot?.injectIdentity(type, serialize(form)) || serialize(form);
-      saveLocal(type, values);
+      const rawValues = serialize(form);
+      saveLocal(type, rawValues);
       const status = statusNode(form);
 
+      if (window.DDDProductionOnboarding?.isEnabled(type)) {
+        await saveProductionForm(type, rawValues, status, form);
+        return;
+      }
+
+      const values = window.DDDFormPilot?.injectIdentity(type, rawValues) || rawValues;
       if (!window.DDDFormPilot?.actionFor(type) || !window.DDD_API?.isConfigured()) {
         announce(status, "Saved on this device. You can continue with the next step below.", true);
         form.dispatchEvent(new CustomEvent("ddd:save-success", { detail:{ type, shared:false, result:null, values } }));
