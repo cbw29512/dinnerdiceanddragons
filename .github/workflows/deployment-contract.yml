@@ -1,0 +1,56 @@
+name: Production Deployment Contract
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  api-runtime-contract:
+    name: API injected-port runtime contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Build production API image
+        run: docker build --tag ddd-api-port-contract ./backend
+
+      - name: Start API on injected port 8123
+        run: |
+          docker run --detach \
+            --name ddd-api-port-contract \
+            --env PORT=8123 \
+            --publish 8123:8123 \
+            ddd-api-port-contract
+
+      - name: Wait for dynamic-port container health
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in {1..30}; do
+            status="$(docker inspect --format '{{.State.Health.Status}}' ddd-api-port-contract)"
+            echo "Dynamic-port health attempt ${attempt}: ${status}"
+            if [[ "$status" == "healthy" ]]; then
+              curl --fail --silent --show-error http://127.0.0.1:8123/api/v1/health \
+                | grep '"status":"ok"'
+              exit 0
+            fi
+            if [[ "$status" == "unhealthy" ]]; then
+              docker logs ddd-api-port-contract
+              exit 1
+            fi
+            sleep 2
+          done
+          docker logs ddd-api-port-contract
+          echo "API did not become healthy on the injected port."
+          exit 1
+
+      - name: Tear down runtime contract container
+        if: always()
+        run: docker rm --force ddd-api-port-contract || true
