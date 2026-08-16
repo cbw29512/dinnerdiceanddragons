@@ -30,15 +30,11 @@ jobs:
           set -euo pipefail
           ruff format backend
           if git diff --quiet -- backend; then
-            echo "Ruff formatting is clean." >> "$GITHUB_STEP_SUMMARY"
+            echo "Ruff formatting is clean."
             exit 0
           fi
 
-          {
-            echo "### Ruff formatter patch"
-            echo
-            echo '```diff'
-            git diff -- backend
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          changed_files="$(git diff --name-only -- backend | tr '\n' ' ')"
+          patch_b64="$(git diff -- backend | base64 -w0)"
+          echo "::error title=Ruff would reformat ${changed_files}::${patch_b64}"
           exit 1
