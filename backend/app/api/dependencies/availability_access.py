@@ -25,9 +25,7 @@ def require_player_availability_owner(
 
     try:
         owner_user_id = session.scalar(
-            select(PlayerProfile.user_id).where(
-                PlayerProfile.id == window.player_profile_id
-            )
+            select(PlayerProfile.user_id).where(PlayerProfile.id == window.player_profile_id)
         )
     except SQLAlchemyError as exc:
         logger.exception(
