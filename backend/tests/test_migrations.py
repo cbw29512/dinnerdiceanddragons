@@ -75,5 +75,4 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert "ck_gm_system_formats_format" in result.stdout
     assert "CREATE TABLE recurring_availability_rules" in result.stdout
     assert "ck_recurring_availability_rules_pattern_fields" in result.stdout
-    assert "ix_recurring_availability_rules_owner_type" in result.stdout
-    assert "ix_recurring_availability_rules_owner_id" in result.stdout
+    assert "ck_recurring_availability_rules_timezone_length" in result.stdout
