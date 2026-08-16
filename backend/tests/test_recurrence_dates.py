@@ -130,8 +130,11 @@ def test_limit_returns_only_requested_preview_count() -> None:
 
 
 def test_inactive_rule_has_no_occurrences() -> None:
-    assert occurrence_dates(
-        weekly_rule(active=False),
-        date(2026, 8, 1),
-        date(2026, 8, 31),
-    ) == []
+    assert (
+        occurrence_dates(
+            weekly_rule(active=False),
+            date(2026, 8, 1),
+            date(2026, 8, 31),
+        )
+        == []
+    )
