@@ -134,7 +134,7 @@ def test_profile_delete_cascades_window_but_keeps_schedule_value() -> None:
         session.commit()
         session.delete(player)
         session.commit()
-        assert session.get(PlayerAvailabilityWindow, window.id) is None
+        assert session.scalar(select(PlayerAvailabilityWindow)) is None
         assert session.get(RecurringAvailabilityRule, rule.id) is not None
 
 
@@ -147,4 +147,4 @@ def test_rule_delete_cascades_linked_window() -> None:
         session.commit()
         session.delete(rule)
         session.commit()
-        assert session.get(GMAvailabilityWindow, window.id) is None
+        assert session.scalar(select(GMAvailabilityWindow)) is None
