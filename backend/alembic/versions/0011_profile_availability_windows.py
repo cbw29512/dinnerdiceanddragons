@@ -28,16 +28,13 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["player_profile_id"],
             ["player_profiles.id"],
-            name="fk_player_availability_windows_player_profile_id_player_profiles",
+            name="fk_player_avail_profile",
             ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
             ["recurring_rule_id"],
             ["recurring_availability_rules.id"],
-            name=(
-                "fk_player_availability_windows_recurring_rule_id_"
-                "recurring_availability_rules"
-            ),
+            name="fk_player_avail_rule",
             ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id", name="pk_player_availability_windows"),
@@ -62,16 +59,13 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["gm_profile_id"],
             ["gm_profiles.id"],
-            name="fk_gm_availability_windows_gm_profile_id_gm_profiles",
+            name="fk_gm_avail_profile",
             ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
             ["recurring_rule_id"],
             ["recurring_availability_rules.id"],
-            name=(
-                "fk_gm_availability_windows_recurring_rule_id_"
-                "recurring_availability_rules"
-            ),
+            name="fk_gm_avail_rule",
             ondelete="CASCADE",
         ),
         sa.PrimaryKeyConstraint("id", name="pk_gm_availability_windows"),
