@@ -6,6 +6,7 @@ Create Date: 2026-08-15
 """
 
 from collections.abc import Sequence
+from uuid import UUID
 
 from alembic import op
 import sqlalchemy as sa
@@ -29,54 +30,39 @@ SYSTEM_ROWS = (
         "5e (2024)",
         "dnd-5e-2024",
     ),
-    (
-        "10000000-0000-0000-0000-000000000003",
-        "Pathfinder",
-        "2e",
-        "pathfinder-2e",
-    ),
+    ("10000000-0000-0000-0000-000000000003", "Pathfinder", "2e", "pathfinder-2e"),
     (
         "10000000-0000-0000-0000-000000000004",
         "Call of Cthulhu",
         None,
         "call-of-cthulhu",
     ),
-    (
-        "10000000-0000-0000-0000-000000000005",
-        "Cyberpunk RED",
-        None,
-        "cyberpunk-red",
-    ),
-    (
-        "10000000-0000-0000-0000-000000000006",
-        "Shadowrun",
-        None,
-        "shadowrun",
-    ),
-    (
-        "10000000-0000-0000-0000-000000000007",
-        "Other RPG",
-        None,
-        "other-rpg",
-    ),
+    ("10000000-0000-0000-0000-000000000005", "Cyberpunk RED", None, "cyberpunk-red"),
+    ("10000000-0000-0000-0000-000000000006", "Shadowrun", None, "shadowrun"),
+    ("10000000-0000-0000-0000-000000000007", "Other RPG", None, "other-rpg"),
 )
 
 
-def upgrade() -> None:
-    """Insert stable reference rows matching the validated MVP selector."""
+def catalog_table() -> sa.TableClause:
+    """Return the minimal table shape needed by this data-only migration."""
 
-    game_systems = sa.table(
+    return sa.table(
         "game_systems",
         sa.column("id", sa.Uuid()),
         sa.column("name", sa.String()),
         sa.column("edition", sa.String()),
         sa.column("slug", sa.String()),
     )
+
+
+def upgrade() -> None:
+    """Insert stable reference rows matching the validated MVP selector."""
+
     op.bulk_insert(
-        game_systems,
+        catalog_table(),
         [
             {
-                "id": row_id,
+                "id": UUID(row_id),
                 "name": name,
                 "edition": edition,
                 "slug": slug,
@@ -89,5 +75,9 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Remove only the stable catalog rows introduced by this revision."""
 
-    seeded_ids = ", ".join(f"'{row_id}'" for row_id, *_ in SYSTEM_ROWS)
-    op.execute(sa.text(f"DELETE FROM game_systems WHERE id IN ({seeded_ids})"))
+    game_systems = catalog_table()
+    op.execute(
+        game_systems.delete().where(
+            game_systems.c.id.in_([UUID(row_id) for row_id, *_ in SYSTEM_ROWS])
+        )
+    )
