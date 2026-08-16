@@ -1,7 +1,7 @@
 """Authenticated APIs for the three production Table Match input types."""
 
 import logging
-from typing import Annotated
+from typing import Annotated, NoReturn
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -34,7 +34,9 @@ LOGGER = logging.getLogger(__name__)
 router = APIRouter(prefix="/matching", tags=["matching"])
 
 
-def _raise_signal_error(exc: Exception) -> None:
+def _raise_signal_error(exc: Exception) -> NoReturn:
+    """Translate service-layer matching errors into stable HTTP responses."""
+
     if isinstance(exc, MatchingSignalValidationError):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -68,7 +70,6 @@ def post_player_demand(
         raise
     except Exception as exc:
         _raise_signal_error(exc)
-        raise AssertionError("unreachable")
 
 
 @router.get("/player-demands", response_model=list[PlayerDemandResponse])
@@ -84,7 +85,6 @@ def get_player_demands(
         raise
     except Exception as exc:
         _raise_signal_error(exc)
-        raise AssertionError("unreachable")
 
 
 @router.post(
@@ -105,7 +105,6 @@ def post_gm_supply(
         raise
     except Exception as exc:
         _raise_signal_error(exc)
-        raise AssertionError("unreachable")
 
 
 @router.get("/gm-supplies", response_model=list[GMSupplyResponse])
@@ -121,7 +120,6 @@ def get_gm_supplies(
         raise
     except Exception as exc:
         _raise_signal_error(exc)
-        raise AssertionError("unreachable")
 
 
 @router.post(
@@ -143,7 +141,6 @@ def post_venue_table_window(
         raise
     except Exception as exc:
         _raise_signal_error(exc)
-        raise AssertionError("unreachable")
 
 
 @router.get(
@@ -163,4 +160,3 @@ def get_venue_table_windows(
         raise
     except Exception as exc:
         _raise_signal_error(exc)
-        raise AssertionError("unreachable")
