@@ -149,6 +149,9 @@ jobs:
       - name: Verify GMSystemExperience persistence in PostgreSQL
         run: bash backend/scripts/verify_gm_system_experience_schema.sh
 
+      - name: Verify RecurringAvailabilityRule persistence in PostgreSQL
+        run: bash backend/scripts/verify_recurring_availability_schema.sh
+
       - name: Verify privileged audit immutability in PostgreSQL
         run: bash backend/scripts/verify_privileged_audit_schema.sh
 
