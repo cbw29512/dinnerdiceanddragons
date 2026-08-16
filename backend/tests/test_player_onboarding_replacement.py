@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 
 from app.models.availability_window import PlayerAvailabilityWindow
 from app.models.player_system_experience import PlayerSystemExperience
+from app.models.recurring_availability_rule import RecurringAvailabilityRule
 
 
 @pytest.fixture()
@@ -29,6 +30,15 @@ def test_second_submission_replaces_player_slice_without_new_profile(onboarding_
     client, factory = onboarding_context
     first = client.put("/api/v1/onboarding/player", json=player_payload(), headers=auth())
     assert first.status_code == 200
+
+    profile_id = UUID(first.json()["player_profile_id"])
+    with factory() as session:
+        first_rule_id = session.scalar(
+            select(PlayerAvailabilityWindow.recurring_rule_id).where(
+                PlayerAvailabilityWindow.player_profile_id == profile_id
+            )
+        )
+        assert first_rule_id is not None
 
     replacement = player_payload()
     replacement["display_name"] = "Alice Updated"
@@ -55,16 +65,29 @@ def test_second_submission_replaces_player_slice_without_new_profile(onboarding_
     assert second.json()["player_profile_id"] == first.json()["player_profile_id"]
 
     with factory() as session:
-        profile_id = UUID(first.json()["player_profile_id"])
         experience_count = session.scalar(
-            select(func.count()).select_from(PlayerSystemExperience).where(
-                PlayerSystemExperience.player_profile_id == profile_id
-            )
+            select(func.count())
+            .select_from(PlayerSystemExperience)
+            .where(PlayerSystemExperience.player_profile_id == profile_id)
         )
         window_count = session.scalar(
-            select(func.count()).select_from(PlayerAvailabilityWindow).where(
+            select(func.count())
+            .select_from(PlayerAvailabilityWindow)
+            .where(PlayerAvailabilityWindow.player_profile_id == profile_id)
+        )
+        recurrence_count = session.scalar(
+            select(func.count()).select_from(RecurringAvailabilityRule)
+        )
+        replacement_rule_id = session.scalar(
+            select(PlayerAvailabilityWindow.recurring_rule_id).where(
                 PlayerAvailabilityWindow.player_profile_id == profile_id
             )
         )
+        stale_rule = session.get(RecurringAvailabilityRule, first_rule_id)
+
         assert experience_count == 1
         assert window_count == 1
+        assert recurrence_count == 1
+        assert replacement_rule_id is not None
+        assert replacement_rule_id != first_rule_id
+        assert stale_rule is None
