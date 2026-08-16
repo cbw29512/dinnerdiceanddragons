@@ -8,6 +8,7 @@ from app.db.base import Base
 from app.models.game_system import GameSystem
 from app.models.gm_profile import GMProfile
 from app.models.player_profile import PlayerProfile, PreferredGameFormat
+from app.models.player_system_experience import PlayerComfortLevel, PlayerSystemExperience
 from app.models.privileged_audit_event import PrivilegedAuditEvent
 from app.models.user import AccountStatus, User
 from app.models.user_role import UserRole, UserRoleType
@@ -19,7 +20,9 @@ __all__ = [
     "AccountStatus",
     "GameSystem",
     "GMProfile",
+    "PlayerComfortLevel",
     "PlayerProfile",
+    "PlayerSystemExperience",
     "PreferredGameFormat",
     "PrivilegedAuditEvent",
     "User",
