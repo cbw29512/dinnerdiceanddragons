@@ -5,6 +5,7 @@ from one place.
 """
 
 from app.db.base import Base
+from app.models.game_system import GameSystem
 from app.models.gm_profile import GMProfile
 from app.models.player_profile import PlayerProfile, PreferredGameFormat
 from app.models.privileged_audit_event import PrivilegedAuditEvent
@@ -16,6 +17,7 @@ metadata = Base.metadata
 
 __all__ = [
     "AccountStatus",
+    "GameSystem",
     "GMProfile",
     "PlayerProfile",
     "PreferredGameFormat",
