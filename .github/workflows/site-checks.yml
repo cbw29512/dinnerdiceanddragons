@@ -143,6 +143,9 @@ jobs:
       - name: Verify GameSystem catalog in PostgreSQL
         run: bash backend/scripts/verify_game_system_schema.sh
 
+      - name: Verify PlayerSystemExperience persistence in PostgreSQL
+        run: bash backend/scripts/verify_player_system_experience_schema.sh
+
       - name: Verify privileged audit immutability in PostgreSQL
         run: bash backend/scripts/verify_privileged_audit_schema.sh
 
