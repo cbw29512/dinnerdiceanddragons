@@ -43,10 +43,10 @@ class AvailabilityWindowInput(BaseModel):
 
         try:
             ZoneInfo(self.timezone)
-        except ZoneInfoNotFoundError as exc:
+        except (ZoneInfoNotFoundError, ValueError) as exc:
             raise ValueError("Availability timezone must be a valid IANA timezone.") from exc
 
-        if self.pattern_type is AvailabilityPatternType.WEEKLY_INTERVAL:
+        if self.pattern_type == AvailabilityPatternType.WEEKLY_INTERVAL:
             self._validate_weekly_pattern()
         else:
             self._validate_monthly_pattern()
