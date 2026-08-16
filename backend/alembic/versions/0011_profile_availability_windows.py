@@ -1,6 +1,6 @@
 """create Player and GM availability window persistence
 
-Revision ID: 0011_profile_availability_windows
+Revision ID: 0011_profile_availability
 Revises: 0010_recurring_availability_rule
 Create Date: 2026-08-15
 """
@@ -10,7 +10,7 @@ from collections.abc import Sequence
 from alembic import op
 import sqlalchemy as sa
 
-revision: str = "0011_profile_availability_windows"
+revision: str = "0011_profile_availability"
 down_revision: str | Sequence[str] | None = "0010_recurring_availability_rule"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
