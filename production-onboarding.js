@@ -37,6 +37,14 @@
     });
   }
 
+  function alignProductionControls() {
+    const learning = document.querySelector('#player-form [name="willing_to_learn"]');
+    if (!learning) return;
+    Array.from(learning.options).forEach((option) => {
+      if (option.textContent.trim() === "Maybe") option.remove();
+    });
+  }
+
   function renderSession(session, message = "") {
     const emailInput = document.getElementById("ddd-auth-email");
     const passwordInput = document.getElementById("ddd-auth-password");
@@ -78,18 +86,23 @@
     event.preventDefault();
     const email = document.getElementById("ddd-auth-email")?.value || "";
     const password = document.getElementById("ddd-auth-password")?.value || "";
+    let failureMessage = "";
+
     setAuthBusy(true);
     announceAuth("Signing in…");
     try {
-      const session = await window.DDDProductionAuth.signIn(email, password);
+      await window.DDDProductionAuth.signIn(email, password);
       await ensureDDDIdentity();
-      renderSession(session, `Signed in as ${session.user?.email || email}.`);
     } catch (error) {
-      renderSession(null, error?.message || "Sign in failed.");
+      failureMessage = error?.message || "Sign in failed.";
     } finally {
       setAuthBusy(false);
       const current = await window.DDDProductionAuth.getSession();
-      renderSession(current);
+      if (failureMessage && !current) {
+        renderSession(null, failureMessage);
+      } else {
+        renderSession(current);
+      }
     }
   }
 
@@ -173,6 +186,7 @@
   async function init() {
     if (!window.DDDProductionAuth || !window.DDDProductionAPI) return;
 
+    alignProductionControls();
     const form = document.getElementById("ddd-auth-form");
     const createButton = document.getElementById("ddd-create-account");
     const signOutButton = document.getElementById("ddd-sign-out");
