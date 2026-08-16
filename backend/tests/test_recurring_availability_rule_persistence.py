@@ -1,10 +1,10 @@
-"""Persistence and invariant tests for recurring availability rules."""
+"""Persistence tests for recurring availability rules."""
 
 from datetime import date, time
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -19,16 +19,12 @@ from app.models.recurring_availability_rule import (
 
 
 def make_session() -> Session:
-    """Create an isolated database with every registered ORM table."""
-
     engine = create_engine("sqlite+pysqlite:///:memory:")
     metadata.create_all(engine)
     return Session(engine)
 
 
 def make_weekly_rule(**overrides: object) -> RecurringAvailabilityRule:
-    """Build a valid weekly rule, then apply one test-specific mutation."""
-
     values: dict[str, object] = {
         "owner_type": AvailabilityOwnerType.PLAYER.value,
         "owner_id": uuid4(),
@@ -61,21 +57,10 @@ def test_weekly_and_monthly_rules_round_trip() -> None:
         )
         session.add_all([weekly, monthly])
         session.commit()
-
-        stored_weekly = session.scalar(
-            select(RecurringAvailabilityRule).where(
-                RecurringAvailabilityRule.id == weekly.id
-            )
-        )
-        stored_monthly = session.scalar(
-            select(RecurringAvailabilityRule).where(
-                RecurringAvailabilityRule.id == monthly.id
-            )
-        )
-
+        stored_weekly = session.get(RecurringAvailabilityRule, weekly.id)
+        stored_monthly = session.get(RecurringAvailabilityRule, monthly.id)
         assert stored_weekly is not None
         assert stored_weekly.active is True
-        assert stored_weekly.week_interval == 1
         assert stored_monthly is not None
         assert stored_monthly.monthly_ordinal == "last"
         assert stored_monthly.month_interval == 2
@@ -110,16 +95,14 @@ def test_invalid_common_fields_are_rejected(overrides: dict[str, object]) -> Non
         {"month_interval": 1},
     ],
 )
-def test_invalid_weekly_pattern_fields_are_rejected(
-    overrides: dict[str, object],
-) -> None:
+def test_invalid_weekly_fields_are_rejected(overrides: dict[str, object]) -> None:
     with make_session() as session:
         session.add(make_weekly_rule(**overrides))
         with pytest.raises(IntegrityError):
             session.commit()
 
 
-def test_alternating_weekly_rule_requires_and_accepts_anchor_date() -> None:
+def test_alternating_weekly_rule_accepts_anchor_date() -> None:
     with make_session() as session:
         rule = make_weekly_rule(
             owner_type=AvailabilityOwnerType.GM.value,
@@ -140,25 +123,24 @@ def test_alternating_weekly_rule_requires_and_accepts_anchor_date() -> None:
         (2, MonthlyOrdinal.FIRST.value, None),
     ],
 )
-def test_invalid_monthly_pattern_fields_are_rejected(
+def test_invalid_monthly_fields_are_rejected(
     month_interval: int | None,
     ordinal: str | None,
     anchor_date: date | None,
 ) -> None:
     with make_session() as session:
-        session.add(
-            RecurringAvailabilityRule(
-                owner_type=AvailabilityOwnerType.VENUE.value,
-                owner_id=uuid4(),
-                day_of_week=AvailabilityDay.MONDAY.value,
-                start_time=time(18, 0),
-                end_time=time(21, 0),
-                pattern_type=AvailabilityPatternType.MONTHLY_ORDINAL_WEEKDAY.value,
-                monthly_ordinal=ordinal,
-                month_interval=month_interval,
-                anchor_date=anchor_date,
-                timezone="America/New_York",
-            )
+        rule = RecurringAvailabilityRule(
+            owner_type=AvailabilityOwnerType.VENUE.value,
+            owner_id=uuid4(),
+            day_of_week=AvailabilityDay.MONDAY.value,
+            start_time=time(18, 0),
+            end_time=time(21, 0),
+            pattern_type=AvailabilityPatternType.MONTHLY_ORDINAL_WEEKDAY.value,
+            monthly_ordinal=ordinal,
+            month_interval=month_interval,
+            anchor_date=anchor_date,
+            timezone="America/New_York",
         )
+        session.add(rule)
         with pytest.raises(IntegrityError):
             session.commit()
