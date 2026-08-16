@@ -25,12 +25,15 @@ def make_session() -> Session:
         finally:
             cursor.close()
 
-    User.__table__.create(engine)
-    PlayerProfile.__table__.create(engine)
-    GMProfile.__table__.create(engine)
-    RecurringAvailabilityRule.__table__.create(engine)
-    PlayerAvailabilityWindow.__table__.create(engine)
-    GMAvailabilityWindow.__table__.create(engine)
+    for table in (
+        User.__table__,
+        PlayerProfile.__table__,
+        GMProfile.__table__,
+        RecurringAvailabilityRule.__table__,
+        PlayerAvailabilityWindow.__table__,
+        GMAvailabilityWindow.__table__,
+    ):
+        table.create(engine)
     return Session(engine)
 
 
@@ -75,18 +78,11 @@ def test_one_user_can_hold_independent_player_and_gm_availability() -> None:
         gm_rule = add_rule(session, "saturday", 17)
         session.add_all(
             [
-                PlayerAvailabilityWindow(
-                    player_profile_id=player.id,
-                    recurring_rule_id=player_rule.id,
-                ),
-                GMAvailabilityWindow(
-                    gm_profile_id=gm.id,
-                    recurring_rule_id=gm_rule.id,
-                ),
+                PlayerAvailabilityWindow(player_profile_id=player.id, recurring_rule_id=player_rule.id),
+                GMAvailabilityWindow(gm_profile_id=gm.id, recurring_rule_id=gm_rule.id),
             ]
         )
         session.commit()
-
         player_window = session.scalar(select(PlayerAvailabilityWindow))
         gm_window = session.scalar(select(GMAvailabilityWindow))
         assert player_window is not None and player_window.active is True
@@ -101,19 +97,12 @@ def test_profile_can_have_multiple_or_set_windows() -> None:
         sunday = add_rule(session, "sunday", 14)
         session.add_all(
             [
-                PlayerAvailabilityWindow(
-                    player_profile_id=player.id,
-                    recurring_rule_id=friday.id,
-                ),
-                PlayerAvailabilityWindow(
-                    player_profile_id=player.id,
-                    recurring_rule_id=sunday.id,
-                ),
+                PlayerAvailabilityWindow(player_profile_id=player.id, recurring_rule_id=friday.id),
+                PlayerAvailabilityWindow(player_profile_id=player.id, recurring_rule_id=sunday.id),
             ]
         )
         session.commit()
-        windows = session.scalars(select(PlayerAvailabilityWindow)).all()
-        assert len(windows) == 2
+        assert len(session.scalars(select(PlayerAvailabilityWindow)).all()) == 2
 
 
 @pytest.mark.parametrize("window_type", ["player", "gm"])
@@ -132,7 +121,7 @@ def test_same_rule_cannot_be_reused_in_same_window_type(window_type: str) -> Non
             session.commit()
 
 
-def test_deleting_profile_cascades_window_without_deleting_rule() -> None:
+def test_profile_delete_cascades_window_but_keeps_schedule_value() -> None:
     with make_session() as session:
         player, _ = add_profiles(session, "profile-delete")
         rule = add_rule(session, "wednesday", 18)
@@ -145,7 +134,7 @@ def test_deleting_profile_cascades_window_without_deleting_rule() -> None:
         assert session.get(RecurringAvailabilityRule, rule.id) is not None
 
 
-def test_deleting_rule_cascades_linked_window() -> None:
+def test_rule_delete_cascades_linked_window() -> None:
     with make_session() as session:
         _, gm = add_profiles(session, "rule-delete")
         rule = add_rule(session, "thursday", 18)
