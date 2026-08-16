@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from app.api.routes.health import router as health_router
 from app.api.routes.me import router as me_router
 from app.api.routes.onboarding import router as onboarding_router
+from app.api.routes.onboarding_read import router as onboarding_read_router
 from app.api.routes.venue_onboarding import router as venue_onboarding_router
 
 LOGGER = logging.getLogger(__name__)
@@ -32,6 +33,7 @@ def create_app() -> FastAPI:
         application.include_router(health_router, prefix="/api/v1")
         application.include_router(me_router, prefix="/api/v1")
         application.include_router(onboarding_router, prefix="/api/v1")
+        application.include_router(onboarding_read_router, prefix="/api/v1")
         application.include_router(venue_onboarding_router, prefix="/api/v1")
         return application
     except Exception:
