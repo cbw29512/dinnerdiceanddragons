@@ -11,12 +11,23 @@ BACKEND_DIR = Path(__file__).resolve().parents[1]
 ALEMBIC_INI = BACKEND_DIR / "alembic.ini"
 
 
-def test_alembic_configuration_discovers_current_head() -> None:
+def load_script_directory() -> ScriptDirectory:
     config = Config(str(ALEMBIC_INI))
-    script = ScriptDirectory.from_config(config)
+    return ScriptDirectory.from_config(config)
+
+
+def test_alembic_configuration_discovers_current_head() -> None:
+    script = load_script_directory()
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == ["0011_profile_availability_windows"]
+    assert script.get_heads() == ["0011_profile_availability"]
+
+
+def test_revision_ids_fit_alembic_version_column() -> None:
+    script = load_script_directory()
+
+    for migration in script.walk_revisions():
+        assert len(migration.revision) <= 32, migration.revision
 
 
 def test_alembic_offline_upgrade_emits_current_foundation_tables_without_database() -> None:
