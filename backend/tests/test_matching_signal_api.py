@@ -93,9 +93,7 @@ def test_verified_venue_manager_can_create_and_list_table_window(matching_contex
     venue_id = UUID(venue_created.json()["venue_id"])
 
     with factory() as session:
-        manager = session.scalar(
-            select(VenueManager).where(VenueManager.venue_id == venue_id)
-        )
+        manager = session.scalar(select(VenueManager).where(VenueManager.venue_id == venue_id))
         assert manager is not None
         manager.verified_at = datetime.now(UTC)
         session.commit()
