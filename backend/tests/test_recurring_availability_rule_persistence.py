@@ -1,7 +1,6 @@
 """Persistence tests for recurring availability rules."""
 
 from datetime import date, time
-from uuid import uuid4
 
 import pytest
 from sqlalchemy import create_engine
@@ -11,7 +10,6 @@ from sqlalchemy.orm import Session
 from app.models import metadata
 from app.models.recurring_availability_rule import (
     AvailabilityDay,
-    AvailabilityOwnerType,
     AvailabilityPatternType,
     MonthlyOrdinal,
     RecurringAvailabilityRule,
@@ -26,8 +24,6 @@ def make_session() -> Session:
 
 def make_weekly_rule(**overrides: object) -> RecurringAvailabilityRule:
     values: dict[str, object] = {
-        "owner_type": AvailabilityOwnerType.PLAYER.value,
-        "owner_id": uuid4(),
         "day_of_week": AvailabilityDay.SATURDAY.value,
         "start_time": time(18, 0),
         "end_time": time(22, 0),
@@ -43,8 +39,6 @@ def test_weekly_and_monthly_rules_round_trip() -> None:
     with make_session() as session:
         weekly = make_weekly_rule()
         monthly = RecurringAvailabilityRule(
-            owner_type=AvailabilityOwnerType.VENUE.value,
-            owner_id=uuid4(),
             day_of_week=AvailabilityDay.WEDNESDAY.value,
             start_time=time(17, 30),
             end_time=time(21, 30),
@@ -69,7 +63,6 @@ def test_weekly_and_monthly_rules_round_trip() -> None:
 @pytest.mark.parametrize(
     "overrides",
     [
-        {"owner_type": "spectator"},
         {"day_of_week": "funday"},
         {"pattern_type": "sometimes"},
         {"timezone": "   "},
@@ -105,7 +98,6 @@ def test_invalid_weekly_fields_are_rejected(overrides: dict[str, object]) -> Non
 def test_alternating_weekly_rule_accepts_anchor_date() -> None:
     with make_session() as session:
         rule = make_weekly_rule(
-            owner_type=AvailabilityOwnerType.GM.value,
             week_interval=2,
             anchor_date=date(2026, 8, 15),
         )
@@ -130,8 +122,6 @@ def test_invalid_monthly_fields_are_rejected(
 ) -> None:
     with make_session() as session:
         rule = RecurringAvailabilityRule(
-            owner_type=AvailabilityOwnerType.VENUE.value,
-            owner_id=uuid4(),
             day_of_week=AvailabilityDay.MONDAY.value,
             start_time=time(18, 0),
             end_time=time(21, 0),
