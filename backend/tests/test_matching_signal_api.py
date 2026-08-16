@@ -1,6 +1,6 @@
 """Happy-path HTTP tests for authenticated Step 3 matching inputs."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 import pytest
@@ -97,7 +97,7 @@ def test_verified_venue_manager_can_create_and_list_table_window(matching_contex
             select(VenueManager).where(VenueManager.venue_id == venue_id)
         )
         assert manager is not None
-        manager.verified_at = datetime.now(timezone.utc)
+        manager.verified_at = datetime.now(UTC)
         session.commit()
 
     created = client.post(
