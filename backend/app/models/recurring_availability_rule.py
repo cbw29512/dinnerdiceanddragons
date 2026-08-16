@@ -4,7 +4,18 @@ from datetime import date, datetime, time
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, SmallInteger, String, Time, Uuid, func, text
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Date,
+    DateTime,
+    SmallInteger,
+    String,
+    Time,
+    Uuid,
+    func,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -48,7 +59,7 @@ class MonthlyOrdinal(StrEnum):
 
 
 class RecurringAvailabilityRule(Base):
-    """A reusable recurring opportunity window, not a guaranteed attendance record."""
+    """A reusable recurring opportunity window, not guaranteed attendance."""
 
     __tablename__ = "recurring_availability_rules"
     __table_args__ = (
@@ -57,7 +68,8 @@ class RecurringAvailabilityRule(Base):
             name="ck_recurring_availability_rules_owner_type",
         ),
         CheckConstraint(
-            "day_of_week IN ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')",
+            "day_of_week IN ('monday', 'tuesday', 'wednesday', 'thursday', "
+            "'friday', 'saturday', 'sunday')",
             name="ck_recurring_availability_rules_day_of_week",
         ),
         CheckConstraint(
@@ -78,16 +90,19 @@ class RecurringAvailabilityRule(Base):
         ),
         CheckConstraint(
             "(pattern_type = 'weekly_interval' "
+            "AND week_interval IS NOT NULL "
             "AND week_interval BETWEEN 1 AND 4 "
             "AND monthly_ordinal IS NULL "
             "AND month_interval IS NULL "
-            "AND ((week_interval = 1 AND anchor_date IS NULL) "
+            "AND (week_interval = 1 "
             "OR (week_interval BETWEEN 2 AND 4 AND anchor_date IS NOT NULL))) "
             "OR (pattern_type = 'monthly_ordinal_weekday' "
             "AND week_interval IS NULL "
+            "AND monthly_ordinal IS NOT NULL "
             "AND monthly_ordinal IN ('first', 'second', 'third', 'fourth', 'last') "
+            "AND month_interval IS NOT NULL "
             "AND month_interval BETWEEN 1 AND 3 "
-            "AND ((month_interval = 1 AND anchor_date IS NULL) "
+            "AND (month_interval = 1 "
             "OR (month_interval BETWEEN 2 AND 3 AND anchor_date IS NOT NULL)))",
             name="ck_recurring_availability_rules_pattern_fields",
         ),
