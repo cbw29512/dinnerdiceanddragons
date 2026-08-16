@@ -140,6 +140,9 @@ jobs:
       - name: Verify Venue persistence in PostgreSQL
         run: bash backend/scripts/verify_venue_schema.sh
 
+      - name: Verify GameSystem catalog in PostgreSQL
+        run: bash backend/scripts/verify_game_system_schema.sh
+
       - name: Verify privileged audit immutability in PostgreSQL
         run: bash backend/scripts/verify_privileged_audit_schema.sh
 
