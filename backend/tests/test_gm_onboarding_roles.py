@@ -45,9 +45,7 @@ def test_gm_onboarding_preserves_existing_player_identity(onboarding_context) ->
     with factory() as session:
         user = session.scalar(select(User).where(User.auth_provider_user_id == ALICE_SUBJECT))
         assert user is not None
-        roles = set(
-            session.scalars(select(UserRole.role).where(UserRole.user_id == user.id)).all()
-        )
+        roles = set(session.scalars(select(UserRole.role).where(UserRole.user_id == user.id)).all())
         player_profile = session.scalar(
             select(PlayerProfile).where(PlayerProfile.user_id == user.id)
         )
