@@ -5,6 +5,7 @@ from one place.
 """
 
 from app.db.base import Base
+from app.models.availability_window import GMAvailabilityWindow, PlayerAvailabilityWindow
 from app.models.game_system import GameSystem
 from app.models.gm_profile import GMProfile
 from app.models.gm_system_experience import (
@@ -34,12 +35,14 @@ __all__ = [
     "AvailabilityDay",
     "AvailabilityPatternType",
     "GameSystem",
+    "GMAvailabilityWindow",
     "GMComfortLevel",
     "GMGameFormat",
     "GMProfile",
     "GMSystemExperience",
     "GMSystemFormat",
     "MonthlyOrdinal",
+    "PlayerAvailabilityWindow",
     "PlayerComfortLevel",
     "PlayerProfile",
     "PlayerSystemExperience",
