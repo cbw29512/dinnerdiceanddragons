@@ -20,7 +20,7 @@ def test_alembic_configuration_discovers_current_head() -> None:
     script = load_script_directory()
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == ["0015_table_match_persistence"]
+    assert script.get_heads() == ["0016_postal_centroid_cache"]
 
 
 def test_revision_ids_fit_alembic_version_column() -> None:
@@ -104,6 +104,9 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert "ck_table_match_players_distance_miles" in result.stdout
     assert "CREATE TABLE match_explanations" in result.stdout
     assert "uq_match_explanations_match_criterion" in result.stdout
+    assert "CREATE TABLE postal_code_centroids" in result.stdout
+    assert "uq_postal_code_centroids_country_postal" in result.stdout
+    assert "ck_postal_code_centroids_accuracy_range" in result.stdout
     assert "INSERT INTO game_systems" in result.stdout
     assert "dnd-5e-2014" in result.stdout
     assert "dnd-5e-2024" in result.stdout
@@ -116,5 +119,6 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert 'ALTER TABLE public."table_matches" ENABLE ROW LEVEL SECURITY' in result.stdout
     assert 'ALTER TABLE public."table_match_players" ENABLE ROW LEVEL SECURITY' in result.stdout
     assert 'ALTER TABLE public."match_explanations" ENABLE ROW LEVEL SECURITY' in result.stdout
+    assert 'ALTER TABLE public."postal_code_centroids" ENABLE ROW LEVEL SECURITY' in result.stdout
     assert "deny_privileged_audit_event_mutation" in result.stdout
     assert "search_path = pg_catalog" in result.stdout
