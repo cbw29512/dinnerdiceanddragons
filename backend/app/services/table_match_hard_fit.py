@@ -111,11 +111,9 @@ def evaluate_table_candidate(facts: TableCandidateFacts) -> TableCandidateEvalua
         CriterionDecision(
             criterion="gm_state",
             passed=gm_active,
-            summary=(
-                "GM supply signal is active."
-                if gm_active
-                else "GM supply signal is not active."
-            ),
+            summary="GM supply signal is active."
+            if gm_active
+            else "GM supply signal is not active.",
         )
     )
 
@@ -146,8 +144,7 @@ def evaluate_table_candidate(facts: TableCandidateFacts) -> TableCandidateEvalua
     )
 
     gm_travel_ok = (
-        facts.gm_distance_miles >= 0
-        and facts.gm_distance_miles <= facts.gm_travel_radius_miles
+        facts.gm_distance_miles >= 0 and facts.gm_distance_miles <= facts.gm_travel_radius_miles
     )
     decisions.append(
         CriterionDecision(
