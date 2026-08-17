@@ -132,7 +132,7 @@ See `docs/DECISIONS.md`, Decision 016.
 - [x] PlayerDemandSignal persistence.
 - [x] GMSupplySignal persistence.
 - [x] VenueTableWindow persistence.
-- [ ] Authenticated create/list APIs for Player demand, GM supply, and Venue table windows. Implementation exists in draft PR #29 and must be rebased, tested against current main, and merged before this item is complete.
+- [x] Authenticated create/list APIs for Player demand, GM supply, and Venue table windows. Recovered and validated in PR #36.
 - [ ] Server-side hard-fit matching.
 - [ ] Privacy-safe aggregate Player demand.
 - [ ] TableMatch / TableMatchPlayer / MatchExplanation persistence.
@@ -156,7 +156,7 @@ See `docs/DECISIONS.md`, Decision 016.
 
 ## STEP 5 — Calendar, reminders, and recurring operations — **IN PROGRESS**
 
-- [ ] Production recurrence expansion. Implementation exists in draft PR #30 and must be rebased, tested against current main, and merged before this item is complete.
+- [x] Production recurrence expansion. Deterministic recurrence expansion recovered and validated in PR #36.
 - [ ] Per-session Skip / Move / cancel behavior.
 - [ ] CalendarEventSync model.
 - [ ] Calendar export/sync provider decision.
@@ -189,9 +189,10 @@ See `docs/DECISIONS.md`, Decision 016.
 - [ ] FairDiscoveryAudit telemetry.
 - [ ] Correction/dispute path.
 
-## STEP 8 — Trust, venue verification, and moderation — NOT STARTED
+## STEP 8 ? Trust, venue verification, and moderation ? **IN PROGRESS**
 
-- [ ] Venue claim lifecycle and evidence review.
+- [x] Initial admin Venue claim verification endpoint with server-side geocoding, precision checks, row-lock address revalidation, and privileged audit recording.
+- [ ] Complete Venue claim lifecycle and evidence review beyond initial approval.
 - [ ] Private reports.
 - [ ] ModerationCase workflow.
 - [ ] Block-user relationships.

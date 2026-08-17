@@ -75,7 +75,7 @@
 - [x] Anti-troll implementation checklist
 - [x] Production authentication integration
 - [ ] Production rate limiting / blocking
-- [ ] Venue claim verification implementation
+- [x] Initial production Venue claim verification backend path
 
 ### Quality
 - [x] Responsive mobile baseline
@@ -139,15 +139,15 @@ Track:
 - [x] Game Master production onboarding/profile persistence
 - [x] Player/Game Master structured availability and recurrence persistence
 - [x] PlayerDemandSignal, GMSupplySignal, and VenueTableWindow production models/tables
+- [x] Authenticated Player/GM/Venue matching-input create/list APIs
+- [x] Deterministic production recurrence expansion
 - [x] Automated backend, static, browser, accessibility-smoke, and fragment-link QA baseline
 
 ### Foundation work remaining
 
 - [ ] Complete Venue production onboarding and management workflow
-- [ ] Reconcile PR #29 authenticated Player/GM/Venue signal APIs with the recovery branch
-- [ ] Reconcile PR #30 deterministic recurrence expansion with the recovery branch
 - [ ] Settle the canonical shared location/travel architecture before hard-fit matching
-- [ ] Complete Venue claim/manager verification implementation
+- [ ] Complete Venue verification operations beyond the initial admin approval path
 - [ ] Complete production validation, rate limiting, blocking, and abuse controls for exposed write surfaces
 - [ ] Complete privacy/security review for production public-write workflows
 
