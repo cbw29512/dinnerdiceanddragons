@@ -4,13 +4,13 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 import pytest
-from sqlalchemy import Engine, func, select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+from table_match_test_support import create_table_match_session, seed_match_inputs
 
 from app.models.match_explanation import MatchCriterionResult, MatchExplanation
 from app.models.table_match import TableMatch
 from app.models.table_match_player import TableMatchPlayer
-from table_match_test_support import create_table_match_session, seed_match_inputs
 
 
 @pytest.fixture()
