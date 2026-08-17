@@ -76,7 +76,7 @@ Accessibility is part of the design from the beginning. Critical interactions mu
 
 ## Decision 013 — GM availability is the scheduling anchor
 
-**Status:** Accepted
+**Status:** Superseded in part by Decision 020
 
 The GM runs the game, so a new table begins with when and where the GM can actually run one.
 
@@ -205,6 +205,73 @@ System experience records must reference canonical GameSystem rows. The producti
 - `other-rpg` is not treated as a substitute for a future custom-system/catalog workflow. It is only a compatibility choice until that workflow is explicitly designed.
 - Catalog rows are reference data, not user-owned profile data, and remain independently administrable after seeding.
 
+
+## Decision 020 — Player, GM, and Venue signals are equal opportunity starters
+
+**Status:** Accepted for production
+
+Dinner, Dice & Dragons is a three-sided marketplace. Player demand, GM supply, and Venue capacity are independent signals, and any one of them may reveal the first useful Table Opportunity.
+
+The platform must not require every table to begin with a GM-created game.
+
+**Production matching model:**
+
+- Player-led: compatible nearby Player demand may reveal an opportunity to GMs and Venues.
+- GM-led: GM supply may reveal compatible Player demand and Venue capacity.
+- Venue-led: Venue table inventory may reveal compatible GM supply and Player demand.
+
+A GM becomes the operational coordinator once a viable forming table has a GM attached, because somebody must run the game. That operational role does not make GM supply the only valid starting point for discovery or matching.
+
+**Consequences:**
+
+- PlayerDemandSignal, GMSupplySignal, and VenueTableWindow remain first-class production entities.
+- Production APIs must allow each role to create and manage its own signal independently.
+- Matching queries must evaluate all three sides rather than assuming a GM-created Event already exists.
+- Player and Venue opportunities must not be hidden merely because no GM has committed yet.
+- Once a table becomes Forming, the GM may serve as the primary group coordinator with the Venue.
+
+This decision supersedes the GM-first interpretation of Decision 013 while preserving the useful principle that GM availability is a hard requirement once a specific table is being formed.
+
+## Decision 021 — Multi-system product with D&D as a primary acquisition anchor
+
+**Status:** Accepted for production
+
+Dinner, Dice & Dragons is a tabletop RPG platform, not a Dungeons & Dragons-only application.
+
+The Dinner, Dice & Dragons brand remains valid, and Dungeons & Dragons may be the largest initial acquisition channel, SEO target, example system, and source of early demand. Product architecture and ordinary marketplace workflows must remain system-neutral.
+
+**Consequences:**
+
+- Production models and matching rules must use canonical GameSystem records rather than hard-coded D&D assumptions.
+- Player and GM onboarding must support multiple RPG systems and editions.
+- Public marketing may prominently feature D&D while making support for Pathfinder, Call of Cthulhu, Cyberpunk RED, Shadowrun, and other supported RPGs understandable.
+- Use Game Master or GM for system-neutral product language.
+- Use Dungeon Master or DM where the context is specifically Dungeons & Dragons or where brand-oriented copy intentionally targets D&D search demand.
+- Venue workflows remain RPG-system independent; staff are providing space and policies, not running the game.
+- No core schema, authorization rule, scheduling rule, or Table Match rule may depend on D&D-specific mechanics.
+
+## Decision 022 — Nationwide platform, local Table Matches
+
+**Status:** Accepted for production
+
+Dinner, Dice & Dragons is available to Players, Game Masters, and Venues throughout the United States.
+
+The network is nationwide, but each in-person Table Match is geographically local.
+
+**Matching principle:**
+
+User location + travel constraint + compatible local Venue + compatible schedule -> geographically viable Table Match.
+
+**Consequences:**
+
+- Accounts and role participation must not be restricted to Florence or another pilot city.
+- Player and GM travel constraints must participate in hard-fit matching.
+- Venue public coordinates and timezone must participate in hard-fit matching.
+- Exact private home addresses must never be exposed to other marketplace participants.
+- ZIP/postal-code matching must remain available as the privacy-friendly default.
+- Timezone-aware recurrence and actual occurrence dates are required for production matching.
+- Florence, South Carolina is the first concentrated density pilot, not a product boundary.
+- Large-scale national advertising or acquisition spend may wait for local-density validation, but nationwide product access and U.S.-wide architecture do not.
 ---
 
 ## How to add decisions

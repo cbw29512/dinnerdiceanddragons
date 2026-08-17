@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     database_url: SecretStr = SecretStr("postgresql+psycopg://ddd:ddd@localhost:5432/ddd")
     supabase_url: AnyHttpUrl | None = None
     supabase_jwt_audience: str = "authenticated"
+    geocodio_api_key: SecretStr | None = None
     cors_allowed_origins: str = ""
 
     def cors_origins(self) -> list[str]:

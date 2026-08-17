@@ -2,9 +2,17 @@
 
 ## Core promise
 
-> Dinner, Dice & Dragons turns local tabletop interest into actual game nights.
+> Dinner, Dice & Dragons turns tabletop RPG interest across the United States into actual local game nights.
 
-The platform is not primarily a social network, chat app, general event calendar, or paid GM marketplace. Its core job is to form viable local in-person RPG tables.
+The platform is not primarily a social network, chat app, general event calendar, or paid GM marketplace. Its core job is to form viable local in-person RPG tables by coordinating Player demand, Game Master supply, and public Venue capacity.
+
+## Product scope
+
+Dinner, Dice & Dragons is a United States-wide tabletop RPG marketplace. Players, Game Masters, and Venues may participate anywhere in the U.S., while each in-person Table Match remains geographically local to the people and Venue involved.
+
+**Operating rule:** nationwide platform, local Table Matches.
+
+Florence, South Carolina is the first concentrated density pilot. It is not a product boundary.
 
 ## Three entry points
 
@@ -17,7 +25,7 @@ Players provide:
 - table preferences
 - ZIP/location and travel radius
 
-The platform should show compatible nearby games and, later, aggregate unmet Player demand that can attract GMs.
+The platform should show compatible nearby games and aggregate unmet Player demand that can attract compatible GMs and reveal where new tables could form.
 
 ### Game Master — Form a Table
 GMs provide:
@@ -42,11 +50,30 @@ Venues provide:
 - accessibility/logistics
 
 The platform should show:
-- nearby GM demand
+- nearby compatible GM supply
+- nearby Player demand
 - expected group sizes
 - recurrence
 - upcoming tabletop traffic
 - pilot/venue analytics
+
+## Opportunity initiation
+
+The marketplace does not require one role to initiate every table.
+
+- Player demand can reveal that enough nearby people want the same kind of game.
+- GM supply can reveal a runnable game that needs compatible Players and a Venue.
+- Venue capacity can reveal an open table window that compatible GMs and Players could use.
+
+Player demand, GM supply, and Venue capacity are equal opportunity starters. Once a viable forming table has a GM attached, the GM may become the primary operational coordinator for the group and Venue.
+
+## System scope
+
+Dinner, Dice & Dragons is a multi-system tabletop RPG product, not a Dungeons & Dragons-only application.
+
+Dungeons & Dragons may remain the strongest early acquisition channel, SEO target, example system, and part of the brand identity. Ordinary marketplace workflows, matching rules, data models, and authorization must remain system-neutral.
+
+The platform should make support for D&D, Pathfinder, Call of Cthulhu, Cyberpunk RED, Shadowrun, and other supported RPGs understandable without weakening the Dinner, Dice & Dragons brand.
 
 ## Core matching model
 
@@ -109,7 +136,7 @@ Do not try to beat:
 
 Win on the combined physical-table workflow:
 
-> local GM + local Players + physical venue + scheduling + compatibility + trust + measurable venue traffic.
+> local Game Master + local Players + public Venue + scheduling + compatibility + trust + measurable venue traffic.
 
 ## Product test for new features
 
@@ -128,10 +155,10 @@ If the answer is no to all six, the feature is probably outside the MVP.
 
 Player CTA: **Find My Table**
 
-GM CTA: **Form a Table**
+Game Master CTA: **Form a Table**
 
 Venue CTA: **Fill My Tables**
 
 Platform explanation:
 
-> Players tell us what they want to play. GMs tell us what they can run. Local venues tell us when they have tables. We find the overlap.
+> Players tell us what they want to play. Game Masters tell us what they can run. Venues tell us when they have tables. We find the local overlap.
