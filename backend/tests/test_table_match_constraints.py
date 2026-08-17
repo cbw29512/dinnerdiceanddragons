@@ -6,11 +6,11 @@ from decimal import Decimal
 import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from table_match_test_support import MatchSeed, create_table_match_session, seed_match_inputs
 
 from app.models.match_explanation import MatchExplanation
 from app.models.table_match import TableMatch
 from app.models.table_match_player import TableMatchPlayer
-from table_match_test_support import MatchSeed, create_table_match_session, seed_match_inputs
 
 
 @pytest.fixture()
