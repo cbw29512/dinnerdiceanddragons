@@ -171,7 +171,20 @@ def check_source_wiring() -> list[str]:
 
 def main() -> int:
     try:
-        pages = sorted(ROOT.rglob("*.html"))
+        excluded_dirs = {
+            ".git",
+            ".venv",
+            "node_modules",
+            "playwright-report",
+            "test-results",
+            ".lighthouseci",
+        }
+
+        pages = sorted(
+            page
+            for page in ROOT.rglob("*.html")
+            if not any(part in excluded_dirs for part in page.relative_to(ROOT).parts)
+        )
         errors: list[str] = []
         button_count = 0
         button_link_count = 0

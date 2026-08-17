@@ -156,7 +156,20 @@ def check_page(page: Path, cache: dict[Path, PageParser]) -> list[str]:
 
 def main() -> int:
     try:
-        pages = sorted(ROOT.rglob("*.html"))
+        excluded_dirs = {
+            ".git",
+            ".venv",
+            "node_modules",
+            "playwright-report",
+            "test-results",
+            ".lighthouseci",
+        }
+
+        pages = sorted(
+            page
+            for page in ROOT.rglob("*.html")
+            if not any(part in excluded_dirs for part in page.relative_to(ROOT).parts)
+        )
         if not pages:
             LOGGER.error("No HTML pages found.")
             return 1
