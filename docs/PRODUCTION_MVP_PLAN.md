@@ -17,6 +17,7 @@ Do not delete completed work from this plan. Mark it complete and preserve the d
 These are not optional during the production migration:
 
 - Player, DM, and Venue are equal sides of the product.
+- Dinner, Dice & Dragons is a United States-wide product: Players, DMs, and Venues may participate anywhere in the U.S. Florence is the first density/pilot market, not a geographic product restriction.
 - Public discovery centers on games/tables, not people-swiping.
 - Visitors may browse without an account.
 - Public venues come first; private-home discovery is deferred.
@@ -45,7 +46,7 @@ These are not optional during the production migration:
 - [x] GitHub Pages validation deployment.
 - [x] Static link/fragment/button/controller QA.
 - [x] Unit tests for matching and lifecycle rules.
-- [x] 57 Chromium functional/accessibility/reflow/runtime regression tests.
+- [x] 59 Chromium functional/accessibility/reflow/runtime regression tests.
 - [x] Automated axe accessibility regression coverage.
 - [x] 320px reflow checks and working site-wide skip links.
 - [x] Lighthouse performance/accessibility/best-practices/SEO regression gate.
@@ -121,15 +122,17 @@ See `docs/DECISIONS.md`, Decision 016.
 - [x] RecurringAvailabilityRule persistence. Owner-neutral recurring schedule value objects support weekly intervals and ordinal-weekday monthly intervals, canonical anchor-date rules, timezone/date bounds, and database-enforced recurrence invariants. Alembic metadata, unit tests, and live PostgreSQL verification cover the production table.
 - [x] Player / GM availability windows. Typed PlayerAvailabilityWindow and GMAvailabilityWindow records bind recurrence rules to role-specific profiles with real foreign keys, OR-set multiple-window behavior, duplicate-rule protection, active state, and tested cascade behavior. Venue availability/capacity deliberately remains the canonical Step 3 `VenueTableWindow`; do not create a duplicate `VenueAvailabilityWindow` concept.
 - [x] Profile ownership/authorization tests. Availability ownership is resolved from the server-loaded typed parent profile back to its durable DDD `User.id`; callers cannot supply or override the owner identity. Same-owner Player/GM access passes, cross-user access is rejected, missing parents return controlled `404`, and database lookup failures return controlled logged `500` responses.
-- [ ] Migrate validated onboarding UI from local/pilot storage to authenticated API.
+- [x] Migrate Player and DM onboarding UI from local/pilot storage to the authenticated production API.
+- [ ] Complete Venue production onboarding/table-opening migration. Venue account sign-in is live, but the table-opening form still uses the pilot/draft fallback until its production API wiring is complete.
 
 **Do not start until Step 1 authorization is passing.**
 
-## STEP 3 — Production Table Match and shared demand/supply — NOT STARTED
+## STEP 3 — Production Table Match and shared demand/supply — **IN PROGRESS**
 
-- [ ] PlayerDemandSignal persistence.
-- [ ] GMSupplySignal persistence.
-- [ ] VenueTableWindow persistence.
+- [x] PlayerDemandSignal persistence.
+- [x] GMSupplySignal persistence.
+- [x] VenueTableWindow persistence.
+- [ ] Authenticated create/list APIs for Player demand, GM supply, and Venue table windows. Implementation exists in draft PR #29 and must be rebased, tested against current main, and merged before this item is complete.
 - [ ] Server-side hard-fit matching.
 - [ ] Privacy-safe aggregate Player demand.
 - [ ] TableMatch / TableMatchPlayer / MatchExplanation persistence.
@@ -151,9 +154,9 @@ See `docs/DECISIONS.md`, Decision 016.
 - [ ] Expected headcount updates.
 - [ ] Idempotency/concurrency tests for joins and approvals.
 
-## STEP 5 — Calendar, reminders, and recurring operations — NOT STARTED
+## STEP 5 — Calendar, reminders, and recurring operations — **IN PROGRESS**
 
-- [ ] Production recurrence expansion.
+- [ ] Production recurrence expansion. Implementation exists in draft PR #30 and must be rebased, tested against current main, and merged before this item is complete.
 - [ ] Per-session Skip / Move / cancel behavior.
 - [ ] CalendarEventSync model.
 - [ ] Calendar export/sync provider decision.
@@ -197,12 +200,12 @@ See `docs/DECISIONS.md`, Decision 016.
 - [ ] Moderator/admin audit trail.
 - [ ] Reporting policy and operator runbook.
 
-## STEP 9 — Production UI migration and polish — NOT STARTED
+## STEP 9 — Production UI migration and polish — **IN PROGRESS**
 
-- [ ] Authenticated navigation/account state.
+- [x] Authenticated navigation/account state.
 - [ ] Shared navigation/layout component.
 - [ ] Replace local/pilot writes with production API calls one workflow at a time.
-- [ ] Preserve three equal role entrances.
+- [x] Preserve three equal role entrances.
 - [ ] Honest loading/error/empty/success states.
 - [ ] Mobile and keyboard regression coverage for authenticated flows.
 - [ ] No internal API/pilot terminology in normal user journeys.
@@ -224,11 +227,12 @@ See `docs/DECISIONS.md`, Decision 016.
 - [ ] Admin/operator runbook.
 - [ ] No unrestricted public writes until identity/authorization/abuse release gates pass.
 
-## STEP 11 — Florence controlled launch — NOT STARTED
+## STEP 11 — Nationwide-capable launch with Florence density pilot — NOT STARTED
 
-- [ ] Recruit initial public venues.
-- [ ] Recruit initial DMs.
-- [ ] Recruit initial Players.
+- [ ] Keep account/profile participation available to Players, DMs, and Venues throughout the United States; matching should activate wherever compatible local supply exists.
+- [ ] Recruit initial Florence-area public venues for the first density pilot.
+- [ ] Recruit initial Florence-area DMs.
+- [ ] Recruit initial Florence-area Players.
 - [ ] Venue onboarding one-pager.
 - [ ] DM onboarding one-pager.
 - [ ] Pilot reporting policy.
@@ -248,7 +252,7 @@ Do not let these distract from the production ladder above:
 - Generic social feed.
 - Complex achievements.
 - Opaque AI-first matching.
-- National launch before proving Florence/local density.
+- Large-scale national marketing/spend before proving local density. Nationwide access and U.S.-wide architecture are not deferred.
 - Premium venue/GM tools.
 - Ticketing/marketplace.
 - DNDCards integration.
