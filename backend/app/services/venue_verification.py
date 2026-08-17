@@ -1,6 +1,7 @@
 """Admin-controlled verification for initial Venue onboarding claims."""
 
 import logging
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -12,6 +13,7 @@ from app.audit.service import record_privileged_action
 from app.models.user import User
 from app.models.user_role import UserRoleType
 from app.models.venue import Venue, VenueManager
+from app.services.geocoding import VenueAddress, venue_address_from_model
 
 LOGGER = logging.getLogger(__name__)
 
@@ -32,12 +34,81 @@ class VenueVerificationPersistenceError(RuntimeError):
     """Venue verification could not be persisted."""
 
 
+@dataclass(frozen=True, slots=True)
+class VenueVerificationCandidate:
+    """Immutable pending Venue claim snapshot safe to geocode outside a DB transaction."""
+
+    venue_id: UUID
+    venue_manager_id: UUID
+    address: VenueAddress
+
+
+def load_initial_venue_claim_for_verification(
+    session: Session,
+    *,
+    venue_id: UUID,
+    venue_manager_id: UUID,
+) -> VenueVerificationCandidate:
+    """Load one pending Venue claim and snapshot its persisted public address."""
+
+    try:
+        row = session.execute(
+            select(Venue, VenueManager)
+            .join(VenueManager, VenueManager.venue_id == Venue.id)
+            .where(
+                Venue.id == venue_id,
+                VenueManager.id == venue_manager_id,
+            )
+        ).one_or_none()
+
+        if row is None:
+            raise VenueVerificationNotFoundError(
+                "The requested Venue Manager claim does not exist for this Venue."
+            )
+
+        venue, manager = row
+
+        if not venue.active:
+            raise VenueVerificationConflictError("This Venue is inactive and cannot be verified.")
+        if venue.verified:
+            raise VenueVerificationConflictError("This Venue is already verified.")
+        if manager.verified_at is not None:
+            raise VenueVerificationConflictError("This Venue Manager claim is already verified.")
+
+        candidate = VenueVerificationCandidate(
+            venue_id=venue.id,
+            venue_manager_id=manager.id,
+            address=venue_address_from_model(venue),
+        )
+
+        # End the read transaction before any external geocoding request.
+        session.commit()
+        return candidate
+
+    except (
+        VenueVerificationNotFoundError,
+        VenueVerificationConflictError,
+    ):
+        session.rollback()
+        raise
+    except SQLAlchemyError as exc:
+        session.rollback()
+        LOGGER.exception(
+            "Database failure while loading Venue %s verification claim",
+            venue_id,
+        )
+        raise VenueVerificationPersistenceError(
+            "Venue verification claim could not be loaded."
+        ) from exc
+
+
 def verify_initial_venue_claim(
     session: Session,
     admin_user: User,
     *,
     venue_id: UUID,
     venue_manager_id: UUID,
+    expected_address: VenueAddress,
     latitude: float,
     longitude: float,
 ) -> Venue:
@@ -66,10 +137,17 @@ def verify_initial_venue_claim(
 
         venue, manager = row
 
+        if not venue.active:
+            raise VenueVerificationConflictError("This Venue is inactive and cannot be verified.")
         if venue.verified:
             raise VenueVerificationConflictError("This Venue is already verified.")
         if manager.verified_at is not None:
             raise VenueVerificationConflictError("This Venue Manager claim is already verified.")
+
+        if venue_address_from_model(venue) != expected_address:
+            raise VenueVerificationConflictError(
+                "Venue address changed while verification was in progress."
+            )
 
         verified_at = datetime.now(UTC)
         venue.latitude = latitude
@@ -82,8 +160,8 @@ def verify_initial_venue_claim(
             actor_user_id=admin_user.id,
             actor_role=UserRoleType.ADMIN.value,
             action="venue.verify_initial_claim",
-            target_type="venue",
-            target_id=str(venue.id),
+            target_type="venue_manager",
+            target_id=str(manager.id),
             outcome="success",
             reason_code="initial_claim_approved",
         )

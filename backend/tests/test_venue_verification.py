@@ -11,6 +11,7 @@ from app.models.privileged_audit_event import PrivilegedAuditEvent
 from app.models.user import User
 from app.models.user_role import UserRole, UserRoleType
 from app.models.venue import Venue, VenueManager
+from app.services.geocoding import VenueAddress, venue_address_from_model
 from app.services.venue_verification import (
     VenueVerificationConflictError,
     VenueVerificationNotFoundError,
@@ -57,6 +58,14 @@ def grant_admin(session, user_id: UUID) -> User:
     return user
 
 
+def persisted_venue_address(session, venue_id: UUID) -> VenueAddress:
+    """Return the exact persisted public Venue address used for geocoding."""
+
+    venue = session.get(Venue, venue_id)
+    assert venue is not None
+    return venue_address_from_model(venue)
+
+
 def test_admin_can_verify_initial_venue_claim_atomically(verification_context) -> None:
     client, factory = verification_context
     venue_id = create_claim(client)
@@ -72,6 +81,7 @@ def test_admin_can_verify_initial_venue_claim_atomically(verification_context) -
             admin,
             venue_id=venue_id,
             venue_manager_id=manager.id,
+            expected_address=persisted_venue_address(session, venue_id),
             latitude=34.1954,
             longitude=-79.7626,
         )
@@ -87,8 +97,8 @@ def test_admin_can_verify_initial_venue_claim_atomically(verification_context) -
         )
         audit = session.scalar(
             select(PrivilegedAuditEvent).where(
-                PrivilegedAuditEvent.target_type == "venue",
-                PrivilegedAuditEvent.target_id == str(venue_id),
+                PrivilegedAuditEvent.target_type == "venue_manager",
+                PrivilegedAuditEvent.target_id == str(manager.id),
                 PrivilegedAuditEvent.action == "venue.verify_initial_claim",
             )
         )
@@ -141,6 +151,7 @@ def test_mismatched_venue_manager_claim_is_rejected(verification_context) -> Non
                 admin,
                 venue_id=alice_venue_id,
                 venue_manager_id=bob_manager.id,
+                expected_address=persisted_venue_address(session, alice_venue_id),
                 latitude=34.1954,
                 longitude=-79.7626,
             )
@@ -166,9 +177,67 @@ def test_already_verified_venue_is_rejected(verification_context) -> None:
                 admin,
                 venue_id=venue_id,
                 venue_manager_id=manager.id,
+                expected_address=persisted_venue_address(session, venue_id),
                 latitude=34.1954,
                 longitude=-79.7626,
             )
+
+
+def test_changed_venue_address_rejects_stale_geocoding_snapshot(
+    verification_context,
+) -> None:
+    client, factory = verification_context
+    venue_id = create_claim(client)
+
+    with factory() as session:
+        manager = session.scalar(select(VenueManager).where(VenueManager.venue_id == venue_id))
+        venue = session.get(Venue, venue_id)
+        assert manager is not None
+        assert venue is not None
+
+        admin = grant_admin(session, manager.user_id)
+        manager_id = manager.id
+        original_address = venue_address_from_model(venue)
+
+        venue.address_line1 = "999 Updated Verification Ave"
+        session.commit()
+
+        with pytest.raises(
+            VenueVerificationConflictError,
+            match="address changed",
+        ):
+            verify_initial_venue_claim(
+                session,
+                admin,
+                venue_id=venue_id,
+                venue_manager_id=manager_id,
+                expected_address=original_address,
+                latitude=34.1954,
+                longitude=-79.7626,
+            )
+
+    with factory() as session:
+        stored_venue = session.get(Venue, venue_id)
+        stored_manager = session.get(VenueManager, manager_id)
+
+        success_audits = session.scalars(
+            select(PrivilegedAuditEvent).where(
+                PrivilegedAuditEvent.target_type == "venue_manager",
+                PrivilegedAuditEvent.target_id == str(manager_id),
+                PrivilegedAuditEvent.action == "venue.verify_initial_claim",
+                PrivilegedAuditEvent.outcome == "success",
+            )
+        ).all()
+
+        assert stored_venue is not None
+        assert stored_venue.verified is False
+        assert stored_venue.latitude is None
+        assert stored_venue.longitude is None
+
+        assert stored_manager is not None
+        assert stored_manager.verified_at is None
+
+        assert success_audits == []
 
 
 @pytest.mark.parametrize(
@@ -200,6 +269,7 @@ def test_invalid_coordinates_are_rejected(
                 admin,
                 venue_id=venue_id,
                 venue_manager_id=manager.id,
+                expected_address=persisted_venue_address(session, venue_id),
                 latitude=latitude,
                 longitude=longitude,
             )
@@ -222,6 +292,7 @@ def test_non_admin_cannot_complete_venue_verification(verification_context) -> N
                 user,
                 venue_id=venue_id,
                 venue_manager_id=manager.id,
+                expected_address=persisted_venue_address(session, venue_id),
                 latitude=34.1954,
                 longitude=-79.7626,
             )
