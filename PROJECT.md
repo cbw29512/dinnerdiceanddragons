@@ -2,7 +2,7 @@
 
 ## Project Purpose
 
-Dinner, Dice & Dragons turns **local tabletop RPG interest into actual game nights**.
+Dinner, Dice & Dragons turns **tabletop RPG interest across the United States into actual local game nights**.
 
 The product coordinates three independent signals:
 
@@ -13,6 +13,8 @@ The product coordinates three independent signals:
 The platform finds the overlap and helps move it through a real-world lifecycle:
 
 **Demand signals → Table Match → Forming → Confirmed → Game Hub → Played → Trust + repeat**
+
+**Scope:** Dinner, Dice & Dragons is a United States-wide platform. Players, Game Masters, and Venues may participate anywhere in the U.S. Matching remains geographically local to each user's travel constraints and venue availability. Florence, South Carolina is the first density pilot, not a product boundary.
 
 The primary success metric is not signups, posts, swipes, or reputation points. It is **successful in-person tabletop sessions**.
 
@@ -207,8 +209,19 @@ The pilot must also verify that new users can obtain matches at a reasonable rat
 
 ## Technology Direction
 
-GitHub Pages remains the validation surface.
+The production architecture is now established:
 
-Google Sheets + Apps Script may be used only as a controlled pilot persistence layer if useful. It is not a permanent architectural commitment.
+- **API / policy layer:** FastAPI.
+- **Primary relational data:** PostgreSQL.
+- **Authentication:** Supabase Auth.
+- **Initial managed database target:** Supabase Postgres, while keeping the application schema portable PostgreSQL.
+- **Runtime packaging:** Docker.
+- **Authorization:** durable Dinner, Dice & Dragons database roles and relationships enforced server-side by FastAPI.
 
-If the workflow is validated, the production architecture can move to an authenticated application backed by a proper relational database. Current long-term direction remains compatible with FastAPI + PostgreSQL + Docker, but the product workflow should be proven before infrastructure is locked.
+The validated static frontend remains useful as the UX and regression-test surface while production workflows are migrated incrementally to authenticated APIs.
+
+Google Sheets and Apps Script are no longer the planned shared persistence architecture. Existing prototype or fallback code may remain temporarily only where a production workflow has not yet completed migration.
+
+Infrastructure must continue to serve the product model rather than redefine it: Player demand + GM supply + Venue capacity must produce explainable, geographically viable Table Matches and move them through the real table lifecycle.
+
+Nationwide participation and U.S.-wide architecture are requirements now. Florence is the first concentrated density pilot used to validate marketplace behavior before significant national marketing or expansion spend.
