@@ -7,7 +7,6 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     Float,
-    Numeric,
     String,
     UniqueConstraint,
     Uuid,
@@ -56,7 +55,7 @@ class PostalCodeCentroid(Base):
     latitude: Mapped[float] = mapped_column(Float, nullable=False)
     longitude: Mapped[float] = mapped_column(Float, nullable=False)
     provider: Mapped[str] = mapped_column(String(32), nullable=False)
-    accuracy: Mapped[float] = mapped_column(Numeric(4, 3), nullable=False)
+    accuracy: Mapped[float] = mapped_column(Float, nullable=False)
     accuracy_type: Mapped[str] = mapped_column(String(32), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
