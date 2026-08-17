@@ -1,4 +1,4 @@
-name: Table Match Signal PostgreSQL Contract
+name: Table Match PostgreSQL Contract
 
 on:
   push:
@@ -8,6 +8,8 @@ on:
       - "backend/alembic/**"
       - "backend/scripts/verify_table_match_signal_schema.sh"
       - "backend/tests/test_table_match_signal_persistence.py"
+      - "backend/tests/test_table_match_persistence.py"
+      - "backend/tests/test_table_match_constraints.py"
       - ".github/workflows/table-match-signal-postgres.yml"
   pull_request:
     branches: [main]
@@ -16,6 +18,8 @@ on:
       - "backend/alembic/**"
       - "backend/scripts/verify_table_match_signal_schema.sh"
       - "backend/tests/test_table_match_signal_persistence.py"
+      - "backend/tests/test_table_match_persistence.py"
+      - "backend/tests/test_table_match_constraints.py"
       - ".github/workflows/table-match-signal-postgres.yml"
 
 permissions:
@@ -66,10 +70,10 @@ jobs:
           echo "API did not become healthy in the expected window."
           exit 1
 
-      - name: Apply migrations through Step 3
+      - name: Apply migrations through Table Match persistence
         run: docker compose exec -T api alembic -c alembic.ini upgrade head
 
-      - name: Verify Table Match signal persistence in PostgreSQL
+      - name: Verify Table Match persistence in PostgreSQL
         run: bash backend/scripts/verify_table_match_signal_schema.sh
 
       - name: Tear down contract stack
