@@ -19,6 +19,7 @@ from app.models.gm_system_experience import GMSystemExperience, GMSystemFormat
 from app.models.player_demand_signal import PlayerDemandSignal
 from app.models.player_profile import PlayerProfile
 from app.models.player_system_experience import PlayerSystemExperience
+from app.models.privileged_audit_event import PrivilegedAuditEvent
 from app.models.recurring_availability_rule import RecurringAvailabilityRule
 from app.models.user import User
 from app.models.user_role import UserRole
@@ -87,6 +88,7 @@ def build_onboarding_client():
             PlayerDemandSignal.__table__,
             GMSupplySignal.__table__,
             VenueTableWindow.__table__,
+            PrivilegedAuditEvent.__table__,
         ):
             table.create(engine)
 
