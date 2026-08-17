@@ -32,8 +32,8 @@ Production migration is actively underway.
 - PlayerDemandSignal, GMSupplySignal, and VenueTableWindow persistence are implemented.
 - Player and GM onboarding are connected to the authenticated production path.
 - Venue account authentication is live, while the Venue table-opening workflow still has a temporary pilot/draft fallback.
-- Authenticated Step 3 matching-input APIs exist in draft PR #29 and require reconciliation with current main before completion.
-- Deterministic production recurrence expansion exists in draft PR #30 and requires reconciliation with current main before completion.
+- Authenticated create/list APIs for Player demand, GM supply, and Venue table windows are implemented and recovered in PR #36.
+- Deterministic production recurrence expansion is implemented and recovered in PR #36.
 - The next major backend milestone is the real server-side Player x GM x Venue hard-fit Table Match engine.
 
 Dinner, Dice & Dragons is United States-wide. Florence, South Carolina is the first concentrated density pilot, not a geographic restriction on participation.
@@ -71,11 +71,10 @@ Do not let infrastructure determine the product, but do not treat production inf
 
 Current engineering priority is to complete the production Table Match path in dependency order:
 
-1. reconcile and merge authenticated Player demand, GM supply, and Venue capacity APIs;
-2. reconcile and merge deterministic recurrence expansion;
-3. implement explainable server-side hard-fit matching for system, actual schedule overlap, travel distance, venue capacity, and required constraints;
-4. persist TableMatch, compatible Players, and MatchExplanation records;
-5. add softer Table Fit ranking only after hard compatibility passes.
+1. implement explainable server-side hard-fit matching for system, actual schedule overlap, travel distance, venue capacity, and required constraints;
+2. persist TableMatch, compatible Players, and MatchExplanation records;
+3. expose role-safe, explainable production match opportunities;
+4. add softer Table Fit ranking only after hard compatibility passes.
 
 Nationwide architecture is required now; matching remains local to each participant's geography, travel radius, schedule, and venue availability.
 
@@ -101,4 +100,4 @@ The repository has automated coverage across the production backend and validate
 - Playwright functional, runtime-health, keyboard, accessibility, and 320px reflow tests;
 - Lighthouse performance, accessibility, best-practices, and SEO gates.
 
-The current local recovery baseline passed 220 backend tests and 59 Playwright browser tests.
+The current recovery branch passes the full backend test suite locally; browser regression coverage remains part of the established test baseline.
