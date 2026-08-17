@@ -30,9 +30,7 @@ def haversine_miles(origin: GeoPoint, destination: GeoPoint) -> float:
 
     haversine = (
         sin(latitude_delta / 2) ** 2
-        + cos(origin_latitude)
-        * cos(destination_latitude)
-        * sin(longitude_delta / 2) ** 2
+        + cos(origin_latitude) * cos(destination_latitude) * sin(longitude_delta / 2) ** 2
     )
     central_angle = 2 * asin(sqrt(haversine))
     return EARTH_RADIUS_MILES * central_angle
