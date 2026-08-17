@@ -21,6 +21,7 @@ from app.models.matching_signal import SignalStatus
 from app.models.player_demand_signal import PlayerDemandSignal
 from app.models.player_profile import PlayerProfile, PreferredGameFormat
 from app.models.player_system_experience import PlayerComfortLevel, PlayerSystemExperience
+from app.models.postal_code_centroid import PostalCodeCentroid
 from app.models.privileged_audit_event import PrivilegedAuditEvent
 from app.models.recurring_availability_rule import (
     AvailabilityDay,
@@ -57,6 +58,7 @@ __all__ = [
     "PlayerDemandSignal",
     "PlayerProfile",
     "PlayerSystemExperience",
+    "PostalCodeCentroid",
     "PreferredGameFormat",
     "PreferredPlayerExperience",
     "PrivilegedAuditEvent",
