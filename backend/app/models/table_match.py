@@ -89,7 +89,9 @@ class TableMatch(Base):
         nullable=False,
         index=True,
     )
-    proposed_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    proposed_start: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, index=True
+    )
     proposed_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     timezone: Mapped[str] = mapped_column(String(64), nullable=False)
     minimum_players: Mapped[int] = mapped_column(SmallInteger, nullable=False)
