@@ -1,4 +1,4 @@
-"""Shared HTTP-test support for authenticated onboarding endpoints."""
+"""Shared HTTP-test support for authenticated onboarding and matching endpoints."""
 
 from uuid import UUID
 
@@ -14,13 +14,16 @@ from app.main import create_app
 from app.models.availability_window import GMAvailabilityWindow, PlayerAvailabilityWindow
 from app.models.game_system import GameSystem
 from app.models.gm_profile import GMProfile
+from app.models.gm_supply_signal import GMSupplySignal
 from app.models.gm_system_experience import GMSystemExperience, GMSystemFormat
+from app.models.player_demand_signal import PlayerDemandSignal
 from app.models.player_profile import PlayerProfile
 from app.models.player_system_experience import PlayerSystemExperience
 from app.models.recurring_availability_rule import RecurringAvailabilityRule
 from app.models.user import User
 from app.models.user_role import UserRole
 from app.models.venue import Venue, VenueManager
+from app.models.venue_table_window import VenueTableWindow
 
 ALICE_SUBJECT = "11111111-1111-1111-1111-111111111111"
 BOB_SUBJECT = "22222222-2222-2222-2222-222222222222"
@@ -50,7 +53,7 @@ class StubVerifier:
 
 
 def build_onboarding_client():
-    """Build an isolated API client and session factory with the Step 2 schema."""
+    """Build an isolated API client and session factory with current production tables."""
 
     try:
         engine = create_engine(
@@ -81,6 +84,9 @@ def build_onboarding_client():
             RecurringAvailabilityRule.__table__,
             PlayerAvailabilityWindow.__table__,
             GMAvailabilityWindow.__table__,
+            PlayerDemandSignal.__table__,
+            GMSupplySignal.__table__,
+            VenueTableWindow.__table__,
         ):
             table.create(engine)
 
