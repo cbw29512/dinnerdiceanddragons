@@ -189,7 +189,7 @@ See `docs/DECISIONS.md`, Decision 016.
 - [ ] FairDiscoveryAudit telemetry.
 - [ ] Correction/dispute path.
 
-## STEP 8 ? Trust, venue verification, and moderation ? **IN PROGRESS**
+## STEP 8 — Trust, venue verification, and moderation — **IN PROGRESS**
 
 - [x] Initial admin Venue claim verification endpoint with server-side geocoding, precision checks, row-lock address revalidation, and privileged audit recording.
 - [ ] Complete Venue claim lifecycle and evidence review beyond initial approval.
