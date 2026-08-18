@@ -1,5 +1,7 @@
 """HTTP tests for verified Venue booking lifecycle decisions."""
 
+from uuid import UUID
+
 import pytest
 from onboarding_test_support import build_onboarding_client
 from table_formation_api_test_support import seed_formation_api_match
@@ -111,7 +113,7 @@ def test_approval_rechecks_current_people_capacity(booking_api) -> None:
     client, factory, _, booking_id = booking_api
 
     with factory() as session:
-        booking = session.get(VenueBookingRequest, booking_id)
+        booking = session.get(VenueBookingRequest, UUID(booking_id))
         assert booking is not None
         window = session.get(VenueTableWindow, booking.venue_table_window_id)
         assert window is not None
