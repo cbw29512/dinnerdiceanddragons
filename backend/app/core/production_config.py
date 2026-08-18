@@ -19,7 +19,11 @@ def production_configuration_errors(
         *_supabase_errors(supabase_url),
         *_cors_errors(cors_origins),
         *([] if supabase_jwt_audience.strip() else ["SUPABASE_JWT_AUDIENCE must not be blank"]),
-        *([] if geocodio_api_key and geocodio_api_key.strip() else ["GEOCODIO_API_KEY is required"]),
+        *(
+            []
+            if geocodio_api_key and geocodio_api_key.strip()
+            else ["GEOCODIO_API_KEY is required"]
+        ),
     ]
 
 
