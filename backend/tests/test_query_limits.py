@@ -74,11 +74,14 @@ def test_venue_table_window_query_is_bounded(monkeypatch) -> None:
         lambda *_args: None,
     )
 
-    assert venue_table_windows.list_venue_table_windows(  # type: ignore[arg-type]
-        session,
-        user,
-        uuid4(),
-    ) == []
+    assert (
+        venue_table_windows.list_venue_table_windows(  # type: ignore[arg-type]
+            session,
+            user,
+            uuid4(),
+        )
+        == []
+    )
     _assert_limit(session.statement, MAX_OWNER_MATCHING_SIGNAL_ITEMS)
 
 
@@ -96,8 +99,11 @@ def test_table_match_opportunity_list_query_is_bounded(monkeypatch) -> None:
         lambda *_args: select(TableMatch),
     )
 
-    assert table_match_opportunity_reads.list_opportunities(  # type: ignore[arg-type]
-        session,
-        user,
-    ) == []
+    assert (
+        table_match_opportunity_reads.list_opportunities(  # type: ignore[arg-type]
+            session,
+            user,
+        )
+        == []
+    )
     _assert_limit(session.statement, MAX_MATCH_OPPORTUNITY_LIST_ITEMS)
