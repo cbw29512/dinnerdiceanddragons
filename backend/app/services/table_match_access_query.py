@@ -10,11 +10,23 @@ from app.models.gm_profile import GMProfile
 from app.models.gm_supply_signal import GMSupplySignal
 from app.models.player_demand_signal import PlayerDemandSignal
 from app.models.player_profile import PlayerProfile
-from app.models.table_match import TableMatch
-from app.models.table_match_player import TableMatchPlayer
+from app.models.table_match import TableMatch, TableMatchStatus
+from app.models.table_match_player import TableMatchPlayer, TableMatchPlayerStatus
 from app.models.user_role import UserRole, UserRoleType
 from app.models.venue import Venue, VenueManager
 from app.models.venue_table_window import VenueTableWindow
+
+VISIBLE_MATCH_STATUSES = (
+    TableMatchStatus.POTENTIAL.value,
+    TableMatchStatus.INVITED.value,
+    TableMatchStatus.FORMING.value,
+)
+VISIBLE_PLAYER_STATUSES = (
+    TableMatchPlayerStatus.ELIGIBLE.value,
+    TableMatchPlayerStatus.NOTIFIED.value,
+    TableMatchPlayerStatus.INTERESTED.value,
+    TableMatchPlayerStatus.COMMITTED.value,
+)
 
 
 def user_roles(session: Session, user_id: UUID) -> frozenset[str]:
@@ -26,7 +38,7 @@ def user_roles(session: Session, user_id: UUID) -> frozenset[str]:
 
 
 def opportunity_query(user_id: UUID, roles: frozenset[str]) -> Select:
-    """Build a query that cannot return matches unrelated to the caller."""
+    """Build a query that returns only active opportunities related to the caller."""
 
     conditions = []
     if UserRoleType.PLAYER.value in roles:
@@ -38,7 +50,10 @@ def opportunity_query(user_id: UUID, roles: frozenset[str]) -> Select:
                     PlayerDemandSignal.id == TableMatchPlayer.player_demand_signal_id,
                 )
                 .join(PlayerProfile, PlayerProfile.id == PlayerDemandSignal.player_profile_id)
-                .where(PlayerProfile.user_id == user_id)
+                .where(
+                    PlayerProfile.user_id == user_id,
+                    TableMatchPlayer.status.in_(VISIBLE_PLAYER_STATUSES),
+                )
             )
         )
     if UserRoleType.GM.value in roles:
@@ -67,7 +82,10 @@ def opportunity_query(user_id: UUID, roles: frozenset[str]) -> Select:
         .join(GameSystem, GameSystem.id == TableMatch.game_system_id)
         .join(VenueTableWindow, VenueTableWindow.id == TableMatch.venue_table_window_id)
         .join(Venue, Venue.id == VenueTableWindow.venue_id)
-        .where(access_filter)
+        .where(
+            access_filter,
+            TableMatch.status.in_(VISIBLE_MATCH_STATUSES),
+        )
     )
 
 
