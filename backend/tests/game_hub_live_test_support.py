@@ -17,7 +17,6 @@ from app.models import metadata
 from app.models.event import Event
 from app.models.game_system import GameSystem
 from app.models.gm_profile import GMProfile
-from app.models.message import Message
 from app.models.player_profile import PlayerProfile
 from app.models.recurring_availability_rule import RecurringAvailabilityRule
 from app.models.registration import Registration
@@ -29,10 +28,26 @@ from app.models.venue_booking_request import VenueBookingRequest
 from app.models.venue_table_window import VenueTableWindow
 
 IDENTITIES = {
-    "alice-token": ("11111111-1111-1111-1111-111111111111", "alice@example.com", "Alice"),
-    "bob-token": ("22222222-2222-2222-2222-222222222222", "bob@example.com", "DM Bob"),
-    "carol-token": ("33333333-3333-3333-3333-333333333333", "carol@example.com", "Venue Carol"),
-    "dave-token": ("44444444-4444-4444-4444-444444444444", "dave@example.com", "Dave"),
+    "alice-token": (
+        "11111111-1111-1111-1111-111111111111",
+        "alice@example.com",
+        "Alice",
+    ),
+    "bob-token": (
+        "22222222-2222-2222-2222-222222222222",
+        "bob@example.com",
+        "DM Bob",
+    ),
+    "carol-token": (
+        "33333333-3333-3333-3333-333333333333",
+        "carol@example.com",
+        "Venue Carol",
+    ),
+    "dave-token": (
+        "44444444-4444-4444-4444-444444444444",
+        "dave@example.com",
+        "Dave",
+    ),
 }
 
 
@@ -60,7 +75,9 @@ class HubVerifier:
         }
 
 
-def build_hub_client(routers: tuple) -> tuple[TestClient, sessionmaker[Session], object, LiveHubSeed]:
+def build_hub_client(
+    routers: tuple,
+) -> tuple[TestClient, sessionmaker[Session], object, LiveHubSeed]:
     engine = create_engine(
         "sqlite+pysqlite://",
         connect_args={"check_same_thread": False},
@@ -95,8 +112,7 @@ def build_hub_client(routers: tuple) -> tuple[TestClient, sessionmaker[Session],
 def _seed(factory: sessionmaker[Session]) -> LiveHubSeed:
     with factory() as session:
         users: dict[str, User] = {}
-        for token, (subject, email, display_name) in IDENTITIES.items():
-            del token
+        for _, (subject, email, display_name) in IDENTITIES.items():
             user = User(
                 auth_provider_user_id=subject,
                 email=email,
@@ -116,10 +132,17 @@ def _seed(factory: sessionmaker[Session]) -> LiveHubSeed:
                 UserRole(user_id=bob_user.id, role=UserRoleType.GM.value),
                 UserRole(user_id=alice_user.id, role=UserRoleType.PLAYER.value),
                 UserRole(user_id=dave_user.id, role=UserRoleType.PLAYER.value),
-                UserRole(user_id=carol_user.id, role=UserRoleType.VENUE_MANAGER.value),
+                UserRole(
+                    user_id=carol_user.id,
+                    role=UserRoleType.VENUE_MANAGER.value,
+                ),
             ]
         )
-        system = GameSystem(name="Dungeons & Dragons", edition="5e (2014)", slug="hub-dnd-5e-2014")
+        system = GameSystem(
+            name="Dungeons & Dragons",
+            edition="5e (2014)",
+            slug="hub-dnd-5e-2014",
+        )
         venue = Venue(
             name="Live Hub Cafe",
             slug="live-hub-cafe",
@@ -148,8 +171,16 @@ def _seed(factory: sessionmaker[Session]) -> LiveHubSeed:
             travel_radius_miles=25,
             gm_style="Collaborative.",
         )
-        alice = PlayerProfile(user_id=alice_user.id, postal_code="29501", travel_radius_miles=25)
-        dave = PlayerProfile(user_id=dave_user.id, postal_code="29501", travel_radius_miles=25)
+        alice = PlayerProfile(
+            user_id=alice_user.id,
+            postal_code="29501",
+            travel_radius_miles=25,
+        )
+        dave = PlayerProfile(
+            user_id=dave_user.id,
+            postal_code="29501",
+            travel_radius_miles=25,
+        )
         session.add_all([gm, alice, dave])
         session.flush()
         session.add(
