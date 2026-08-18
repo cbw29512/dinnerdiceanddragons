@@ -49,6 +49,34 @@ def require_event_player(
     if profile is None:
         raise TableFormationForbiddenError("Active Player access is required.")
 
+    require_player_profile_eligible(session, event=event, player_profile_id=profile.id)
+    return profile
+
+
+def require_player_profile_eligible(
+    session: Session,
+    *,
+    event: Event,
+    player_profile_id: UUID,
+) -> PlayerProfile:
+    """Revalidate a registration Player before confirmation or waitlist promotion."""
+
+    profile = session.scalar(
+        select(PlayerProfile)
+        .join(User, User.id == PlayerProfile.user_id)
+        .join(
+            UserRole,
+            (UserRole.user_id == User.id)
+            & (UserRole.role == UserRoleType.PLAYER.value),
+        )
+        .where(
+            PlayerProfile.id == player_profile_id,
+            User.status == AccountStatus.ACTIVE.value,
+        )
+    )
+    if profile is None:
+        raise TableFormationForbiddenError("Player is no longer eligible for this Event.")
+
     if event.table_match_id is not None:
         matched = session.scalar(
             select(TableMatchPlayer.table_match_id)
@@ -94,4 +122,8 @@ def require_event_gm(
     return profile
 
 
-__all__ = ["require_event_gm", "require_event_player"]
+__all__ = [
+    "require_event_gm",
+    "require_event_player",
+    "require_player_profile_eligible",
+]
