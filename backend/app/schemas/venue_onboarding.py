@@ -35,7 +35,10 @@ class VenueOnboardingRequest(BaseModel):
     website_url: str | None = Field(default=None, max_length=500)
     phone: str | None = Field(default=None, max_length=40)
     amenities: list[Amenity] = Field(default_factory=list, max_length=30)
-    host_support_offerings: list[VenueSupportOffering] = Field(default_factory=list, max_length=30)
+    host_support_offerings: list[VenueSupportOffering] = Field(
+        default_factory=list,
+        max_length=30,
+    )
     host_support_notes: str | None = Field(default=None, max_length=2000)
     accessibility_notes: str | None = Field(default=None, max_length=2000)
     parking_notes: str | None = Field(default=None, max_length=2000)
