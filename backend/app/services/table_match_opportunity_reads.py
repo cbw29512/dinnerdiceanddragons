@@ -19,6 +19,7 @@ from app.schemas.table_match_opportunities import (
     TableMatchOpportunityDetailResponse,
     TableMatchOpportunityResponse,
 )
+from app.services.query_limits import MAX_MATCH_OPPORTUNITY_LIST_ITEMS
 from app.services.table_match_access_query import opportunity_query, user_roles
 from app.services.table_match_viewer_context import viewer_facts
 
@@ -34,12 +35,14 @@ class TableMatchOpportunityReadError(RuntimeError):
 
 
 def list_opportunities(session: Session, user: User) -> list[TableMatchOpportunityResponse]:
-    """Return only matches reachable through the caller's durable DDD roles."""
+    """Return a bounded set of matches reachable through the caller's durable roles."""
 
     try:
         roles = user_roles(session, user.id)
         rows = session.execute(
-            opportunity_query(user.id, roles).order_by(TableMatch.proposed_start)
+            opportunity_query(user.id, roles)
+            .order_by(TableMatch.proposed_start, TableMatch.id)
+            .limit(MAX_MATCH_OPPORTUNITY_LIST_ITEMS)
         ).all()
         return [_summary_response(session, user.id, roles, *row) for row in rows]
     except SQLAlchemyError as exc:
