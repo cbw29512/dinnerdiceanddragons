@@ -18,6 +18,7 @@ from app.services.matching_signal_common import (
     require_gm_profile,
     resolve_active_system,
 )
+from app.services.query_limits import MAX_OWNER_MATCHING_SIGNAL_ITEMS
 
 LOGGER = logging.getLogger(__name__)
 
@@ -94,7 +95,7 @@ def create_gm_supply(
 
 
 def list_gm_supplies(session: Session, user: User) -> list[GMSupplyResponse]:
-    """Return only supply signals owned by the authenticated GM."""
+    """Return the caller's most recent bounded GM supply history."""
 
     try:
         profile = require_gm_profile(session, user)
@@ -103,6 +104,7 @@ def list_gm_supplies(session: Session, user: User) -> list[GMSupplyResponse]:
             .join(GameSystem, GameSystem.id == GMSupplySignal.game_system_id)
             .where(GMSupplySignal.gm_profile_id == profile.id)
             .order_by(GMSupplySignal.created_at.desc(), GMSupplySignal.id)
+            .limit(MAX_OWNER_MATCHING_SIGNAL_ITEMS)
         ).all()
         return [_response(signal, slug) for signal, slug in rows]
     except (MatchingSignalValidationError, MatchingSignalConflictError):
