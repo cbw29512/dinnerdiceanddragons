@@ -20,7 +20,7 @@ def test_alembic_configuration_discovers_current_head() -> None:
     script = load_script_directory()
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == ["0019_distributed_api_rate_limits"]
+    assert script.get_heads() == ["0020_game_table_aggregate"]
 
 
 def test_revision_ids_fit_alembic_version_column() -> None:
@@ -68,6 +68,8 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert "CREATE TABLE venues" in result.stdout
     assert "uq_venues_slug" in result.stdout
     assert "ck_venues_venue_type" in result.stdout
+    assert "host_support_offerings" in result.stdout
+    assert "host_support_notes" in result.stdout
     assert "CREATE TABLE venue_managers" in result.stdout
     assert "uq_venue_managers_venue_id_user_id" in result.stdout
     assert "ck_venue_managers_role" in result.stdout
@@ -96,6 +98,8 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert "ck_gm_supply_signals_player_range" in result.stdout
     assert "CREATE TABLE venue_table_windows" in result.stdout
     assert "uq_venue_table_windows_recurring_rule_id" in result.stdout
+    assert "special_support_offerings" in result.stdout
+    assert "special_support_notes" in result.stdout
     assert "CREATE TABLE table_matches" in result.stdout
     assert "ck_table_matches_time_order" in result.stdout
     assert "uq_table_matches_gm_venue_occurrence" in result.stdout
@@ -128,6 +132,13 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert "ck_api_rate_limit_buckets_scope_length" in result.stdout
     assert "ck_api_rate_limit_buckets_tokens_nonnegative" in result.stdout
     assert "ix_api_rate_limit_buckets_updated_at" in result.stdout
+    assert "CREATE TABLE game_tables" in result.stdout
+    assert "ck_game_tables_lifecycle_status" in result.stdout
+    assert "ck_game_tables_player_range" in result.stdout
+    assert "ck_game_tables_proposed_schedule" in result.stdout
+    assert "CREATE TABLE game_table_players" in result.stdout
+    assert "pk_game_table_players" in result.stdout
+    assert "ck_game_table_players_status" in result.stdout
     assert "INSERT INTO game_systems" in result.stdout
     assert "dnd-5e-2014" in result.stdout
     assert "dnd-5e-2024" in result.stdout
@@ -149,6 +160,8 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
         "venue_booking_requests",
         "messages",
         "api_rate_limit_buckets",
+        "game_tables",
+        "game_table_players",
     ):
         assert f'ALTER TABLE public."{table}" ENABLE ROW LEVEL SECURITY' in result.stdout
     assert "deny_privileged_audit_event_mutation" in result.stdout
