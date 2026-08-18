@@ -36,23 +36,11 @@ def test_valid_production_settings_construct_successfully() -> None:
     [
         (
             "postgresql+psycopg://ddd:ddd@localhost:5432/ddd",
-            "public non-local database host",
+            "non-loopback database host",
         ),
         (
             "postgresql+psycopg://ddd_app:secret@127.0.0.1:5432/ddd",
-            "public non-local database host",
-        ),
-        (
-            "postgresql+psycopg://ddd_app:secret@10.20.30.40:5432/ddd",
-            "public non-local database host",
-        ),
-        (
-            "postgresql+psycopg://ddd_app:secret@172.20.0.10:5432/ddd",
-            "public non-local database host",
-        ),
-        (
-            "postgresql+psycopg://ddd_app:secret@192.168.50.5:5432/ddd",
-            "public non-local database host",
+            "non-loopback database host",
         ),
         (
             "postgresql://ddd_app:secret@db.example.com:5432/ddd",
@@ -67,6 +55,14 @@ def test_valid_production_settings_construct_successfully() -> None:
 def test_production_rejects_unsafe_database_urls(database_url: str, message: str) -> None:
     with pytest.raises(ValidationError, match=message):
         production_settings(database_url=database_url)
+
+
+def test_production_allows_private_network_database_endpoint() -> None:
+    settings = production_settings(
+        database_url="postgresql+psycopg://ddd_app:secret@10.20.30.40:5432/ddd"
+    )
+
+    assert settings.app_env == "production"
 
 
 @pytest.mark.parametrize(
