@@ -33,7 +33,6 @@ class TableExpectations(Base):
         Uuid,
         ForeignKey("events.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
     tone: Mapped[str | None] = mapped_column(String(80), nullable=True)
     age_expectation: Mapped[str | None] = mapped_column(String(120), nullable=True)
