@@ -3,6 +3,7 @@ const AxeBuilder = require("@axe-core/playwright").default;
 const { mockZipLookup } = require("./helpers");
 
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
+const LIVE_HUB_EVENT_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 
 const pages = [
   "/index.html",
@@ -144,12 +145,151 @@ test("live Table Match results remain WCAG clean", async ({ page }) => {
   await expectNoWcagViolations(page);
 });
 
-test("all Game Hub role views remain WCAG clean when revealed", async ({ page }) => {
-  await page.goto("/game-hub.html?role=player");
+test("all authenticated Game Hub role views remain WCAG clean when revealed", async ({ page }) => {
+  await mockAuthenticatedMultiRoleHub(page);
+  await page.goto(`/game-hub.html?event=${LIVE_HUB_EVENT_ID}&role=player`);
+  await expect(page.locator("#hub-status")).toHaveText("Live Game Hub loaded.");
 
-  for (const role of ["player", "gm", "venue"]) {
-    await page.locator(`.hub-role[data-role="${role}"]`).click();
-    await expect(page.locator(`#${role}-view`)).toBeVisible();
+  for (const [role, viewId] of [
+    ["player", "player-view"],
+    ["gm", "gm-view"],
+    ["venue_manager", "venue-view"],
+  ]) {
+    await page.locator(`.hub-role-button[data-role="${role}"]`).click();
+    await expect(page.locator(`#${viewId}`)).toBeVisible();
     await expectNoWcagViolations(page);
   }
 });
+
+async function mockAuthenticatedMultiRoleHub(page) {
+  const accessToken = fakeJwt({
+    sub: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+    email: "accessibility@example.test",
+    exp: 4102444800,
+  });
+  await page.addInitScript(({ token }) => {
+    localStorage.setItem("ddd-production-auth-session", JSON.stringify({
+      access_token: token,
+      refresh_token: "accessibility-refresh-token",
+      expires_at: 4102444800,
+      user: {
+        id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+        email: "accessibility@example.test",
+      },
+    }));
+  }, { token: accessToken });
+
+  await page.route("https://dinnerdiceanddragons.vercel.app/api/v1/**", async (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname === `/api/v1/events/${LIVE_HUB_EVENT_ID}/hub`) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(accessibleHubPayload()),
+      });
+      return;
+    }
+    if (url.pathname === `/api/v1/events/${LIVE_HUB_EVENT_ID}/messages`) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ items: [], next_cursor: null }),
+      });
+      return;
+    }
+    if (url.pathname === "/api/v1/me") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          display_name: "Accessibility User",
+          roles: ["player", "gm", "venue_manager"],
+        }),
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 404,
+      contentType: "application/json",
+      body: JSON.stringify({ detail: "Not found" }),
+    });
+  });
+}
+
+function accessibleHubPayload() {
+  return {
+    event: {
+      id: LIVE_HUB_EVENT_ID,
+      slug: "accessibility-live-hub",
+      title: "Accessible Live Game Hub",
+      description: "Authenticated multi-role accessibility fixture.",
+      status: "confirmed",
+      event_type: "one_shot",
+      join_mode: "instant_join",
+      starts_at: "2030-08-23T22:00:00Z",
+      ends_at: "2030-08-24T02:00:00Z",
+      min_players: 1,
+      max_players: 4,
+      minimum_age: null,
+      beginner_friendly: true,
+      system_name: "Dungeons & Dragons",
+      system_edition: "5e (2014)",
+      venue_name: "Accessible Test Cafe",
+      venue_city: "Florence",
+      venue_state_region: "SC",
+      viewer_roles: ["player", "gm", "venue_manager"],
+      confirmed_players: 1,
+      booking: {
+        id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        status: "approved",
+        expected_guests: 2,
+        requested_start: "2030-08-23T22:00:00Z",
+        requested_end: "2030-08-24T02:00:00Z",
+      },
+      expectations: {
+        tone: "Welcoming",
+        age_environment: null,
+        play_style: "Collaborative roleplay and tactical combat.",
+        boundaries: "Respectful table.",
+        pvp_policy: "No PvP without table consent.",
+        homebrew_policy: null,
+        character_death_policy: null,
+        mature_content_notes: null,
+        alcohol_policy: null,
+        new_players_welcome: true,
+        break_policy: null,
+        safety_framework: "Pause or step away whenever needed.",
+        environment_notes: null,
+        accessibility_notes: "Accessible entrance available.",
+        other_notes: null,
+      },
+      your_registration: {
+        id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+        event_id: LIVE_HUB_EVENT_ID,
+        status: "confirmed",
+        expectations_acknowledged_at: "2030-08-01T12:00:00Z",
+        requested_at: "2030-08-01T12:00:00Z",
+        responded_at: "2030-08-01T12:05:00Z",
+        cancelled_at: null,
+      },
+    },
+    capabilities: {
+      viewer_roles: ["player", "gm", "venue_manager"],
+      post_channels: [
+        "table_announcement",
+        "table_discussion",
+        "gm_venue",
+        "player_gm",
+        "player_venue_question",
+      ],
+      can_manage_registrations: true,
+      can_manage_booking: true,
+    },
+    registration_queue: [],
+  };
+}
+
+function fakeJwt(payload) {
+  const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  return `${encode({ alg: "RS256", typ: "JWT" })}.${encode(payload)}.accessibility-signature`;
+}
