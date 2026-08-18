@@ -3,10 +3,11 @@
 from collections.abc import Mapping
 from typing import Annotated, Any
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies.auth import get_verified_supabase_claims
+from app.api.dependencies.rate_limit import enforce_authenticated_request_rate_limit
 from app.db.session import get_db_session
 from app.identity.user_linking import (
     IdentityClaimsError,
@@ -38,9 +39,10 @@ def get_current_user(
 
 
 def require_active_user(
+    request: Request,
     user: Annotated[User, Depends(get_current_user)],
 ) -> User:
-    """Allow participation only for an active DDD account.
+    """Allow only active accounts and enforce their shared request allowance.
 
     Restricted, suspended, and banned users remain authenticated so they can
     inspect their own account state, but they cannot enter protected
@@ -52,4 +54,5 @@ def require_active_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is not permitted to participate.",
         )
+    enforce_authenticated_request_rate_limit(request, user)
     return user
