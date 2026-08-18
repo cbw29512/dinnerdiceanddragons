@@ -1,4 +1,4 @@
-FROM python:3.13-slim
+FROM python:3.13.14-alpine3.24@sha256:399babc8b49529dabfd9c922f2b5eea81d611e4512e3ed250d75bd2e7683f4b0
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -11,8 +11,7 @@ COPY app ./app
 COPY alembic.ini ./
 COPY alembic ./alembic
 
-RUN python -m pip install --no-cache-dir --upgrade pip \
-    && python -m pip install --no-cache-dir .
+RUN python -m pip install --no-cache-dir .
 
 EXPOSE 8000
 
