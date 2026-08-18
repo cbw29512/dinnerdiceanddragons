@@ -46,10 +46,11 @@ jobs:
       - name: Install pinned Python vulnerability auditor
         run: python -m pip install --disable-pip-version-check --no-cache-dir pip-audit==2.10.1
 
-      - name: Audit production Python dependencies
+      - name: Prepare production Python requirement set
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p security-sbom
           python - <<'PY'
           from pathlib import Path
           import tomllib
@@ -64,7 +65,12 @@ jobs:
               encoding='utf-8',
           )
           PY
-          pip-audit --requirement /tmp/ddd-production-requirements.txt
+
+      - name: Audit production Python dependencies
+        run: pip-audit --requirement /tmp/ddd-production-requirements.txt
+
+      - name: Generate Python CycloneDX SBOM
+        run: pip-audit --requirement /tmp/ddd-production-requirements.txt --format cyclonedx-json --output security-sbom/python-production.cdx.json
 
       - name: Set up Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -77,3 +83,15 @@ jobs:
 
       - name: Audit npm dependency graph
         run: npm audit --audit-level=high
+
+      - name: Generate npm CycloneDX SBOM
+        run: npm sbom --sbom-format=cyclonedx > security-sbom/npm-tooling.cdx.json
+
+      - name: Preserve dependency SBOMs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: dependency-sboms
+          path: security-sbom
+          if-no-files-found: warn
+          retention-days: 14
