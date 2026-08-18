@@ -17,6 +17,7 @@ from app.services.table_match_persistence_service import (
     PersistedMatchResult,
     persist_match_opportunities,
 )
+from app.services.table_match_reconciliation import expire_stale_potential_matches
 
 LOGGER = logging.getLogger(__name__)
 SessionFactory = Callable[[], Session]
@@ -28,6 +29,7 @@ class TableMatchRunResult:
 
     computed_opportunities: int
     persisted: tuple[PersistedMatchResult, ...]
+    expired_count: int = 0
 
 
 def run_table_match(
@@ -37,7 +39,7 @@ def run_table_match(
     session_factory: SessionFactory | sessionmaker[Session] | None = None,
     postal_resolver: PostalCentroidResolver | None = None,
 ) -> TableMatchRunResult:
-    """Load inputs, compute outside the read transaction, then persist results."""
+    """Load inputs, compute outside the read transaction, persist, and reconcile."""
 
     factory = session_factory or get_session_factory()
     try:
@@ -65,13 +67,20 @@ def run_table_match(
             opportunities,
             session_factory=factory,
         )
+        expired_count = expire_stale_potential_matches(
+            opportunities,
+            window_start=window_start,
+            window_end=window_end,
+            session_factory=factory,
+        )
     except Exception:
-        LOGGER.exception("Table Match computation or persistence failed")
+        LOGGER.exception("Table Match computation, persistence, or reconciliation failed")
         raise
 
     return TableMatchRunResult(
         computed_opportunities=len(opportunities),
         persisted=persisted,
+        expired_count=expired_count,
     )
 
 
