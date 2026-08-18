@@ -75,26 +75,37 @@ The initial policies are deliberately conservative and live in `backend/app/serv
 - `table_formation`: burst 3; refill 1 token every 60 seconds.
 - `venue_booking`: burst 6; refill 1 token every 10 seconds.
 - `matching_run`: burst 2; refill 1 token every 300 seconds.
+- `onboarding_mutation`: burst 6; refill 1 token every 20 seconds.
+- `matching_input`: burst 10; refill 1 token every 10 seconds.
+- `provider_geocoding`: burst 2; refill 1 token every 60 seconds.
 
 Changing these values is a reviewed application-security change. Do not hot-patch production database rows as a substitute for changing policy.
+
+## Hard request-body bound
+
+Mutation requests (`POST`, `PUT`, `PATCH`, and `DELETE`) are capped at **64 KiB** before FastAPI/Pydantic parsing. The ASGI guard rejects oversized declared bodies immediately and also counts streamed chunks so omitting `Content-Length` does not bypass the limit. Current production endpoints accept small JSON documents only; there is no upload endpoint that requires a larger body.
+
+Any future file upload or intentionally large-payload feature must use a separately reviewed upload architecture instead of raising this global API limit casually.
 
 ## What is intentionally not database-rate-limited
 
 Ordinary authenticated reads are not written into PostgreSQL merely to count requests. Coarse read-flood protection belongs at the Vercel edge. This avoids turning every GET into a write transaction and preserves database capacity for product state.
 
-Supabase authentication traffic is also not re-proxied through the DDD API solely to add another limiter. Supabase owns and rate-limits those endpoints directly.
+Supabase authentication traffic is also not re-proxied through the DDD API solely to add another limiter. Supabase owns and rate-limits those endpoints directly. Durable DDD identity bootstrap occurs after successful Supabase authentication and therefore remains under the Supabase + edge layers until a trusted DDD user ID exists.
 
 ## Validation requirements
 
-A rate-limit change is not production-ready unless the exact PR head proves:
+A rate-limit or request-bound change is not production-ready unless the exact PR head proves:
 
 - Alembic head includes the rate-limit table and enables RLS at creation;
 - static/offline migration tests include the table and constraints;
 - deterministic token-bucket exhaustion/refill tests pass;
+- every declared `RateLimitScope` has one valid version-controlled policy;
 - HTTP 429 includes `Retry-After` and rejects the business write;
 - limiter persistence failure produces controlled 503 behavior;
 - PostgreSQL first-request races allow exactly one token consumer;
 - PostgreSQL existing-row races allow exactly one consumer when only one token is available;
+- oversized declared and streamed request bodies are rejected with HTTP 413;
 - existing API, RLS, migration, Docker/PostgreSQL, and production runtime contracts remain green.
 
 ## Incident response
