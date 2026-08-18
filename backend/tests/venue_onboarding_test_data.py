@@ -16,6 +16,15 @@ def venue_payload() -> dict:
             "website_url": "https://example.com",
             "phone": "843-555-0100",
             "amenities": ["Accessible entrance", "Parking", "Wi-Fi"],
+            "host_support_offerings": [
+                "consistent_space",
+                "loyalty_rewards",
+                "prize_support",
+                "beverages",
+            ],
+            "host_support_notes": (
+                "Game Masters may earn loyalty punches that can be redeemed for prizes."
+            ),
             "accessibility_notes": "Step-free front entrance.",
             "parking_notes": "Shared lot beside the building.",
             "noise_notes": "Quieter rear seating area.",
