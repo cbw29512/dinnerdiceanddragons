@@ -1,0 +1,6 @@
+"""Version-controlled upper bounds for API list and owner-history queries."""
+
+MAX_OWNER_MATCHING_SIGNAL_ITEMS = 100
+MAX_MATCH_OPPORTUNITY_LIST_ITEMS = 100
+
+__all__ = ["MAX_MATCH_OPPORTUNITY_LIST_ITEMS", "MAX_OWNER_MATCHING_SIGNAL_ITEMS"]
