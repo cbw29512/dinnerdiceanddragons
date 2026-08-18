@@ -1,12 +1,16 @@
 """End-to-end API privacy and authorization tests for the live Game Hub."""
 
+from datetime import UTC, datetime
+
 import pytest
 from game_hub_live_test_support import LiveHubSeed, auth, build_hub_client
+from sqlalchemy import select
 
 from app.api.routes.events import router as events_router
 from app.api.routes.game_hub import index_router
 from app.api.routes.game_hub import router as game_hub_router
 from app.models.event import Event, EventStatus
+from app.models.message import Message
 
 
 @pytest.fixture()
@@ -143,7 +147,7 @@ def test_private_player_messages_are_isolated_from_other_players_and_venue(hub_a
 
 
 def test_player_cannot_post_announcement_bad_cursor_is_422_and_pages_do_not_repeat(hub_api) -> None:
-    client, _, seed = hub_api
+    client, factory, seed = hub_api
     denied = _post_raw(
         client,
         seed,
@@ -159,6 +163,24 @@ def test_player_cannot_post_announcement_bad_cursor_is_422_and_pages_do_not_repe
 
     for body in ("One", "Two", "Three"):
         _post(client, seed, "bob-token", "table_announcement", body)
+
+    # SQLite stores CURRENT_TIMESTAMP differently from a bound DateTime value.
+    # Normalize the fixture so this test exercises the UUID tie-break for equal
+    # timestamps, matching PostgreSQL timestamptz keyset semantics.
+    with factory() as session:
+        rows = session.scalars(
+            select(Message).where(
+                Message.event_id == seed.event_id,
+                Message.channel_type == "table_announcement",
+                Message.body.in_(("One", "Two", "Three")),
+            )
+        ).all()
+        assert len(rows) == 3
+        stable_time = datetime(2030, 8, 1, 14, tzinfo=UTC)
+        for row in rows:
+            row.created_at = stable_time
+        session.commit()
+
     first = client.get(
         f"/api/v1/events/{seed.event_id}/messages?limit=2",
         headers=auth("alice-token"),

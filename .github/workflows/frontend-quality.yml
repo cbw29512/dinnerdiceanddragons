@@ -121,6 +121,18 @@ jobs:
       - name: Run functional, keyboard, WCAG, reflow, and runtime tests
         run: npm run test:e2e
 
+      - name: Preserve Playwright failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-failure-report
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 14
+
   lighthouse:
     name: Lighthouse performance, SEO, and best-practices gate
     needs: validate
