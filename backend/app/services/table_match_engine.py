@@ -9,7 +9,6 @@ from app.services.table_match_computation_context import TableMatchComputationCo
 from app.services.table_match_engine_policy import (
     MAX_MATCH_HORIZON_DAYS,
     TableMatchHorizonError,
-    prefer_opportunity,
     validate_match_horizon,
 )
 from app.services.table_match_hard_fit import (
@@ -20,6 +19,10 @@ from app.services.table_match_hard_fit import (
 )
 from app.services.table_match_opportunity import MatchOpportunity
 from app.services.table_match_player_matching import find_compatible_players
+from app.services.table_match_venue_allocation import (
+    VenueOccurrenceCandidate,
+    allocate_venue_tables,
+)
 
 
 def build_match_opportunities(
@@ -29,11 +32,11 @@ def build_match_opportunities(
     window_start: date,
     window_end: date,
 ) -> tuple[MatchOpportunity, ...]:
-    """Compute all minimum-qualified opportunities without writing match state."""
+    """Compute minimum-qualified opportunities capped by physical Venue tables."""
 
     validate_match_horizon(window_start, window_end)
     context = TableMatchComputationContext(postal_resolver)
-    opportunities: dict[tuple[object, ...], MatchOpportunity] = {}
+    candidates: list[VenueOccurrenceCandidate] = []
 
     for gm in snapshot.gms:
         gm_occurrences = context.occurrences(gm.rule, window_start, window_end)
@@ -116,23 +119,16 @@ def build_match_opportunities(
                         players=compatible_players,
                         explanations=explanations,
                     )
-                    key = (
-                        opportunity.gm_supply_signal_id,
-                        opportunity.venue_table_window_id,
-                        opportunity.proposed_start,
-                        opportunity.proposed_end,
+                    candidates.append(
+                        VenueOccurrenceCandidate(
+                            opportunity=opportunity,
+                            venue_occurrence_start=venue_occurrence.start_at,
+                            venue_occurrence_end=venue_occurrence.end_at,
+                            table_count=venue.table_count,
+                        )
                     )
-                    current = opportunities.get(key)
-                    if current is None or prefer_opportunity(opportunity, current):
-                        opportunities[key] = opportunity
 
-    return tuple(
-        opportunities[key]
-        for key in sorted(
-            opportunities,
-            key=lambda item: (str(item[0]), str(item[1]), item[2], item[3]),
-        )
-    )
+    return allocate_venue_tables(candidates)
 
 
 __all__ = [
