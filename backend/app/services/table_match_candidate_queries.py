@@ -4,12 +4,14 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.availability_window import GMAvailabilityWindow, PlayerAvailabilityWindow
+from app.models.game_system import GameSystem
 from app.models.gm_profile import GMProfile
 from app.models.gm_supply_signal import GMSupplySignal
 from app.models.matching_signal import SignalStatus
 from app.models.player_demand_signal import PlayerDemandSignal
 from app.models.player_profile import PlayerProfile
 from app.models.recurring_availability_rule import RecurringAvailabilityRule
+from app.models.user import AccountStatus, User
 from app.models.venue import Venue
 from app.models.venue_table_window import VenueTableWindow
 from app.services.table_match_candidate_types import (
@@ -34,6 +36,8 @@ def _load_gms(session: Session) -> list[GMCandidate]:
     rows = session.execute(
         select(GMSupplySignal, GMProfile, RecurringAvailabilityRule)
         .join(GMProfile, GMProfile.id == GMSupplySignal.gm_profile_id)
+        .join(User, User.id == GMProfile.user_id)
+        .join(GameSystem, GameSystem.id == GMSupplySignal.game_system_id)
         .join(GMAvailabilityWindow, GMAvailabilityWindow.gm_profile_id == GMProfile.id)
         .join(
             RecurringAvailabilityRule,
@@ -41,6 +45,8 @@ def _load_gms(session: Session) -> list[GMCandidate]:
         )
         .where(
             GMSupplySignal.status == SignalStatus.ACTIVE.value,
+            User.status == AccountStatus.ACTIVE.value,
+            GameSystem.active.is_(True),
             GMAvailabilityWindow.active.is_(True),
             RecurringAvailabilityRule.active.is_(True),
         )
@@ -99,6 +105,8 @@ def _load_players(session: Session) -> list[PlayerCandidate]:
     rows = session.execute(
         select(PlayerDemandSignal, PlayerProfile, RecurringAvailabilityRule)
         .join(PlayerProfile, PlayerProfile.id == PlayerDemandSignal.player_profile_id)
+        .join(User, User.id == PlayerProfile.user_id)
+        .join(GameSystem, GameSystem.id == PlayerDemandSignal.game_system_id)
         .join(
             PlayerAvailabilityWindow,
             PlayerAvailabilityWindow.player_profile_id == PlayerProfile.id,
@@ -109,6 +117,8 @@ def _load_players(session: Session) -> list[PlayerCandidate]:
         )
         .where(
             PlayerDemandSignal.status == SignalStatus.ACTIVE.value,
+            User.status == AccountStatus.ACTIVE.value,
+            GameSystem.active.is_(True),
             PlayerAvailabilityWindow.active.is_(True),
             RecurringAvailabilityRule.active.is_(True),
         )
