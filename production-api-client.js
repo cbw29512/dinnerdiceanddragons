@@ -82,6 +82,10 @@
     }
   }
 
+  function eventPath(eventId, suffix = "") {
+    return `/api/v1/events/${encodeURIComponent(String(eventId || ""))}${suffix}`;
+  }
+
   window.DDDProductionAPI = Object.freeze({
     ProductionApiError,
     configure,
@@ -91,6 +95,27 @@
     putPlayerOnboarding: (payload) => request("PUT", "/api/v1/onboarding/player", payload),
     getGMOnboarding: () => request("GET", "/api/v1/onboarding/gm"),
     putGMOnboarding: (payload) => request("PUT", "/api/v1/onboarding/gm", payload),
-    postVenueOnboarding: (payload) => request("POST", "/api/v1/onboarding/venue", payload)
+    postVenueOnboarding: (payload) => request("POST", "/api/v1/onboarding/venue", payload),
+    getGameHubs: () => request("GET", "/api/v1/game-hubs"),
+    getEvent: (eventId) => request("GET", eventPath(eventId)),
+    getGameHub: (eventId) => request("GET", eventPath(eventId, "/hub")),
+    getHubMessages: (eventId, { limit = 50, cursor = "" } = {}) => {
+      const params = new URLSearchParams({ limit: String(limit) });
+      if (cursor) params.set("cursor", cursor);
+      return request("GET", `${eventPath(eventId, "/messages")}?${params.toString()}`);
+    },
+    postHubMessage: (eventId, payload) => request("POST", eventPath(eventId, "/messages"), payload),
+    postRegistration: (eventId) => request("POST", eventPath(eventId, "/registrations"), { expectations_acknowledged: true }),
+    cancelMyRegistration: (eventId) => request("PATCH", eventPath(eventId, "/registrations/me"), { action: "cancel" }),
+    decideRegistration: (eventId, registrationId, action) => request(
+      "PATCH",
+      eventPath(eventId, `/registrations/${encodeURIComponent(String(registrationId || ""))}`),
+      { action }
+    ),
+    decideVenueBooking: (bookingId, action, message = null) => request(
+      "PATCH",
+      `/api/v1/venue-bookings/${encodeURIComponent(String(bookingId || ""))}`,
+      { action, ...(message ? { message } : {}) }
+    )
   });
 })();

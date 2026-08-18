@@ -1,6 +1,12 @@
 (() => {
   "use strict";
 
+  const HUB_ROLE_MAP = Object.freeze({
+    player: "player",
+    gm: "gm",
+    venue: "venue_manager"
+  });
+
   // Data schema: one role owns its label, hero copy, and the two next-step actions.
   const ROLE_CONFIG = Object.freeze({
     player: {
@@ -22,7 +28,7 @@
       title: "Turn open tables into game nights.",
       copy: "Post the times and capacity you want filled, connect with GMs, and keep expected headcount and game-night logistics in one place.",
       primary: { href: "venues.html#signup", label: "Fill My Tables" },
-      secondary: { href: "game-hub.html?role=venue", label: "Preview Venue Game Hub" }
+      secondary: { href: "game-hub.html", label: "Open My Game Hubs" }
     }
   });
 
@@ -44,8 +50,9 @@
 
   function syncHubLinks(role) {
     try {
+      const hubRole = HUB_ROLE_MAP[role] || role;
       document.querySelectorAll('a[href^="game-hub.html"]').forEach((link) => {
-        link.href = `game-hub.html?role=${encodeURIComponent(role)}`;
+        link.href = `game-hub.html?role=${encodeURIComponent(hubRole)}`;
       });
     } catch (error) {
       logError("Unable to preserve role in Game Hub links", error);

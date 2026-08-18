@@ -5,9 +5,12 @@ on:
     branches: [main]
     paths:
       - "*.html"
+      - "*.js"
+      - "*.css"
       - "assets/**"
       - "css/**"
       - "js/**"
+      - "e2e/**"
       - "scripts/check_site.py"
       - "scripts/check_buttons.py"
       - "tests/**"
@@ -21,9 +24,12 @@ on:
     branches: [main]
     paths:
       - "*.html"
+      - "*.js"
+      - "*.css"
       - "assets/**"
       - "css/**"
       - "js/**"
+      - "e2e/**"
       - "scripts/check_site.py"
       - "scripts/check_buttons.py"
       - "tests/**"
@@ -114,6 +120,18 @@ jobs:
 
       - name: Run functional, keyboard, WCAG, reflow, and runtime tests
         run: npm run test:e2e
+
+      - name: Preserve Playwright failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-failure-report
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 14
 
   lighthouse:
     name: Lighthouse performance, SEO, and best-practices gate

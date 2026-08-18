@@ -1,10 +1,12 @@
-name: Matching and Formation PostgreSQL Contract
+name: Matching, Formation and Hub PostgreSQL Contract
 
 on:
   push:
     branches: [main]
     paths:
       - "backend/app/models/**"
+      - "backend/app/api/routes/game_hub.py"
+      - "backend/app/schemas/game_hub.py"
       - "backend/app/services/geo_distance.py"
       - "backend/app/services/geocodio_postal_resolver.py"
       - "backend/app/services/postal_centroid*.py"
@@ -14,10 +16,13 @@ on:
       - "backend/app/services/event_*.py"
       - "backend/app/services/*registration*.py"
       - "backend/app/services/venue_booking_*.py"
+      - "backend/app/services/game_hub_*.py"
+      - "backend/app/services/message_cursor.py"
       - "backend/alembic/**"
       - "backend/scripts/verify_table_match_signal_schema.sh"
       - "backend/scripts/verify_postal_centroid_schema.sh"
       - "backend/scripts/verify_table_formation_schema.sh"
+      - "backend/scripts/verify_game_hub_schema.sh"
       - "backend/tests/test_geo_distance.py"
       - "backend/tests/test_geocodio_postal_resolver.py"
       - "backend/tests/test_postal_centroid_cache.py"
@@ -25,12 +30,15 @@ on:
       - "backend/tests/test_table_formation_*.py"
       - "backend/tests/test_registration_lifecycle.py"
       - "backend/tests/test_venue_booking_capacity.py"
+      - "backend/tests/test_game_hub_*.py"
       - "backend/tests/table_formation_postgres_contract.py"
       - ".github/workflows/table-match-signal-postgres.yml"
   pull_request:
     branches: [main]
     paths:
       - "backend/app/models/**"
+      - "backend/app/api/routes/game_hub.py"
+      - "backend/app/schemas/game_hub.py"
       - "backend/app/services/geo_distance.py"
       - "backend/app/services/geocodio_postal_resolver.py"
       - "backend/app/services/postal_centroid*.py"
@@ -40,10 +48,13 @@ on:
       - "backend/app/services/event_*.py"
       - "backend/app/services/*registration*.py"
       - "backend/app/services/venue_booking_*.py"
+      - "backend/app/services/game_hub_*.py"
+      - "backend/app/services/message_cursor.py"
       - "backend/alembic/**"
       - "backend/scripts/verify_table_match_signal_schema.sh"
       - "backend/scripts/verify_postal_centroid_schema.sh"
       - "backend/scripts/verify_table_formation_schema.sh"
+      - "backend/scripts/verify_game_hub_schema.sh"
       - "backend/tests/test_geo_distance.py"
       - "backend/tests/test_geocodio_postal_resolver.py"
       - "backend/tests/test_postal_centroid_cache.py"
@@ -51,6 +62,7 @@ on:
       - "backend/tests/test_table_formation_*.py"
       - "backend/tests/test_registration_lifecycle.py"
       - "backend/tests/test_venue_booking_capacity.py"
+      - "backend/tests/test_game_hub_*.py"
       - "backend/tests/table_formation_postgres_contract.py"
       - ".github/workflows/table-match-signal-postgres.yml"
 
@@ -58,7 +70,7 @@ permissions:
   contents: read
 
 jobs:
-  matching-formation-postgres-contract:
+  matching-formation-hub-postgres-contract:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -102,7 +114,7 @@ jobs:
           echo "API did not become healthy in the expected window."
           exit 1
 
-      - name: Apply migrations through table formation
+      - name: Apply migrations through live Game Hub
         run: docker compose exec -T api alembic -c alembic.ini upgrade head
 
       - name: Verify Table Match persistence in PostgreSQL
@@ -113,6 +125,9 @@ jobs:
 
       - name: Verify table formation persistence in PostgreSQL
         run: bash backend/scripts/verify_table_formation_schema.sh
+
+      - name: Verify live Game Hub message persistence in PostgreSQL
+        run: bash backend/scripts/verify_game_hub_schema.sh
 
       - name: Verify table formation concurrency in PostgreSQL
         run: docker compose exec -T api python - < backend/tests/table_formation_postgres_contract.py

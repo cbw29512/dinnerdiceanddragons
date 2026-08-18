@@ -33,6 +33,7 @@ rls_tables=(
   table_expectations
   registrations
   venue_booking_requests
+  messages
 )
 
 for table in "${rls_tables[@]}"; do
@@ -44,6 +45,6 @@ function_search_path="$(psql_scalar "SELECT COALESCE(array_to_string(p.proconfig
 test "$function_search_path" = "search_path=pg_catalog"
 
 alembic_head="$(psql_scalar "SELECT version_num FROM alembic_version")"
-test "$alembic_head" = "0017_table_formation_lifecycle"
+test "$alembic_head" = "0018_game_hub_messages"
 
-echo "Supabase RLS hardening verification passed through table formation persistence."
+echo "Supabase RLS hardening verification passed through live Game Hub messaging."
