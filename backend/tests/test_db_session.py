@@ -4,7 +4,7 @@ from pydantic import SecretStr
 from sqlalchemy.pool import NullPool
 
 from app.core.config import Settings
-from app.db.session import _engine_options, build_engine
+from app.db.session import _engine_options, _transaction_timeout_sql, build_engine
 
 
 def make_settings(database_url: str) -> Settings:
@@ -20,17 +20,6 @@ def make_settings(database_url: str) -> Settings:
         db_pool_timeout_seconds=6,
         db_pool_recycle_seconds=240,
     )
-
-
-def expected_connect_args() -> dict[str, object]:
-    return {
-        "connect_timeout": 7,
-        "options": (
-            "-c statement_timeout=22000 "
-            "-c lock_timeout=4000 "
-            "-c idle_in_transaction_session_timeout=12000"
-        ),
-    }
 
 
 def test_build_engine_uses_postgresql_psycopg_without_connecting() -> None:
@@ -60,7 +49,7 @@ def test_supabase_transaction_pooler_uses_serverless_safe_options() -> None:
     try:
         assert options["poolclass"] is NullPool
         assert options["connect_args"] == {
-            **expected_connect_args(),
+            "connect_timeout": 7,
             "prepare_threshold": None,
         }
         assert isinstance(engine.pool, NullPool)
@@ -83,8 +72,18 @@ def test_non_transaction_pooler_uses_bounded_engine_pooling() -> None:
         "max_overflow": 3,
         "pool_timeout": 6,
         "pool_recycle": 240,
-        "connect_args": expected_connect_args(),
+        "connect_args": {"connect_timeout": 7},
     }
+
+
+def test_transaction_limits_are_applied_with_set_local_semantics() -> None:
+    settings = make_settings("postgresql+psycopg://ddd:secret@db.example.test:5432/ddd")
+
+    sql = _transaction_timeout_sql(settings)
+
+    assert "set_config('statement_timeout', '22000', true)" in sql
+    assert "set_config('lock_timeout', '4000', true)" in sql
+    assert "set_config('idle_in_transaction_session_timeout', '12000', true)" in sql
 
 
 def test_session_factory_can_bind_to_lazy_engine() -> None:
