@@ -1,5 +1,6 @@
 """Deterministic waitlist promotion after confirmed seats open."""
 
+import logging
 from datetime import UTC, datetime
 
 from sqlalchemy import select
@@ -12,6 +13,8 @@ from app.services.event_participant_eligibility import (
     player_profile_is_currently_eligible,
 )
 from app.services.game_table_membership_sync import confirm_game_table_membership
+
+LOGGER = logging.getLogger(__name__)
 
 
 def promote_waitlist(session: Session, event: Event) -> list[Registration]:
@@ -71,12 +74,7 @@ def promote_waitlist(session: Session, event: Event) -> list[Registration]:
     except Exception:
         # Transaction ownership remains with the caller; this helper must not commit
         # or roll back independently, but it still records failures for diagnosis.
-        import logging
-
-        logging.getLogger(__name__).exception(
-            "Failed to promote Event waitlist event_id=%s",
-            event.id,
-        )
+        LOGGER.exception("Failed to promote Event waitlist event_id=%s", event.id)
         raise
 
 
