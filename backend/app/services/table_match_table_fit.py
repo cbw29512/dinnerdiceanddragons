@@ -60,11 +60,9 @@ def evaluate_table_candidate(facts: TableCandidateFacts) -> TableCandidateEvalua
             criterion="gm_distance",
             passed=gm_travel_ok,
             summary=(
-                f"Venue is approximately {facts.gm_distance_miles:.1f} miles from the GM anchor, "
-                f"within the {facts.gm_travel_radius_miles}-mile radius."
+                "Venue is within the GM's configured travel radius."
                 if gm_travel_ok
-                else f"Venue is approximately {facts.gm_distance_miles:.1f} miles from the GM anchor, "
-                f"outside the {facts.gm_travel_radius_miles}-mile radius."
+                else "Venue is outside the GM's configured travel radius."
             ),
         )
     )
