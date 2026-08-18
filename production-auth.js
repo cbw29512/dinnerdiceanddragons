@@ -1,14 +1,10 @@
 (() => {
   "use strict";
 
-  const SUPABASE_URL = "https://acpjfycmwbnxzlkvoouv.supabase.co";
-  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_9V6jr7CdScW56IygolKgJQ_ul5v3pBb";
-  const API_BASE_URL = "https://dinnerdiceanddragons.vercel.app";
-  const STORAGE_KEY = "ddd-production-auth-session";
   const REFRESH_SKEW_SECONDS = 90;
-
   const listeners = new Set();
   let redirectConsumed = false;
+  let validatedConfig = null;
 
   class ProductionAuthError extends Error {
     constructor(message, status = 0, detail = null) {
@@ -17,6 +13,42 @@
       this.status = status;
       this.detail = detail;
     }
+  }
+
+  function productionConfig() {
+    if (validatedConfig) return validatedConfig;
+    const config = window.DDDProductionConfig;
+    if (!config) {
+      throw new ProductionAuthError("Production browser configuration is unavailable.");
+    }
+
+    try {
+      const api = new URL(String(config.apiBaseUrl || ""));
+      const supabase = new URL(String(config.supabaseUrl || ""));
+      const publishableKey = String(config.supabasePublishableKey || "").trim();
+      if (api.protocol !== "https:" || supabase.protocol !== "https:") {
+        throw new Error("Production endpoints must use HTTPS.");
+      }
+      if (!publishableKey.startsWith("sb_publishable_")) {
+        throw new Error("Supabase publishable key is invalid.");
+      }
+      validatedConfig = Object.freeze({
+        apiBaseUrl: api.origin,
+        supabaseUrl: supabase.origin,
+        supabasePublishableKey: publishableKey
+      });
+      return validatedConfig;
+    } catch (error) {
+      throw new ProductionAuthError("Production browser configuration is invalid.", 0, error);
+    }
+  }
+
+  function sessionStore() {
+    const store = window.DDDProductionSessionStore;
+    if (!store?.readRaw || !store?.write || !store?.clear) {
+      throw new ProductionAuthError("Secure tab-scoped session storage is unavailable.");
+    }
+    return store;
   }
 
   function decodeJwtClaims(token) {
@@ -48,12 +80,11 @@
       const claims = decodeJwtClaims(payload.access_token);
       const expiresAt = Number(payload.expires_at || claims.exp || 0) ||
         Math.floor(Date.now() / 1000) + Number(payload.expires_in || 3600);
-      const session = {
+      return {
         ...payload,
         expires_at: expiresAt,
         user: payload.user || (claims.sub ? { id: claims.sub, email: claims.email || "" } : null)
       };
-      return session;
     } catch (error) {
       throw new ProductionAuthError("Supabase returned an invalid session.", 0, error);
     }
@@ -61,24 +92,20 @@
 
   function readStoredSession() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = sessionStore().readRaw();
       if (!raw) return null;
       return normalizeSession(JSON.parse(raw));
     } catch {
-      localStorage.removeItem(STORAGE_KEY);
+      sessionStore().clear();
       return null;
     }
   }
 
   function storeSession(session) {
     try {
-      if (!session) {
-        localStorage.removeItem(STORAGE_KEY);
-        return;
-      }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+      sessionStore().write(session);
     } catch (error) {
-      throw new ProductionAuthError("This browser could not store your sign-in session.", 0, error);
+      throw new ProductionAuthError("This browser could not store your tab-scoped sign-in session.", 0, error);
     }
   }
 
@@ -93,12 +120,13 @@
   }
 
   async function authRequest(path, { method = "POST", body = null, accessToken = "", redirectTo = "" } = {}) {
-    const url = new URL(`${SUPABASE_URL}/auth/v1/${path}`);
+    const config = productionConfig();
+    const url = new URL(`${config.supabaseUrl}/auth/v1/${path}`);
     if (redirectTo) url.searchParams.set("redirect_to", redirectTo);
 
     const headers = {
       Accept: "application/json",
-      apikey: SUPABASE_PUBLISHABLE_KEY
+      apikey: config.supabasePublishableKey
     };
     if (body !== null) headers["Content-Type"] = "application/json";
     if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
@@ -121,7 +149,7 @@
         payload = JSON.parse(text);
       } catch {
         if (!response.ok) {
-          throw new ProductionAuthError("Authentication request failed.", response.status, text);
+          throw new ProductionAuthError("Authentication request failed.", response.status);
         }
         throw new ProductionAuthError("Authentication service returned an invalid response.", response.status);
       }
@@ -129,7 +157,7 @@
 
     if (!response.ok) {
       const message = payload.msg || payload.message || payload.error_description || payload.error || "Authentication request failed.";
-      throw new ProductionAuthError(message, response.status, payload);
+      throw new ProductionAuthError(message, response.status);
     }
     return payload;
   }
@@ -140,16 +168,19 @@
       redirectConsumed = true;
       const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : "";
       const params = new URLSearchParams(hash);
-      if (!params.get("access_token") || !params.get("refresh_token")) return readStoredSession();
+      const accessToken = params.get("access_token");
+      const refreshToken = params.get("refresh_token");
+      if (!accessToken || !refreshToken) return readStoredSession();
 
+      // Remove bearer credentials from the visible URL before parsing/storing them.
+      history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
       const session = normalizeSession({
-        access_token: params.get("access_token"),
-        refresh_token: params.get("refresh_token"),
+        access_token: accessToken,
+        refresh_token: refreshToken,
         token_type: params.get("token_type") || "bearer",
         expires_in: Number(params.get("expires_in") || 3600)
       });
       storeSession(session);
-      history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
       notify(session);
       return session;
     } catch {
@@ -167,10 +198,9 @@
       storeSession(refreshed);
       notify(refreshed);
       return refreshed;
-    } catch (error) {
-      storeSession(null);
+    } catch {
+      sessionStore().clear();
       notify(null);
-      if (error instanceof ProductionAuthError) return null;
       return null;
     }
   }
@@ -222,13 +252,13 @@
 
   async function signOut() {
     const session = readStoredSession();
-    storeSession(null);
+    sessionStore().clear();
     notify(null);
     if (!session?.access_token) return;
     try {
       await authRequest("logout", { accessToken: session.access_token });
     } catch {
-      // Local sign-out is authoritative for this browser even if remote revocation is unavailable.
+      // Local sign-out is authoritative for this tab even if remote revocation is unavailable.
     }
   }
 
@@ -239,34 +269,27 @@
   }
 
   async function init() {
+    const config = productionConfig();
+    sessionStore();
     if (!window.DDDProductionAPI?.configure) {
       throw new ProductionAuthError("Production API client is unavailable.");
     }
     window.DDDProductionAPI.configure({
-      baseUrl: API_BASE_URL,
+      baseUrl: config.apiBaseUrl,
       accessTokenProvider: getAccessToken
     });
     return getSession();
   }
 
-  try {
-    window.addEventListener("storage", (event) => {
-      if (event.key !== STORAGE_KEY) return;
-      notify(readStoredSession());
-    });
-  } catch {
-    // Cross-tab session synchronization is optional.
-  }
-
   window.DDDProductionAuth = Object.freeze({
     ProductionAuthError,
-    init,
-    getSession,
     getAccessToken,
-    signIn,
-    signUp,
-    signOut,
+    getSession,
+    init,
     onAuthStateChange,
-    sessionUser
+    sessionUser,
+    signIn,
+    signOut,
+    signUp
   });
 })();
