@@ -76,7 +76,7 @@ The initial policies are deliberately conservative and live in `backend/app/serv
 - `event_registration`: burst 8; refill 1 token every 8 seconds.
 - `table_formation`: burst 3; refill 1 token every 60 seconds.
 - `venue_booking`: burst 6; refill 1 token every 10 seconds.
-- `venue_verification`: burst 2; refill 1 token every 300 seconds. The token is consumed before the external geocoding request.
+- `venue_verification`: burst 6; refill 1 token every 30 seconds. The token is consumed before the external geocoding request.
 - `matching_run`: burst 2; refill 1 token every 300 seconds.
 
 Changing these values is a reviewed application-security change. Do not hot-patch production database rows as a substitute for changing policy.
