@@ -39,9 +39,7 @@ def synchronize_game_table_from_event(
             return
 
         game_table = session.scalar(
-            select(GameTable)
-            .where(GameTable.id == event.game_table_id)
-            .with_for_update()
+            select(GameTable).where(GameTable.id == event.game_table_id).with_for_update()
         )
         if game_table is None:
             raise RuntimeError("Event references a missing persistent GameTable.")
