@@ -2,6 +2,7 @@
 
 import logging
 from collections.abc import Callable
+from datetime import date, timedelta
 from typing import Annotated, NoReturn
 from uuid import UUID
 
@@ -12,8 +13,11 @@ from app.api.dependencies.current_user import require_active_user
 from app.api.dependencies.roles import require_admin
 from app.api.rate_limit import enforce_user_rate_limit
 from app.db.session import get_db_session
+from app.models.table_match import TableMatchStatus
 from app.models.user import User
 from app.schemas.table_match_opportunities import (
+    FindMyTableRequest,
+    FindMyTableResponse,
     TableMatchOpportunityDetailResponse,
     TableMatchOpportunityResponse,
     TableMatchRunRequest,
@@ -35,12 +39,28 @@ from app.services.table_match_runner import TableMatchRunResult, run_table_match
 LOGGER = logging.getLogger(__name__)
 router = APIRouter(prefix="/matching", tags=["matching"])
 MatchRunner = Callable[..., TableMatchRunResult]
+ACTIVE_OPPORTUNITY_STATUSES = {
+    TableMatchStatus.POTENTIAL.value,
+    TableMatchStatus.INVITED.value,
+    TableMatchStatus.FORMING.value,
+}
 
 
 def get_match_runner() -> MatchRunner:
     """Return the production runner; tests may override this dependency."""
 
     return run_table_match
+
+
+def _run_response(result: TableMatchRunResult) -> TableMatchRunResponse:
+    return TableMatchRunResponse(
+        computed_opportunities=result.computed_opportunities,
+        persisted_count=len(result.persisted),
+        created_count=sum(item.created for item in result.persisted),
+        refreshed_count=sum(item.refreshed for item in result.persisted),
+        materialized_table_count=len(result.materialized_tables),
+        expired_count=result.expired_count,
+    )
 
 
 def _raise_read_error(exc: Exception) -> NoReturn:
@@ -55,6 +75,59 @@ def _raise_read_error(exc: Exception) -> NoReturn:
             detail="Matching opportunities could not be loaded.",
         ) from exc
     raise exc
+
+
+def _raise_match_run_error(exc: Exception) -> NoReturn:
+    if isinstance(exc, TableMatchHorizonError):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+    if isinstance(exc, TableMatchCapacityError):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Matching candidate volume exceeds the safe synchronous processing budget.",
+            headers={"Retry-After": "300"},
+        ) from exc
+    raise exc
+
+
+@router.post("/find-my-table", response_model=FindMyTableResponse)
+def post_find_my_table(
+    payload: FindMyTableRequest,
+    user: Annotated[User, Depends(require_active_user)],
+    session: Annotated[Session, Depends(get_db_session)],
+    runner: Annotated[MatchRunner, Depends(get_match_runner)],
+) -> FindMyTableResponse:
+    """Run a bounded matcher refresh and return only Tables visible to this user."""
+
+    try:
+        enforce_user_rate_limit(session, user, RateLimitScope.MATCHING_REFRESH)
+        window_start = date.today()
+        window_end = window_start + timedelta(days=payload.horizon_days - 1)
+        result = runner(window_start=window_start, window_end=window_end)
+        opportunities = [
+            item
+            for item in list_opportunities(session, user)
+            if item.status in ACTIVE_OPPORTUNITY_STATUSES
+        ]
+        return FindMyTableResponse(
+            boom=bool(opportunities),
+            run=_run_response(result),
+            opportunities=opportunities,
+        )
+    except HTTPException:
+        raise
+    except (TableMatchHorizonError, TableMatchCapacityError) as exc:
+        _raise_match_run_error(exc)
+    except TableMatchOpportunityReadError as exc:
+        _raise_read_error(exc)
+    except Exception as exc:
+        LOGGER.exception("User-triggered Find My Table refresh failed user_id=%s", user.id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="We could not look for a Table right now.",
+        ) from exc
 
 
 @router.post("/run", response_model=TableMatchRunResponse)
@@ -72,17 +145,8 @@ def post_matching_run(
             window_start=payload.window_start,
             window_end=payload.window_end,
         )
-    except TableMatchHorizonError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=str(exc),
-        ) from exc
-    except TableMatchCapacityError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Matching candidate volume exceeds the safe synchronous processing budget.",
-            headers={"Retry-After": "300"},
-        ) from exc
+    except (TableMatchHorizonError, TableMatchCapacityError) as exc:
+        _raise_match_run_error(exc)
     except HTTPException:
         raise
     except Exception as exc:
@@ -92,13 +156,7 @@ def post_matching_run(
             detail="Matching run could not be completed.",
         ) from exc
 
-    return TableMatchRunResponse(
-        computed_opportunities=result.computed_opportunities,
-        persisted_count=len(result.persisted),
-        created_count=sum(item.created for item in result.persisted),
-        refreshed_count=sum(item.refreshed for item in result.persisted),
-        expired_count=result.expired_count,
-    )
+    return _run_response(result)
 
 
 @router.get("/opportunities", response_model=list[TableMatchOpportunityResponse])
