@@ -117,6 +117,7 @@ def _load_players(session: Session) -> list[PlayerCandidate]:
     return [
         PlayerCandidate(
             demand_id=signal.id,
+            player_profile_id=profile.id,
             game_system_id=signal.game_system_id,
             preferred_format=signal.preferred_format,
             status=signal.status,
