@@ -4,6 +4,7 @@ import pytest
 
 from app.api.routes.events import router as events_router
 from app.api.routes.game_hub import index_router, router as game_hub_router
+from app.models.event import Event, EventStatus
 from backend.tests.game_hub_live_test_support import LiveHubSeed, auth, build_hub_client
 
 
@@ -70,6 +71,33 @@ def test_cancelled_player_loses_hub_access_and_index_entry(hub_api) -> None:
     )
     assert response.status_code == 404
     assert client.get("/api/v1/game-hubs", headers=auth("dave-token")).json() == []
+
+
+def test_cancelled_event_is_archived_from_index_and_read_only(hub_api) -> None:
+    client, factory, seed = hub_api
+    with factory() as session:
+        event = session.get(Event, seed.event_id)
+        assert event is not None
+        event.status = EventStatus.CANCELLED.value
+        session.commit()
+
+    index = client.get("/api/v1/game-hubs", headers=auth("bob-token"))
+    assert index.status_code == 200
+    assert index.json() == []
+
+    archived = client.get(
+        f"/api/v1/events/{seed.event_id}/hub", headers=auth("bob-token")
+    )
+    assert archived.status_code == 200, archived.text
+    assert archived.json()["event"]["status"] == EventStatus.CANCELLED.value
+
+    write = _post_raw(
+        client,
+        seed,
+        "bob-token",
+        {"channel_type": "table_announcement", "body": "Should not persist."},
+    )
+    assert write.status_code == 409
 
 
 def test_private_player_messages_are_isolated_from_other_players_and_venue(hub_api) -> None:
