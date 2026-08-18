@@ -5,9 +5,12 @@ on:
     branches: [main]
     paths:
       - "*.html"
+      - "*.js"
+      - "*.css"
       - "assets/**"
       - "css/**"
       - "js/**"
+      - "e2e/**"
       - "scripts/check_site.py"
       - "scripts/check_buttons.py"
       - "tests/**"
@@ -21,9 +24,12 @@ on:
     branches: [main]
     paths:
       - "*.html"
+      - "*.js"
+      - "*.css"
       - "assets/**"
       - "css/**"
       - "js/**"
+      - "e2e/**"
       - "scripts/check_site.py"
       - "scripts/check_buttons.py"
       - "tests/**"
