@@ -20,7 +20,7 @@ def test_alembic_configuration_discovers_current_head() -> None:
     script = load_script_directory()
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == ["0021_event_game_table_link"]
+    assert script.get_heads() == ["0022_signal_specific_availability"]
 
 
 def test_revision_ids_fit_alembic_version_column() -> None:
@@ -96,6 +96,10 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert "ck_player_demand_signals_preferred_format" in result.stdout
     assert "CREATE TABLE gm_supply_signals" in result.stdout
     assert "ck_gm_supply_signals_player_range" in result.stdout
+    assert "CREATE TABLE player_demand_availability_windows" in result.stdout
+    assert "uq_player_demand_availability_windows_rule_id" in result.stdout
+    assert "CREATE TABLE gm_supply_availability_windows" in result.stdout
+    assert "uq_gm_supply_availability_windows_rule_id" in result.stdout
     assert "CREATE TABLE venue_table_windows" in result.stdout
     assert "uq_venue_table_windows_recurring_rule_id" in result.stdout
     assert "special_support_offerings" in result.stdout
@@ -165,6 +169,8 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
         "api_rate_limit_buckets",
         "game_tables",
         "game_table_players",
+        "player_demand_availability_windows",
+        "gm_supply_availability_windows",
     ):
         assert f'ALTER TABLE public."{table}" ENABLE ROW LEVEL SECURITY' in result.stdout
     assert "deny_privileged_audit_event_mutation" in result.stdout
