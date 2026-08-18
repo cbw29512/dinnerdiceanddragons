@@ -49,7 +49,7 @@ def upgrade() -> None:
         sa.Column("game_system_id", sa.Uuid(), nullable=False),
         sa.Column("created_by_user_id", sa.Uuid(), nullable=False),
         sa.Column("source_table_match_id", sa.Uuid(), nullable=True),
-        sa.Column("title", sa.String(length=160), nullable=False),
+        sa.Column("title", sa.String(length=200), nullable=False),
         sa.Column("lifecycle_status", sa.String(length=20), server_default="draft", nullable=False),
         sa.Column("game_format", sa.String(length=32), nullable=False),
         sa.Column("minimum_players", sa.SmallInteger(), nullable=False),
@@ -66,7 +66,7 @@ def upgrade() -> None:
         sa.Column("timezone", sa.String(length=64), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.CheckConstraint("length(trim(title)) BETWEEN 1 AND 160", name="ck_game_tables_title_length"),
+        sa.CheckConstraint("length(trim(title)) BETWEEN 1 AND 200", name="ck_game_tables_title_length"),
         sa.CheckConstraint(
             "lifecycle_status IN ('draft', 'forming', 'ready', 'confirmed', "
             "'in_progress', 'completed', 'cancelled', 'archived')",
