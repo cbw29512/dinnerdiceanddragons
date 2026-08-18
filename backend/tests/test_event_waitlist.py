@@ -34,6 +34,7 @@ def session() -> Session:
 
 def form_one_seat_event(session: Session):
     seed = seed_formation_parents(session)
+    seed.gm_supply.maximum_players = 1
     seed.table_match.maximum_players = 1
     second_user, _ = add_eligible_player(session, seed, suffix="two")
     third_user, _ = add_eligible_player(session, seed, suffix="three")
