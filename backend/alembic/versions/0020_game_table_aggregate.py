@@ -124,11 +124,6 @@ def upgrade() -> None:
             ondelete="SET NULL",
         ),
         sa.PrimaryKeyConstraint("game_table_id", "player_profile_id", name="pk_game_table_players"),
-        sa.UniqueConstraint(
-            "game_table_id",
-            "player_profile_id",
-            name="uq_game_table_players_table_player",
-        ),
     )
     op.create_index("ix_game_table_players_player_profile_id", "game_table_players", ["player_profile_id"])
     op.create_index("ix_game_table_players_status", "game_table_players", ["status"])
