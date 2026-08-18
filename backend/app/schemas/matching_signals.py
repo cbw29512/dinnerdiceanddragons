@@ -17,7 +17,7 @@ ShortPreference = Annotated[
 
 
 class PlayerDemandCreate(BaseModel):
-    """Create one intent signal owned by the authenticated Player profile."""
+    """Create one concrete statement of what/when/where a Player can play."""
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
@@ -26,6 +26,7 @@ class PlayerDemandCreate(BaseModel):
         max_length=120,
         pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$",
     )
+    availability: list[AvailabilityWindowInput] = Field(min_length=1, max_length=12)
     preferred_format: PreferredGameFormat = PreferredGameFormat.ANY
     preferred_cadence: str | None = Field(default=None, max_length=32)
     minimum_age_preference: int | None = Field(default=None, ge=0, le=120)
@@ -41,7 +42,7 @@ class PlayerDemandResponse(PlayerDemandCreate):
 
 
 class GMSupplyCreate(BaseModel):
-    """Create one capability/supply signal owned by the authenticated GM profile."""
+    """Create one concrete statement of what/when/where a GM can run."""
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
@@ -50,6 +51,7 @@ class GMSupplyCreate(BaseModel):
         max_length=120,
         pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$",
     )
+    availability: list[AvailabilityWindowInput] = Field(min_length=1, max_length=12)
     preferred_format: GMGameFormat
     preferred_cadence: str | None = Field(default=None, max_length=32)
     minimum_players: int = Field(ge=1, le=20)
