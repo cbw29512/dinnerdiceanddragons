@@ -98,7 +98,10 @@ def _current_player_invitations(
             UserRole,
             (UserRole.user_id == User.id) & (UserRole.role == UserRoleType.PLAYER.value),
         )
-        .join(PlayerDemandSignal, PlayerDemandSignal.player_profile_id == PlayerProfile.id)
+        .join(
+            PlayerDemandSignal,
+            PlayerDemandSignal.player_profile_id == PlayerProfile.id,
+        )
         .join(
             TableMatchPlayer,
             TableMatchPlayer.player_demand_signal_id == PlayerDemandSignal.id,
