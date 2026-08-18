@@ -28,8 +28,10 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install pinned lock generator
-        run: python -m pip install --disable-pip-version-check --no-cache-dir pip-tools==7.6.0
+      - name: Install pinned compatible lock generator
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir pip==26.1
+          python -m pip install --disable-pip-version-check --no-cache-dir pip-tools==7.6.0
 
       - name: Generate hash-locked production requirements
         run: |
