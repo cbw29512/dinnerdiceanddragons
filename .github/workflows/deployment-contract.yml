@@ -21,13 +21,27 @@ jobs:
       - name: Build production API image
         run: docker build --tag ddd-api-port-contract ./backend
 
-      - name: Start API on injected port 8123
+      - name: Start least-privilege API on injected port 8123
         run: |
           docker run --detach \
             --name ddd-api-port-contract \
+            --read-only \
+            --tmpfs /tmp:rw,noexec,nosuid,size=16m \
+            --cap-drop ALL \
+            --security-opt no-new-privileges:true \
             --env PORT=8123 \
             --publish 8123:8123 \
             ddd-api-port-contract
+
+      - name: Verify non-root and read-only runtime identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(docker exec ddd-api-port-contract id -u)" = "10001"
+          test "$(docker exec ddd-api-port-contract id -g)" = "10001"
+          test "$(docker inspect --format '{{.HostConfig.ReadonlyRootfs}}' ddd-api-port-contract)" = "true"
+          test "$(docker inspect --format '{{json .HostConfig.CapDrop}}' ddd-api-port-contract)" = '["ALL"]'
+          test "$(docker inspect --format '{{json .HostConfig.SecurityOpt}}' ddd-api-port-contract)" = '["no-new-privileges:true"]'
 
       - name: Wait for dynamic-port container health
         shell: bash

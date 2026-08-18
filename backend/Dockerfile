@@ -13,6 +13,13 @@ COPY app ./app
 COPY alembic.ini ./
 COPY alembic ./alembic
 
+# Use a deterministic high-numbered runtime identity that owns no application files.
+# The API only needs read access to /app; writable scratch space is supplied by the host.
+RUN addgroup -S -g 10001 app \
+    && adduser -S -D -H -u 10001 -G app app
+
+USER 10001:10001
+
 EXPOSE 8000
 
 HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=5 \
