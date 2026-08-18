@@ -10,6 +10,7 @@ from app.services.table_match_hard_fit import (
     CriterionDecision,
     TableCandidateFacts,
     evaluate_table_candidate,
+    intersect_occurrences,
 )
 from app.services.table_match_opportunity import MatchOpportunity
 from app.services.table_match_player_matching import find_compatible_players
@@ -37,16 +38,28 @@ def build_match_opportunities(
     for gm in snapshot.gms:
         gm_occurrences = context.occurrences(gm.rule, window_start, window_end)
         for venue in snapshot.venues:
+            if not venue.active or not venue.verified:
+                continue
+            if max(venue.max_people_per_table - 1, 0) < gm.minimum_players:
+                continue
+
+            venue_occurrences = context.occurrences(
+                venue.rule,
+                window_start,
+                window_end,
+            )
+            if not any(
+                intersect_occurrences(gm_occurrence, venue_occurrence) is not None
+                for gm_occurrence in gm_occurrences
+                for venue_occurrence in venue_occurrences
+            ):
+                continue
+
             venue_point = GeoPoint(latitude=venue.latitude, longitude=venue.longitude)
             gm_distance = context.distance_to_venue(
                 gm.postal_code,
                 venue.venue_id,
                 venue_point,
-            )
-            venue_occurrences = context.occurrences(
-                venue.rule,
-                window_start,
-                window_end,
             )
 
             for gm_occurrence in gm_occurrences:
