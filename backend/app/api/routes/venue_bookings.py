@@ -11,9 +11,9 @@ from app.db.session import get_db_session
 from app.models.user import User
 from app.schemas.event_lifecycle import VenueBookingAction, VenueBookingResponse
 from app.services.event_access import EventForbiddenError, EventNotFoundError
-from app.services.registration_common import RegistrationConflictError
 from app.services.venue_booking_capacity import VenueCapacityConflictError
 from app.services.venue_booking_service import (
+    VenueBookingConflictError,
     VenueBookingNotFoundError,
     VenueBookingPersistenceError,
     decide_venue_booking,
@@ -44,7 +44,7 @@ def patch_venue_booking(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not permitted for this Venue booking.",
         ) from exc
-    except (RegistrationConflictError, VenueCapacityConflictError) as exc:
+    except (VenueBookingConflictError, VenueCapacityConflictError) as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except VenueBookingPersistenceError as exc:
         raise HTTPException(
