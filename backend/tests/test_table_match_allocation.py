@@ -15,6 +15,7 @@ from app.models.recurring_availability_rule import RecurringAvailabilityRule
 from app.models.table_match import TableMatch
 from app.models.table_match_player import TableMatchPlayer
 from app.models.user import AccountStatus, User
+from app.models.user_role import UserRole, UserRoleType
 from app.services.postal_centroids import PostalCentroidResult
 from app.services.table_match_runner import run_table_match
 
@@ -92,6 +93,7 @@ def _add_gm(session, system: GameSystem, index: int) -> None:
     )
     session.add(user)
     session.flush()
+    session.add(UserRole(user_id=user.id, role=UserRoleType.GM.value))
     profile = GMProfile(
         user_id=user.id,
         postal_code="29501",
