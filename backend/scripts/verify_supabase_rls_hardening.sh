@@ -28,6 +28,11 @@ rls_tables=(
   table_match_players
   match_explanations
   postal_code_centroids
+  game_series
+  events
+  table_expectations
+  registrations
+  venue_booking_requests
 )
 
 for table in "${rls_tables[@]}"; do
@@ -39,6 +44,6 @@ function_search_path="$(psql_scalar "SELECT COALESCE(array_to_string(p.proconfig
 test "$function_search_path" = "search_path=pg_catalog"
 
 alembic_head="$(psql_scalar "SELECT version_num FROM alembic_version")"
-test "$alembic_head" = "0016_postal_centroid_cache"
+test "$alembic_head" = "0017_table_formation"
 
-echo "Supabase RLS hardening verification passed through Table Match persistence."
+echo "Supabase RLS hardening verification passed through table formation."
