@@ -11,6 +11,19 @@ LOGGER = logging.getLogger(__name__)
 
 _RATE_LIMIT_UPSERT = text(
     """
+    WITH stale AS (
+        SELECT policy, subject_hash
+        FROM api_rate_limit_buckets
+        WHERE expires_at < CURRENT_TIMESTAMP - INTERVAL '5 minutes'
+        ORDER BY expires_at
+        LIMIT 32
+    ),
+    pruned AS (
+        DELETE FROM api_rate_limit_buckets AS expired
+        USING stale
+        WHERE expired.policy = stale.policy
+          AND expired.subject_hash = stale.subject_hash
+    )
     INSERT INTO api_rate_limit_buckets AS bucket (
         policy,
         subject_hash,
@@ -56,7 +69,7 @@ def consume_rate_limit(
     subject_hash: str,
     limit: int,
 ) -> RateLimitDecision:
-    """Atomically consume one allowance from the shared PostgreSQL bucket."""
+    """Atomically consume one allowance and prune a bounded stale-state batch."""
 
     try:
         row = session.execute(
