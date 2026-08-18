@@ -17,7 +17,6 @@ from app.services.postal_centroids import (
 )
 
 GEOCODIO_GEOCODE_URL = "https://api.geocod.io/v2/geocode"
-GEOCODIO_TIMEOUT_SECONDS = 5.0
 
 
 class GeocodioPostalCentroidResolver:
@@ -96,13 +95,14 @@ class GeocodioPostalCentroidResolver:
         return api_key
 
     def _get(self, params: dict[str, object]) -> httpx.Response:
+        timeout = self._settings.outbound_http_timeout_seconds
         if self._client is not None:
             return self._client.get(
                 GEOCODIO_GEOCODE_URL,
                 params=params,
-                timeout=GEOCODIO_TIMEOUT_SECONDS,
+                timeout=timeout,
             )
-        with httpx.Client(timeout=GEOCODIO_TIMEOUT_SECONDS) as client:
+        with httpx.Client(timeout=timeout) as client:
             return client.get(GEOCODIO_GEOCODE_URL, params=params)
 
 
