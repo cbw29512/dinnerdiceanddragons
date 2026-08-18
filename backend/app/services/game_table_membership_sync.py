@@ -26,7 +26,7 @@ def confirm_game_table_membership(
     event: Event,
     player_profile_id: UUID,
 ) -> GameTablePlayer | None:
-    """Promote one confirmed Event seat without demoting membership on later absence."""
+    """Promote a confirmed Event participant when durable roster capacity exists."""
 
     try:
         if event.game_table_id is None:
@@ -61,7 +61,25 @@ def confirm_game_table_membership(
             or 0
         )
         if confirmed_members >= game_table.maximum_players:
-            raise RegistrationConflictError("Persistent Table roster is already full.")
+            if membership is None:
+                membership = GameTablePlayer(
+                    game_table_id=game_table.id,
+                    player_profile_id=player_profile_id,
+                    source_player_demand_signal_id=_source_demand_id(
+                        session,
+                        event,
+                        player_profile_id,
+                    ),
+                    status=GameTablePlayerStatus.INVITED.value,
+                )
+                session.add(membership)
+                session.flush()
+            LOGGER.info(
+                "Confirmed Event participant remains non-roster substitute table_id=%s player_profile_id=%s",
+                game_table.id,
+                player_profile_id,
+            )
+            return membership
 
         now = datetime.now(UTC)
         if membership is None:
