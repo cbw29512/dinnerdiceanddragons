@@ -7,10 +7,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies.current_user import require_active_user
+from app.api.rate_limit import enforce_user_rate_limit
 from app.db.session import get_db_session
 from app.models.user import User
 from app.schemas.gm_onboarding import GMOnboardingRequest, GMOnboardingResponse
 from app.schemas.player_onboarding import PlayerOnboardingRequest, PlayerOnboardingResponse
+from app.services.api_rate_limit_policy import RateLimitScope
 from app.services.gm_onboarding import save_gm_onboarding
 from app.services.onboarding_common import (
     OnboardingConflictError,
@@ -32,6 +34,7 @@ def put_player_onboarding(
     """Persist the authenticated caller's complete Step 2 Player state."""
 
     try:
+        enforce_user_rate_limit(session, current_user, RateLimitScope.ONBOARDING)
         result = save_player_onboarding(session, current_user, payload)
         return PlayerOnboardingResponse(
             player_profile_id=result.player_profile_id,
@@ -74,6 +77,7 @@ def put_gm_onboarding(
     """Persist the authenticated caller's complete Step 2 GM state."""
 
     try:
+        enforce_user_rate_limit(session, current_user, RateLimitScope.ONBOARDING)
         result = save_gm_onboarding(session, current_user, payload)
         return GMOnboardingResponse(
             gm_profile_id=result.gm_profile_id,
