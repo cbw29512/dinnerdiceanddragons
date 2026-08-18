@@ -22,6 +22,10 @@ from app.models.gm_profile import GMProfile
 from app.models.gm_supply_signal import GMSupplySignal
 from app.models.gm_system_experience import GMSystemExperience, GMSystemFormat
 from app.models.match_explanation import MatchExplanation
+from app.models.matching_signal_availability import (
+    GMSupplyAvailabilityWindow,
+    PlayerDemandAvailabilityWindow,
+)
 from app.models.player_demand_signal import PlayerDemandSignal
 from app.models.player_profile import PlayerProfile
 from app.models.player_system_experience import PlayerSystemExperience
@@ -100,6 +104,8 @@ def build_onboarding_client():
             GMAvailabilityWindow.__table__,
             PlayerDemandSignal.__table__,
             GMSupplySignal.__table__,
+            PlayerDemandAvailabilityWindow.__table__,
+            GMSupplyAvailabilityWindow.__table__,
             VenueTableWindow.__table__,
             TableMatch.__table__,
             TableMatchPlayer.__table__,
