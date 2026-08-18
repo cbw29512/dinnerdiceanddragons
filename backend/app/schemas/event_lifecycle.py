@@ -38,13 +38,20 @@ class RegistrationResponse(BaseModel):
     cancelled_at: datetime | None
 
 
-class VenueBookingResponse(BaseModel):
+class EventBookingSummary(BaseModel):
+    """Booking facts safe for any authorized Event viewer."""
+
     id: UUID
-    event_id: UUID | None
     status: str
     expected_guests: int
     requested_start: datetime
     requested_end: datetime
+
+
+class VenueBookingResponse(EventBookingSummary):
+    """Operational response visible only to authorized Venue/GM workflows."""
+
+    event_id: UUID | None
     venue_message: str | None
 
 
@@ -87,6 +94,6 @@ class EventResponse(BaseModel):
     venue_city: str
     venue_state_region: str
     viewer_roles: list[str]
-    booking: VenueBookingResponse
+    booking: EventBookingSummary
     expectations: EventExpectationsResponse
     your_registration: RegistrationResponse | None = None
