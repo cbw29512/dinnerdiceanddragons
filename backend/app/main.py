@@ -19,6 +19,7 @@ from app.api.routes.venue_bookings import router as venue_bookings_router
 from app.api.routes.venue_onboarding import router as venue_onboarding_router
 from app.api.routes.venue_verification import router as venue_verification_router
 from app.core.config import get_settings
+from app.middleware.request_observability import RequestObservabilityMiddleware
 from app.middleware.request_size import RequestBodyLimitMiddleware
 
 LOGGER = logging.getLogger(__name__)
@@ -38,7 +39,8 @@ def create_app() -> FastAPI:
             ),
         )
 
-        # Install the body guard before CORS so CORS remains the outer response layer.
+        # Body limits sit inside CORS; request observability is installed last/outermost
+        # so every HTTP response, including 413s and CORS responses, is correlated.
         application.add_middleware(RequestBodyLimitMiddleware)
 
         allowed_origins = settings.cors_origins()
@@ -50,6 +52,8 @@ def create_app() -> FastAPI:
                 allow_methods=["GET", "POST", "PUT", "PATCH", "OPTIONS"],
                 allow_headers=["Accept", "Authorization", "Content-Type"],
             )
+
+        application.add_middleware(RequestObservabilityMiddleware)
 
         application.include_router(health_router, prefix="/api/v1")
         application.include_router(me_router, prefix="/api/v1")
