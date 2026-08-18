@@ -1,8 +1,8 @@
 """Readiness contracts for critical production dependencies."""
 
-from fastapi.testclient import TestClient
 import pytest
-from sqlalchemy import create_engine
+from fastapi.testclient import TestClient
+from sqlalchemy import Engine, create_engine
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -13,7 +13,7 @@ from app.main import app
 from app.services.readiness import ReadinessCheckError, check_database_readiness
 
 
-def _sqlite_factory() -> tuple[sessionmaker[Session], object]:
+def _sqlite_factory() -> tuple[sessionmaker[Session], Engine]:
     engine = create_engine(
         "sqlite+pysqlite://",
         connect_args={"check_same_thread": False},
