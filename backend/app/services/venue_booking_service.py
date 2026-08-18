@@ -13,7 +13,6 @@ from app.models.venue_table_window import VenueTableWindow
 from app.schemas.event_lifecycle import VenueBookingResponse
 from app.services.event_access import load_event, require_verified_venue_manager
 from app.services.event_lifecycle_state import synchronize_event_state
-from app.services.registration_common import RegistrationConflictError
 from app.services.venue_booking_capacity import (
     VenueCapacityConflictError,
     require_booking_capacity,
@@ -23,6 +22,10 @@ LOGGER = logging.getLogger(__name__)
 
 
 class VenueBookingNotFoundError(LookupError):
+    pass
+
+
+class VenueBookingConflictError(RuntimeError):
     pass
 
 
@@ -51,7 +54,7 @@ def decide_venue_booking(
         require_verified_venue_manager(session, user, event)
         window = session.get(VenueTableWindow, booking.venue_table_window_id)
         if window is None or not window.active:
-            raise RegistrationConflictError("Venue table window is no longer available.")
+            raise VenueBookingConflictError("Venue table window is no longer available.")
 
         if action == "approve":
             if booking.status == VenueBookingStatus.APPROVED.value:
@@ -93,7 +96,7 @@ def decide_venue_booking(
             )
             booking.status = VenueBookingStatus.CANCELLED.value
         else:
-            raise RegistrationConflictError("Unsupported Venue booking action.")
+            raise VenueBookingConflictError("Unsupported Venue booking action.")
 
         if message is not None:
             booking.venue_message = message.strip() or None
@@ -102,7 +105,7 @@ def decide_venue_booking(
         return _response(booking)
     except (
         VenueBookingNotFoundError,
-        RegistrationConflictError,
+        VenueBookingConflictError,
         VenueCapacityConflictError,
     ):
         session.rollback()
@@ -115,7 +118,9 @@ def decide_venue_booking(
 
 def _require_transition(current: str, allowed: set[str], label: str) -> None:
     if current not in allowed:
-        raise RegistrationConflictError(f"Venue booking cannot be {label} from its current state.")
+        raise VenueBookingConflictError(
+            f"Venue booking cannot be {label} from its current state."
+        )
 
 
 def _response(booking: VenueBookingRequest) -> VenueBookingResponse:
@@ -131,6 +136,7 @@ def _response(booking: VenueBookingRequest) -> VenueBookingResponse:
 
 
 __all__ = [
+    "VenueBookingConflictError",
     "VenueBookingNotFoundError",
     "VenueBookingPersistenceError",
     "decide_venue_booking",
