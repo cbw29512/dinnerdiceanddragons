@@ -1,7 +1,7 @@
 """Authoritative formation requirements for the persistent GameTable aggregate."""
 
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
