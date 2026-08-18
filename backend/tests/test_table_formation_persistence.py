@@ -6,13 +6,23 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from table_formation_test_support import (
+    FormationSeed,
+    create_formation_session,
+    seed_formation_inputs,
+)
 
 from app.models.event import Event, EventStatus
 from app.models.game_series import GameSeries
+from app.models.game_system import GameSystem
+from app.models.gm_profile import GMProfile
+from app.models.player_profile import PlayerProfile
 from app.models.registration import Registration
 from app.models.table_expectations import TableExpectations
+from app.models.table_match import TableMatch
+from app.models.venue import Venue
 from app.models.venue_booking_request import VenueBookingRequest
-from table_formation_test_support import create_formation_session, seed_formation_inputs
+from app.models.venue_table_window import VenueTableWindow
 
 
 @pytest.fixture()
@@ -190,15 +200,10 @@ def test_deleting_event_cascades_expectations_and_registrations(session: Session
     assert session.scalar(select(func.count()).select_from(Registration)) == 0
 
 
-def seed_formation_inputs_for_existing_event(session: Session, event: Event):
-    from table_formation_test_support import FormationSeed
-    from app.models.game_system import GameSystem
-    from app.models.gm_profile import GMProfile
-    from app.models.player_profile import PlayerProfile
-    from app.models.table_match import TableMatch
-    from app.models.venue import Venue
-    from app.models.venue_table_window import VenueTableWindow
-
+def seed_formation_inputs_for_existing_event(
+    session: Session,
+    event: Event,
+) -> FormationSeed:
     return FormationSeed(
         gm=session.get(GMProfile, event.gm_profile_id),
         player=session.scalar(select(PlayerProfile)),

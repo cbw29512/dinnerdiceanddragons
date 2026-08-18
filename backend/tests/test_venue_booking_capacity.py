@@ -3,6 +3,7 @@
 from datetime import timedelta
 
 import pytest
+from event_lifecycle_test_support import build_lifecycle_factory
 
 from app.models.event import Event
 from app.models.venue_booking_request import VenueBookingRequest
@@ -11,7 +12,6 @@ from app.services.venue_booking_capacity import (
     VenueCapacityConflictError,
     require_booking_capacity,
 )
-from event_lifecycle_test_support import build_lifecycle_factory
 
 
 def test_second_overlapping_booking_cannot_exceed_single_table_capacity() -> None:

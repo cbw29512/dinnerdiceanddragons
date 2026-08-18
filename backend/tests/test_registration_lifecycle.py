@@ -1,14 +1,17 @@
 """Transaction-level tests for Player seats, waitlists, and Event state."""
 
 from sqlalchemy import select
+from event_lifecycle_test_support import build_lifecycle_factory
 
 from app.models.event import Event
 from app.models.registration import Registration, RegistrationStatus
 from app.models.user import User
 from app.models.venue_booking_request import VenueBookingRequest
 from app.services.gm_registration_service import decide_registration
-from app.services.player_registration_service import cancel_registration, request_registration
-from event_lifecycle_test_support import build_lifecycle_factory
+from app.services.player_registration_service import (
+    cancel_registration,
+    request_registration,
+)
 
 
 def test_instant_join_waitlists_then_promotes_after_confirmed_cancel() -> None:

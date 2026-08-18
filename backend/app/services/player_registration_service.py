@@ -18,7 +18,11 @@ from app.services.event_access import (
     player_is_matched,
     require_player_profile,
 )
-from app.services.event_lifecycle_state import booking_for_event, confirmed_registration_count, synchronize_event_state
+from app.services.event_lifecycle_state import (
+    booking_for_event,
+    confirmed_registration_count,
+    synchronize_event_state,
+)
 from app.services.registration_common import (
     RegistrationConflictError,
     RegistrationNotFoundError,
@@ -35,7 +39,11 @@ ACTIVE_REGISTRATION_STATUSES = {
 }
 
 
-def request_registration(session: Session, user: User, event_id: UUID) -> RegistrationResponse:
+def request_registration(
+    session: Session,
+    user: User,
+    event_id: UUID,
+) -> RegistrationResponse:
     """Create or idempotently return the caller's matched Player registration."""
 
     try:
@@ -44,7 +52,9 @@ def request_registration(session: Session, user: User, event_id: UUID) -> Regist
             raise RegistrationConflictError("Event is not accepting registrations.")
         profile = require_player_profile(session, user)
         if not player_is_matched(session, event, profile):
-            raise EventForbiddenError("This Player is not eligible for the matched table.")
+            raise EventForbiddenError(
+                "This Player is not eligible for the matched table."
+            )
 
         registration = session.scalar(
             select(Registration)
@@ -54,13 +64,18 @@ def request_registration(session: Session, user: User, event_id: UUID) -> Regist
             )
             .with_for_update()
         )
-        if registration is not None and registration.status in ACTIVE_REGISTRATION_STATUSES:
+        if (
+            registration is not None
+            and registration.status in ACTIVE_REGISTRATION_STATUSES
+        ):
             return registration_response(registration)
         if registration is not None and registration.status in {
             RegistrationStatus.DECLINED.value,
             RegistrationStatus.REMOVED.value,
         }:
-            raise RegistrationConflictError("Registration cannot be reopened after a GM decision.")
+            raise RegistrationConflictError(
+                "Registration cannot be reopened after a GM decision."
+            )
 
         confirmed = confirmed_registration_count(session, event.id)
         status = _initial_status(event.join_mode, confirmed, event.max_players)
@@ -72,14 +87,18 @@ def request_registration(session: Session, user: User, event_id: UUID) -> Regist
                 status=status,
                 expectations_acknowledged_at=now,
                 requested_at=now,
-                responded_at=now if status == RegistrationStatus.CONFIRMED.value else None,
+                responded_at=(
+                    now if status == RegistrationStatus.CONFIRMED.value else None
+                ),
             )
             session.add(registration)
         else:
             registration.status = status
             registration.expectations_acknowledged_at = now
             registration.requested_at = now
-            registration.responded_at = now if status == RegistrationStatus.CONFIRMED.value else None
+            registration.responded_at = (
+                now if status == RegistrationStatus.CONFIRMED.value else None
+            )
             registration.cancelled_at = None
 
         booking = booking_for_event(session, event.id, lock=True)
@@ -92,10 +111,16 @@ def request_registration(session: Session, user: User, event_id: UUID) -> Regist
     except SQLAlchemyError as exc:
         session.rollback()
         LOGGER.exception("Player registration request failed")
-        raise RegistrationPersistenceError("Registration could not be persisted.") from exc
+        raise RegistrationPersistenceError(
+            "Registration could not be persisted."
+        ) from exc
 
 
-def cancel_registration(session: Session, user: User, event_id: UUID) -> RegistrationResponse:
+def cancel_registration(
+    session: Session,
+    user: User,
+    event_id: UUID,
+) -> RegistrationResponse:
     """Cancel the caller's own registration and promote the waitlist if needed."""
 
     try:
@@ -134,7 +159,9 @@ def cancel_registration(session: Session, user: User, event_id: UUID) -> Registr
     except SQLAlchemyError as exc:
         session.rollback()
         LOGGER.exception("Player registration cancellation failed")
-        raise RegistrationPersistenceError("Registration could not be cancelled.") from exc
+        raise RegistrationPersistenceError(
+            "Registration could not be cancelled."
+        ) from exc
 
 
 def _initial_status(join_mode: str, confirmed: int, max_players: int) -> str:

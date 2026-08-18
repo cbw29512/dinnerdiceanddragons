@@ -11,7 +11,11 @@ from app.models.registration import RegistrationStatus
 from app.models.user import User
 from app.schemas.event_lifecycle import RegistrationResponse
 from app.services.event_access import load_event, require_gm_owner
-from app.services.event_lifecycle_state import booking_for_event, confirmed_registration_count, synchronize_event_state
+from app.services.event_lifecycle_state import (
+    booking_for_event,
+    confirmed_registration_count,
+    synchronize_event_state,
+)
 from app.services.registration_common import (
     RegistrationConflictError,
     RegistrationPersistenceError,
@@ -52,7 +56,9 @@ def decide_registration(
                 RegistrationStatus.DECLINED.value,
                 RegistrationStatus.REMOVED.value,
             }:
-                raise RegistrationConflictError("Closed registration cannot be confirmed.")
+                raise RegistrationConflictError(
+                    "Closed registration cannot be confirmed."
+                )
             if confirmed_registration_count(session, event.id) >= event.max_players:
                 raise RegistrationConflictError("No confirmed Player seat remains.")
             registration.status = RegistrationStatus.CONFIRMED.value
@@ -64,20 +70,27 @@ def decide_registration(
                 RegistrationStatus.CANCELLED.value,
                 RegistrationStatus.REMOVED.value,
             }:
-                raise RegistrationConflictError("Closed registration cannot be declined.")
+                raise RegistrationConflictError(
+                    "Closed registration cannot be declined."
+                )
             registration.status = RegistrationStatus.DECLINED.value
             registration.responded_at = now
         elif action == "remove":
             if registration.status == RegistrationStatus.REMOVED.value:
                 return registration_response(registration)
             if registration.status == RegistrationStatus.CANCELLED.value:
-                raise RegistrationConflictError("Cancelled registration is already closed.")
+                raise RegistrationConflictError(
+                    "Cancelled registration is already closed."
+                )
             registration.status = RegistrationStatus.REMOVED.value
             registration.responded_at = now
         else:
             raise RegistrationConflictError("Unsupported GM registration action.")
 
-        if prior_status == RegistrationStatus.CONFIRMED.value and registration.status != prior_status:
+        if (
+            prior_status == RegistrationStatus.CONFIRMED.value
+            and registration.status != prior_status
+        ):
             promote_waitlist(session, event)
         booking = booking_for_event(session, event.id, lock=True)
         synchronize_event_state(session, event, booking)
@@ -89,7 +102,9 @@ def decide_registration(
     except SQLAlchemyError as exc:
         session.rollback()
         LOGGER.exception("GM registration decision failed")
-        raise RegistrationPersistenceError("Registration decision could not be persisted.") from exc
+        raise RegistrationPersistenceError(
+            "Registration decision could not be persisted."
+        ) from exc
 
 
 __all__ = ["decide_registration"]
