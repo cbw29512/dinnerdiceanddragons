@@ -37,5 +37,7 @@ def venue_table_window_payload() -> dict:
         "max_people_per_table": 6,
         "purchase_policy": "One purchase per guest.",
         "approval_required": True,
+        "special_support_offerings": ["loyalty_rewards", "prize_support"],
+        "special_support_notes": "Game Masters earn an extra loyalty punch on RPG night.",
         "environment_notes": "Quieter rear tables preferred for RPG groups.",
     }
