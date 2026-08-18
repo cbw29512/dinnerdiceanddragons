@@ -10,6 +10,8 @@ from sqlalchemy.orm import Session
 
 from app.models.event import Event, EventStatus
 from app.models.game_series import GameSeries
+from app.models.game_system import GameSystem
+from app.models.game_table import GameTable
 from app.models.gm_profile import GMProfile
 from app.models.gm_supply_signal import GMSupplySignal
 from app.models.table_match import TableMatch
@@ -64,9 +66,11 @@ def build_event(
     parents: FormationParents,
     payload: FormTableMatchRequest,
     series: GameSeries | None,
+    game_table: GameTable,
 ) -> Event:
     return Event(
         game_series_id=series.id if series else None,
+        game_table_id=game_table.id,
         table_match_id=match.id,
         slug=event_slug(payload.title, match.id),
         title=payload.title.strip(),
@@ -106,6 +110,7 @@ def formation_response(
 ) -> FormTableMatchResponse:
     return FormTableMatchResponse(
         table_match_id=match.id,
+        game_table_id=event.game_table_id,
         event_id=event.id,
         game_series_id=series.id if series else None,
         venue_booking_request_id=booking.id,
