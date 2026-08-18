@@ -65,7 +65,7 @@ class GameTable(Base):
     __tablename__ = "game_tables"
     __table_args__ = (
         UniqueConstraint("source_table_match_id", name="uq_game_tables_source_table_match_id"),
-        CheckConstraint("length(trim(title)) BETWEEN 1 AND 160", name="ck_game_tables_title_length"),
+        CheckConstraint("length(trim(title)) BETWEEN 1 AND 200", name="ck_game_tables_title_length"),
         CheckConstraint(
             "lifecycle_status IN ('draft', 'forming', 'ready', 'confirmed', "
             "'in_progress', 'completed', 'cancelled', 'archived')",
@@ -93,7 +93,7 @@ class GameTable(Base):
     game_system_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("game_systems.id", ondelete="RESTRICT"), nullable=False, index=True)
     created_by_user_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
     source_table_match_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("table_matches.id", ondelete="SET NULL"), nullable=True)
-    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
     lifecycle_status: Mapped[str] = mapped_column(String(20), nullable=False, default=GameTableStatus.DRAFT.value, server_default=GameTableStatus.DRAFT.value, index=True)
     game_format: Mapped[str] = mapped_column(String(32), nullable=False)
     minimum_players: Mapped[int] = mapped_column(SmallInteger, nullable=False)
