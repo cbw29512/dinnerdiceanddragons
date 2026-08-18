@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
-from typing import Any
-
-ASGIApp = Callable[[dict[str, Any], Callable[[], Awaitable[dict[str, Any]]], Callable[[dict[str, Any]], Awaitable[None]]], Awaitable[None]]
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 MUTATION_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 DEFAULT_MAX_BODY_BYTES = 64 * 1024
@@ -20,8 +17,8 @@ class RequestBodyLimitMiddleware:
         self.app = app
         self.max_body_bytes = max_body_bytes
 
-    async def __call__(self, scope: dict[str, Any], receive, send) -> None:
-        if scope.get("type") != "http" or scope.get("method") not in MUTATION_METHODS:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http" or scope["method"] not in MUTATION_METHODS:
             await self.app(scope, receive, send)
             return
 
@@ -30,13 +27,13 @@ class RequestBodyLimitMiddleware:
             await _send_too_large(send, self.max_body_bytes)
             return
 
-        buffered: list[dict[str, Any]] = []
+        buffered: list[Message] = []
         total = 0
         while True:
             message = await receive()
-            if message.get("type") == "http.disconnect":
+            if message["type"] == "http.disconnect":
                 return
-            if message.get("type") != "http.request":
+            if message["type"] != "http.request":
                 buffered.append(message)
                 continue
 
@@ -49,7 +46,7 @@ class RequestBodyLimitMiddleware:
             if not message.get("more_body", False):
                 break
 
-        async def replay_receive() -> dict[str, Any]:
+        async def replay_receive() -> Message:
             if buffered:
                 return buffered.pop(0)
             return {"type": "http.request", "body": b"", "more_body": False}
@@ -57,7 +54,7 @@ class RequestBodyLimitMiddleware:
         await self.app(scope, replay_receive, send)
 
 
-def _content_length(scope: dict[str, Any]) -> int | None:
+def _content_length(scope: Scope) -> int | None:
     for raw_name, raw_value in scope.get("headers", []):
         if raw_name.lower() != b"content-length":
             continue
@@ -69,7 +66,7 @@ def _content_length(scope: dict[str, Any]) -> int | None:
     return None
 
 
-async def _send_too_large(send, max_body_bytes: int) -> None:
+async def _send_too_large(send: Send, max_body_bytes: int) -> None:
     body = (
         '{"detail":"Request body is too large.","max_body_bytes":'
         f"{max_body_bytes}" + "}"
