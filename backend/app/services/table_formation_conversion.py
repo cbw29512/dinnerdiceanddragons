@@ -13,6 +13,7 @@ from app.models.table_match import TableMatch, TableMatchStatus
 from app.models.user import User
 from app.models.venue_booking_request import VenueBookingRequest, VenueBookingStatus
 from app.schemas.table_formation import FormTableMatchRequest, FormTableMatchResponse
+from app.services.game_table_from_match import create_game_table_from_match
 from app.services.table_formation_builders import (
     build_event,
     build_game_series,
@@ -67,13 +68,14 @@ def form_table_match(
             raise FormationConflictError("Table Match is no longer available for formation.")
 
         validate_new_formation(session, user=user, match=match)
+        game_table = create_game_table_from_match(session, match, parents, payload)
 
         series = build_game_series(match, parents, payload)
         if series is not None:
             session.add(series)
             session.flush()
 
-        event = build_event(match, parents, payload, series)
+        event = build_event(match, parents, payload, series, game_table)
         session.add(event)
         session.flush()
         session.add(TableExpectations(event_id=event.id, **payload.expectations.model_dump()))
