@@ -1,7 +1,7 @@
 """HTTP tests for role-safe explainable Table Match opportunities."""
 
 from datetime import date
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from onboarding_test_support import build_onboarding_client
@@ -113,6 +113,7 @@ def test_match_run_is_admin_only_and_returns_non_sensitive_counts(api_context) -
                 PersistedMatchResult(table_match_id=uuid4(), created=True, refreshed=True),
                 PersistedMatchResult(table_match_id=uuid4(), created=False, refreshed=True),
             ),
+            expired_count=1,
         )
 
     client.app.dependency_overrides[get_match_runner] = lambda: stub_runner
@@ -128,10 +129,11 @@ def test_match_run_is_admin_only_and_returns_non_sensitive_counts(api_context) -
         "persisted_count": 2,
         "created_count": 1,
         "refreshed_count": 2,
+        "expired_count": 1,
     }
 
 
-def _grant_admin(session: Session, user_id) -> None:
+def _grant_admin(session: Session, user_id: UUID) -> None:
     session.add(UserRole(user_id=user_id, role=UserRoleType.ADMIN.value))
     session.commit()
 
