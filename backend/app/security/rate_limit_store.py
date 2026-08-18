@@ -54,6 +54,7 @@ def consume_rate_limit(
     *,
     policy: RateLimitPolicy,
     subject_hash: str,
+    limit: int,
 ) -> RateLimitDecision:
     """Atomically consume one allowance from the shared PostgreSQL bucket."""
 
@@ -64,15 +65,15 @@ def consume_rate_limit(
                 "policy": policy.name,
                 "subject_hash": subject_hash,
                 "window_seconds": policy.window_seconds,
-                "counter_ceiling": policy.limit + 1,
+                "counter_ceiling": limit + 1,
             },
         ).mappings().one()
         request_count = int(row["request_count"])
         retry_after_seconds = int(row["retry_after_seconds"])
         return RateLimitDecision(
-            allowed=request_count <= policy.limit,
-            limit=policy.limit,
-            remaining=max(0, policy.limit - request_count),
+            allowed=request_count <= limit,
+            limit=limit,
+            remaining=max(0, limit - request_count),
             retry_after_seconds=max(1, retry_after_seconds),
         )
     except Exception:
