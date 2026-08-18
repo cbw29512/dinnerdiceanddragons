@@ -90,11 +90,14 @@ def check_python_lock() -> list[str]:
     text = REQUIREMENTS_LOCK.read_text(encoding="utf-8")
     if "--hash=sha256:" not in text:
         errors.append("backend/requirements.lock: no SHA-256 package hashes found")
-    logical_lines = []
+    logical_lines: list[str] = []
     current = ""
     for raw_line in text.splitlines():
         stripped = raw_line.strip()
-        if not stripped or stripped.startswith("#") or stripped.startswith("--"):
+        if not stripped or stripped.startswith("#"):
+            continue
+        if stripped.startswith("--") and not current:
+            # Global pip options such as --index-url/--trusted-host are not package rows.
             continue
         current = f"{current} {stripped}".strip() if current else stripped
         if not stripped.endswith("\\"):
