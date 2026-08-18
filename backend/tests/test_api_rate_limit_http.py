@@ -45,8 +45,7 @@ def test_exhausted_message_bucket_returns_429_and_does_not_persist() -> None:
 
         with factory() as session:
             assert (
-                session.scalar(select(Message).where(Message.body == "Do not persist me."))
-                is None
+                session.scalar(select(Message).where(Message.body == "Do not persist me.")) is None
             )
     finally:
         client.close()
