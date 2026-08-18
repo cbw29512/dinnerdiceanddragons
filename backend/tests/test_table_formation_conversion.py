@@ -60,14 +60,10 @@ def test_multi_session_conversion_creates_one_series_and_is_idempotent() -> None
         assert event.game_table_id == first.game_table_id
 
         memberships = session.scalars(
-            select(GameTablePlayer).where(
-                GameTablePlayer.game_table_id == first.game_table_id
-            )
+            select(GameTablePlayer).where(GameTablePlayer.game_table_id == first.game_table_id)
         ).all()
         assert len(memberships) == 3
-        assert {member.status for member in memberships} == {
-            GameTablePlayerStatus.INVITED.value
-        }
+        assert {member.status for member in memberships} == {GameTablePlayerStatus.INVITED.value}
     finally:
         session.close()
         engine.dispose()
