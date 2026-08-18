@@ -6,6 +6,7 @@
     gm: "join.html#gm",
     venue: "venues.html#signup"
   });
+  const SUPPORT_URL = "https://buymeacoffee.com/divclass016";
 
   let initialized = false;
   let selectedRole = "player";
@@ -22,6 +23,32 @@
     }
     if (text) node.textContent = text;
     return node;
+  }
+
+  function ensureSupportFooter() {
+    const footer = document.querySelector("footer");
+    if (!footer || footer.querySelector(".ddd-support-footer")) return;
+
+    const support = element("div", { class: "ddd-support-footer" });
+    const message = element(
+      "span",
+      {},
+      "Want to help keep Dinner, Dice & Dragons running? Contributions help cover the time, effort, and costs of operating the site."
+    );
+    const link = element(
+      "a",
+      {
+        href: SUPPORT_URL,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        "aria-label": "Support Dinner, Dice & Dragons on Buy Me a Coffee (opens in a new tab)"
+      },
+      "☕ Support DD&D"
+    );
+    support.append(message, link);
+
+    const footerShell = footer.querySelector(".shell") || footer;
+    footerShell.append(support);
   }
 
   function roleLabel(role) {
@@ -327,6 +354,7 @@
   async function init() {
     if (initialized) return;
     initialized = true;
+    ensureSupportFooter();
     if (!window.DDDProductionAuth || !window.DDDProductionAPI) {
       logError("Global account UI requires production auth and API clients", new Error("Missing dependency"));
       return;
