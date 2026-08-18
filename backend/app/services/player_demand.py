@@ -17,6 +17,7 @@ from app.services.matching_signal_common import (
     require_player_profile,
     resolve_active_system,
 )
+from app.services.query_limits import MAX_OWNER_MATCHING_SIGNAL_ITEMS
 
 LOGGER = logging.getLogger(__name__)
 
@@ -79,7 +80,7 @@ def create_player_demand(
 
 
 def list_player_demands(session: Session, user: User) -> list[PlayerDemandResponse]:
-    """Return only demand signals owned by the authenticated Player."""
+    """Return the caller's most recent bounded Player demand history."""
 
     try:
         profile = require_player_profile(session, user)
@@ -88,6 +89,7 @@ def list_player_demands(session: Session, user: User) -> list[PlayerDemandRespon
             .join(GameSystem, GameSystem.id == PlayerDemandSignal.game_system_id)
             .where(PlayerDemandSignal.player_profile_id == profile.id)
             .order_by(PlayerDemandSignal.created_at.desc(), PlayerDemandSignal.id)
+            .limit(MAX_OWNER_MATCHING_SIGNAL_ITEMS)
         ).all()
         return [_response(signal, slug) for signal, slug in rows]
     except (MatchingSignalValidationError, MatchingSignalConflictError):
