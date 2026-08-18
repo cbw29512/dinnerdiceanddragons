@@ -15,12 +15,12 @@ from app.models.user_role import UserRoleType
 from app.models.venue import Venue
 from app.models.venue_booking_request import VenueBookingRequest
 from app.schemas.table_formation import (
-    EventExpectationsResponse,
     EventFormationDetailResponse,
     EventFormationResponse,
     EventSystemResponse,
     EventVenueResponse,
 )
+from app.services.event_expectations_read import render_event_expectations
 from app.services.event_formation_access import event_viewer_roles
 from app.services.table_formation_errors import TableFormationReadError
 
@@ -120,22 +120,7 @@ def render_event_detail(
         raise TableFormationReadError("Formed Event expectations are missing.")
     return EventFormationDetailResponse(
         **summary.model_dump(),
-        expectations=EventExpectationsResponse(
-            tone=expectations.tone,
-            age_expectation=expectations.age_expectation,
-            table_style=expectations.table_style,
-            pvp_policy=expectations.pvp_policy,
-            homebrew_policy=expectations.homebrew_policy,
-            character_death_policy=expectations.character_death_policy,
-            mature_content_policy=expectations.mature_content_policy,
-            alcohol_policy=expectations.alcohol_policy,
-            new_players_welcome=expectations.new_players_welcome,
-            break_policy=expectations.break_policy,
-            safety_framework=expectations.safety_framework,
-            environment_notes=expectations.environment_notes,
-            accessibility_notes=expectations.accessibility_notes,
-            other_notes=expectations.other_notes,
-        ),
+        expectations=render_event_expectations(expectations),
     )
 
 
