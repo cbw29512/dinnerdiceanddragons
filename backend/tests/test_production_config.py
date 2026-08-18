@@ -1,7 +1,7 @@
 """Fail-closed production configuration contracts."""
 
-import pytest
 from pydantic import ValidationError
+import pytest
 
 from app.core.config import Settings
 
