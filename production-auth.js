@@ -51,6 +51,14 @@
     return store;
   }
 
+  function clearStoredSessionSafely() {
+    try {
+      window.DDDProductionSessionStore?.clear?.();
+    } catch {
+      // Storage cleanup is best effort; callers still transition to signed-out state.
+    }
+  }
+
   function decodeJwtClaims(token) {
     try {
       const part = String(token || "").split(".")[1];
@@ -96,7 +104,7 @@
       if (!raw) return null;
       return normalizeSession(JSON.parse(raw));
     } catch {
-      sessionStore().clear();
+      clearStoredSessionSafely();
       return null;
     }
   }
@@ -199,7 +207,7 @@
       notify(refreshed);
       return refreshed;
     } catch {
-      sessionStore().clear();
+      clearStoredSessionSafely();
       notify(null);
       return null;
     }
@@ -252,7 +260,7 @@
 
   async function signOut() {
     const session = readStoredSession();
-    sessionStore().clear();
+    clearStoredSessionSafely();
     notify(null);
     if (!session?.access_token) return;
     try {
