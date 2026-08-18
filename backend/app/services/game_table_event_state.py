@@ -1,0 +1,66 @@
+"""Promote persistent GameTable state from authoritative Event state."""
+
+import logging
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.models.event import Event, EventStatus
+from app.models.game_table import GameTable, GameTableStatus
+from app.models.venue_booking_request import VenueBookingRequest, VenueBookingStatus
+from app.services.game_table_requirement_state import transition_game_table_to_ready
+from app.services.game_table_requirements import evaluate_game_table_requirements
+
+LOGGER = logging.getLogger(__name__)
+CONFIRMED_EVENT_STATUSES = {
+    EventStatus.CONFIRMED.value,
+    EventStatus.FULL.value,
+}
+
+
+def synchronize_game_table_from_event(
+    session: Session,
+    event: Event,
+    booking: VenueBookingRequest,
+) -> None:
+    """Promote a Table when this scheduled occurrence is genuinely confirmed."""
+
+    try:
+        if event.game_table_id is None or event.status not in CONFIRMED_EVENT_STATUSES:
+            return
+
+        game_table = session.scalar(
+            select(GameTable)
+            .where(GameTable.id == event.game_table_id)
+            .with_for_update()
+        )
+        if game_table is None:
+            raise RuntimeError("Event references a missing persistent GameTable.")
+
+        requirements = evaluate_game_table_requirements(
+            session,
+            game_table,
+            venue_approved=booking.status == VenueBookingStatus.APPROVED.value,
+        )
+        if not requirements.ready_to_confirm:
+            LOGGER.warning(
+                "Confirmed Event has unmet GameTable requirements event_id=%s table_id=%s",
+                event.id,
+                game_table.id,
+            )
+            return
+
+        if game_table.lifecycle_status == GameTableStatus.FORMING.value:
+            transition_game_table_to_ready(game_table, requirements)
+        if game_table.lifecycle_status == GameTableStatus.READY.value:
+            game_table.lifecycle_status = GameTableStatus.CONFIRMED.value
+    except Exception:
+        LOGGER.exception(
+            "Failed to synchronize GameTable from Event event_id=%s table_id=%s",
+            event.id,
+            event.game_table_id,
+        )
+        raise
+
+
+__all__ = ["synchronize_game_table_from_event"]
