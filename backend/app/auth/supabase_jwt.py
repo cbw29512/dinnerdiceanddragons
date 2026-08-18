@@ -48,7 +48,7 @@ class SupabaseJWTVerifier:
             cache_jwk_set=True,
             lifespan=JWKS_CACHE_SECONDS,
             cache_keys=False,
-            timeout=5,
+            timeout=self.settings.outbound_http_timeout_seconds,
         )
 
     def verify(self, token: str) -> Mapping[str, Any]:
