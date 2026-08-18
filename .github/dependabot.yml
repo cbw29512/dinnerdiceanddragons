@@ -1,0 +1,66 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 3
+    groups:
+      routine-npm-updates:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: pip
+    directory: "/backend"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:15"
+      timezone: America/New_York
+    open-pull-requests-limit: 3
+    groups:
+      routine-python-updates:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:30"
+      timezone: America/New_York
+    open-pull-requests-limit: 3
+    groups:
+      routine-action-updates:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: docker
+    directory: "/backend"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:45"
+      timezone: America/New_York
+    open-pull-requests-limit: 3
+    groups:
+      routine-container-updates:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
