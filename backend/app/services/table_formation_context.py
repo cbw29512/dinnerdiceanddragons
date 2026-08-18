@@ -1,6 +1,7 @@
 """Locked, revalidated context loading for TableMatch formation."""
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import select
@@ -72,14 +73,25 @@ def load_formation_match_context(
         raise TableFormationForbiddenError("GM account is not eligible to form a table.")
     if supply.status != SignalStatus.ACTIVE.value:
         raise TableFormationConflictError("GM supply is no longer active.")
-    if not game_system.active:
-        raise TableFormationConflictError("Game system is no longer active.")
+    if not game_system.active or supply.game_system_id != match.game_system_id:
+        raise TableFormationConflictError("Game system state changed; rerun matching.")
     if not venue_window.active or not venue.active or not venue.verified:
         raise TableFormationConflictError("Venue is no longer eligible for formation.")
 
     player_capacity = max(venue_window.max_people_per_table - 1, 0)
-    if player_capacity < match.minimum_players:
-        raise TableFormationConflictError("Venue capacity no longer satisfies the table minimum.")
+    current_maximum = min(supply.maximum_players, player_capacity)
+    if (
+        match.minimum_players != supply.minimum_players
+        or match.maximum_players != current_maximum
+        or current_maximum < supply.minimum_players
+    ):
+        raise TableFormationConflictError("GM or Venue capacity changed; rerun matching.")
+
+    proposed_start = match.proposed_start
+    if proposed_start.tzinfo is None:
+        proposed_start = proposed_start.replace(tzinfo=UTC)
+    if proposed_start.astimezone(UTC) <= datetime.now(UTC):
+        raise TableFormationConflictError("Table Match occurrence is no longer in the future.")
 
     return FormationMatchContext(
         match=match,
