@@ -143,7 +143,12 @@
         time.textContent = `${slot.system || "RPG"} · ${slot.day || ""} · ${slot.gmStart || ""} · ${formatDuration(slot.durationMinutes)}`;
         const fit = document.createElement("p");
         const usable = Number(slot.usablePlayers) || Number(slot.eligiblePlayers) || 0;
-        fit.innerHTML = `<strong>${slot.matchScore || "—"}/100 fit</strong> · ${slot.eligiblePlayers || 0} potential Player${slot.eligiblePlayers === 1 ? "" : "s"} match this game night · ${usable} fit the current table capacity`;
+        const score = document.createElement("strong");
+        score.textContent = `${slot.matchScore || "—"}/100 fit`;
+        fit.append(
+          score,
+          document.createTextNode(` · ${slot.eligiblePlayers || 0} potential Player${slot.eligiblePlayers === 1 ? "" : "s"} match this game night · ${usable} fit the current table capacity`)
+        );
         const capacity = document.createElement("p");
         capacity.textContent = `Venue table capacity: you + ${slot.playerCapacity || "?"} Players. Larger Player-count options are disabled automatically.`;
         const policy = document.createElement("p");

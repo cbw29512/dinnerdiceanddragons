@@ -8,8 +8,32 @@
     console.error(`[Dinner Dice & Dragons] ${message}`, error);
   }
 
-  function options(values) {
-    return values.map((value) => `<option value="${value}">${value}</option>`).join("");
+  function element(tag, attributes = {}, text = "") {
+    const node = document.createElement(tag);
+    for (const [name, value] of Object.entries(attributes)) {
+      if (value === true) node.setAttribute(name, "");
+      else if (value !== false && value !== null && value !== undefined) node.setAttribute(name, String(value));
+    }
+    if (text) node.textContent = text;
+    return node;
+  }
+
+  function option(value, label = value, selected = false) {
+    const node = element("option", { value }, label);
+    node.selected = selected;
+    return node;
+  }
+
+  function selectControl(name, values) {
+    const select = element("select", { name });
+    for (const value of values) select.append(option(value));
+    return select;
+  }
+
+  function labeledControl(labelText, control, className = "") {
+    const label = element("label", className ? { class: className } : {});
+    label.append(document.createTextNode(labelText), control);
+    return label;
   }
 
   function updateRuleFields(entry) {
@@ -56,20 +80,88 @@
 
   function buildEntry(index) {
     try {
-      const entry = document.createElement("fieldset");
-      entry.className = "availability-entry";
-      entry.innerHTML = `
-        <legend>Recurring window ${index + 1}</legend>
-        <label>Day<select name="availability_day[]" required>${options(DAYS)}</select></label>
-        <label>Start time<input name="availability_start[]" type="time" value="18:00" required></label>
-        <label>End time<input name="availability_end[]" type="time" value="22:00" required></label>
-        <label>Pattern<select name="availability_pattern[]" required><option value="weekly">Weekly / every N weeks</option><option value="monthly">Monthly weekday pattern</option></select></label>
-        <label class="weekly-rule">Repeat every<select name="availability_week_interval[]"><option value="1">1 week</option><option value="2">2 weeks</option><option value="3">3 weeks</option><option value="4">4 weeks</option></select></label>
-        <label class="anchor-rule" hidden>Anchor occurrence<input name="availability_anchor_date[]" type="date"><span class="microcopy">Choose one date in the intended cycle so every-other-week or multi-month patterns stay aligned.</span></label>
-        <label class="monthly-rule" hidden>Which occurrence?<select name="availability_monthly_ordinal[]">${options(ORDINALS)}</select></label>
-        <label class="monthly-rule" hidden>Repeat every<select name="availability_month_interval[]"><option value="1">1 month</option><option value="2">2 months</option><option value="3">3 months</option></select></label>
-        <p class="recurrence-summary microcopy" aria-live="polite"></p>
-        <button class="button secondary remove-availability" type="button">Remove This Window</button>`;
+      const entry = element("fieldset", { class: "availability-entry" });
+
+      const day = selectControl("availability_day[]", DAYS);
+      day.required = true;
+
+      const start = element("input", {
+        name: "availability_start[]",
+        type: "time",
+        value: "18:00",
+        required: true
+      });
+      const end = element("input", {
+        name: "availability_end[]",
+        type: "time",
+        value: "22:00",
+        required: true
+      });
+
+      const pattern = element("select", { name: "availability_pattern[]", required: true });
+      pattern.append(
+        option("weekly", "Weekly / every N weeks", true),
+        option("monthly", "Monthly weekday pattern")
+      );
+
+      const weekInterval = element("select", { name: "availability_week_interval[]" });
+      weekInterval.append(
+        option("1", "1 week", true),
+        option("2", "2 weeks"),
+        option("3", "3 weeks"),
+        option("4", "4 weeks")
+      );
+
+      const anchor = labeledControl(
+        "Anchor occurrence",
+        element("input", { name: "availability_anchor_date[]", type: "date" }),
+        "anchor-rule"
+      );
+      anchor.hidden = true;
+      anchor.append(
+        element(
+          "span",
+          { class: "microcopy" },
+          "Choose one date in the intended cycle so every-other-week or multi-month patterns stay aligned."
+        )
+      );
+
+      const ordinal = selectControl("availability_monthly_ordinal[]", ORDINALS);
+      const ordinalLabel = labeledControl("Which occurrence?", ordinal, "monthly-rule");
+      ordinalLabel.hidden = true;
+
+      const monthInterval = element("select", { name: "availability_month_interval[]" });
+      monthInterval.append(
+        option("1", "1 month", true),
+        option("2", "2 months"),
+        option("3", "3 months")
+      );
+      const monthLabel = labeledControl("Repeat every", monthInterval, "monthly-rule");
+      monthLabel.hidden = true;
+
+      const summary = element("p", {
+        class: "recurrence-summary microcopy",
+        "aria-live": "polite"
+      });
+      const remove = element(
+        "button",
+        { class: "button secondary remove-availability", type: "button" },
+        "Remove This Window"
+      );
+
+      entry.append(
+        element("legend", {}, `Recurring window ${index + 1}`),
+        labeledControl("Day", day),
+        labeledControl("Start time", start),
+        labeledControl("End time", end),
+        labeledControl("Pattern", pattern),
+        labeledControl("Repeat every", weekInterval, "weekly-rule"),
+        anchor,
+        ordinalLabel,
+        monthLabel,
+        summary,
+        remove
+      );
       return entry;
     } catch (error) {
       logError("Unable to build availability window", error);
@@ -110,7 +202,9 @@
       };
       addButton.addEventListener("click", addEntry);
       list.addEventListener("click", (event) => {
-        const button = event.target.closest(".remove-availability");
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        const button = target.closest(".remove-availability");
         if (!button) return;
         if (list.querySelectorAll(".availability-entry").length <= 1) return;
         button.closest(".availability-entry")?.remove();
@@ -125,17 +219,14 @@
   function loadPreviewAssets() {
     try {
       if (!document.querySelector('link[href="recurrence-preview.css"]')) {
-        const style = document.createElement("link");
-        style.rel = "stylesheet";
-        style.href = "recurrence-preview.css";
+        const style = element("link", { rel: "stylesheet", href: "recurrence-preview.css" });
         document.head.appendChild(style);
       }
-      const engine = document.createElement("script");
-      engine.src = "recurrence-engine.js";
+      if (document.querySelector('script[src="recurrence-engine.js"]')) return;
+      const engine = element("script", { src: "recurrence-engine.js" });
       engine.addEventListener("load", () => {
-        const preview = document.createElement("script");
-        preview.src = "recurrence-preview.js";
-        document.body.appendChild(preview);
+        if (document.querySelector('script[src="recurrence-preview.js"]')) return;
+        document.body.appendChild(element("script", { src: "recurrence-preview.js" }));
       });
       document.body.appendChild(engine);
     } catch (error) {
