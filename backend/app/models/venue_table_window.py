@@ -3,6 +3,7 @@
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     CheckConstraint,
     ForeignKey,
@@ -52,6 +53,13 @@ class VenueTableWindow(Base):
     max_people_per_table: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     purchase_policy: Mapped[str | None] = mapped_column(Text, nullable=True)
     approval_required: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    special_support_offerings: Mapped[list[str]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=list,
+        server_default=text("'[]'"),
+    )
+    special_support_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     environment_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     active: Mapped[bool] = mapped_column(
         Boolean,
