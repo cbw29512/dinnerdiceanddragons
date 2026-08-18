@@ -1,6 +1,6 @@
 """Unit tests for the persistent GameTable formation contract."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -16,7 +16,7 @@ from app.services.game_table_requirement_state import (
 
 def make_table(*, with_gm: bool = False, with_venue: bool = False) -> GameTable:
     try:
-        start = datetime(2026, 8, 22, 22, 0, tzinfo=timezone.utc)
+        start = datetime(2026, 8, 22, 22, 0, tzinfo=UTC)
         return GameTable(
             game_system_id=uuid4(),
             created_by_user_id=uuid4(),
