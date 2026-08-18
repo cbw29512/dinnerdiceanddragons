@@ -70,10 +70,13 @@ Failed validation or business-state conflicts still consume abuse budget. This p
 
 The initial policies are deliberately conservative and live in `backend/app/services/api_rate_limit_policy.py`:
 
+- `onboarding`: burst 6; refill 1 token every 30 seconds. Covers Player, GM, and Venue onboarding writes.
+- `matching_input`: burst 12; refill 1 token every 10 seconds. Covers Player demand, GM supply, and Venue table-window creation.
 - `hub_message`: burst 12; refill 1 token every 3 seconds.
 - `event_registration`: burst 8; refill 1 token every 8 seconds.
 - `table_formation`: burst 3; refill 1 token every 60 seconds.
 - `venue_booking`: burst 6; refill 1 token every 10 seconds.
+- `venue_verification`: burst 2; refill 1 token every 300 seconds. The token is consumed before the external geocoding request.
 - `matching_run`: burst 2; refill 1 token every 300 seconds.
 
 Changing these values is a reviewed application-security change. Do not hot-patch production database rows as a substitute for changing policy.
@@ -91,6 +94,9 @@ A rate-limit change is not production-ready unless the exact PR head proves:
 - Alembic head includes the rate-limit table and enables RLS at creation;
 - static/offline migration tests include the table and constraints;
 - deterministic token-bucket exhaustion/refill tests pass;
+- every declared sensitive-write scope has a version-controlled policy;
+- onboarding and matching-input creation consume their scopes before business persistence;
+- provider-backed Venue verification consumes its scope before external geocoding;
 - HTTP 429 includes `Retry-After` and rejects the business write;
 - limiter persistence failure produces controlled 503 behavior;
 - PostgreSQL first-request races allow exactly one token consumer;
