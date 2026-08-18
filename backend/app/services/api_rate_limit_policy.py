@@ -5,10 +5,13 @@ from enum import StrEnum
 
 
 class RateLimitScope(StrEnum):
+    ONBOARDING = "onboarding"
+    MATCHING_INPUT = "matching_input"
     HUB_MESSAGE = "hub_message"
     EVENT_REGISTRATION = "event_registration"
     TABLE_FORMATION = "table_formation"
     VENUE_BOOKING = "venue_booking"
+    VENUE_VERIFICATION = "venue_verification"
     MATCHING_RUN = "matching_run"
 
 
@@ -27,6 +30,20 @@ class RateLimitPolicy:
 
 
 POLICIES: dict[RateLimitScope, RateLimitPolicy] = {
+    # Profile/role onboarding is user-driven and should not be automated at high frequency.
+    RateLimitScope.ONBOARDING: RateLimitPolicy(
+        scope=RateLimitScope.ONBOARDING,
+        capacity=6,
+        refill_tokens=1,
+        refill_seconds=30,
+    ),
+    # Demand/supply/window creation can happen in short bursts but should not become feed spam.
+    RateLimitScope.MATCHING_INPUT: RateLimitPolicy(
+        scope=RateLimitScope.MATCHING_INPUT,
+        capacity=12,
+        refill_tokens=1,
+        refill_seconds=10,
+    ),
     # Human conversation can burst briefly, while sustained automated spam is throttled.
     RateLimitScope.HUB_MESSAGE: RateLimitPolicy(
         scope=RateLimitScope.HUB_MESSAGE,
@@ -54,6 +71,13 @@ POLICIES: dict[RateLimitScope, RateLimitPolicy] = {
         capacity=6,
         refill_tokens=1,
         refill_seconds=10,
+    ),
+    # Verification consumes an external geocoding request and is intentionally very tight.
+    RateLimitScope.VENUE_VERIFICATION: RateLimitPolicy(
+        scope=RateLimitScope.VENUE_VERIFICATION,
+        capacity=2,
+        refill_tokens=1,
+        refill_seconds=300,
     ),
     # Global matching is admin/internal and materially more expensive than ordinary writes.
     RateLimitScope.MATCHING_RUN: RateLimitPolicy(
