@@ -1,6 +1,6 @@
 """add signal-specific matching availability
 
-Revision ID: 0022_signal_specific_availability
+Revision ID: 0022_signal_availability
 Revises: 0021_event_game_table_link
 Create Date: 2026-08-18
 """
@@ -10,7 +10,7 @@ from collections.abc import Sequence
 from alembic import op
 import sqlalchemy as sa
 
-revision: str = "0022_signal_specific_availability"
+revision: str = "0022_signal_availability"
 down_revision: str | Sequence[str] | None = "0021_event_game_table_link"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
