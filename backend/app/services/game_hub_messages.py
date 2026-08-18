@@ -22,6 +22,10 @@ from app.services.game_hub_message_policy import (
 from app.services.message_cursor import decode_message_cursor, encode_message_cursor
 
 LOGGER = logging.getLogger(__name__)
+READ_ONLY_EVENT_STATUSES = {
+    EventStatus.CANCELLED.value,
+    EventStatus.COMPLETED.value,
+}
 
 
 class HubMessagePersistenceError(RuntimeError):
@@ -85,8 +89,10 @@ def create_hub_message(
 
     try:
         context = require_hub_access(session, user, event_id)
-        if context.event.status == EventStatus.COMPLETED.value:
-            raise HubMessageConflictError("Completed Events no longer accept new messages.")
+        if context.event.status in READ_ONLY_EVENT_STATUSES:
+            raise HubMessageConflictError(
+                "Cancelled and completed Events are read-only."
+            )
         routing = route_message(session, context=context, payload=payload)
         message = Message(
             event_id=event_id,
@@ -118,7 +124,12 @@ def _render_message(
     sender: User,
 ) -> HubMessageResponse:
     role = _sender_role(context, message.sender_user_id)
-    fallback = {"gm": "Dungeon Master", "venue": "Venue", "player": "Player", "member": "Table member"}[role]
+    fallback = {
+        "gm": "Dungeon Master",
+        "venue": "Venue",
+        "player": "Player",
+        "member": "Table member",
+    }[role]
     can_reply_to_player = bool(
         set(context.viewer_roles) & {"gm", "venue_manager"}
         and message.sender_user_id in context.confirmed_player_registration_by_user
@@ -151,4 +162,9 @@ def _sender_role(context: HubAccessContext, sender_user_id: UUID) -> str:
     return "member"
 
 
-__all__ = ["HubMessagePersistenceError", "create_hub_message", "list_hub_messages"]
+__all__ = [
+    "HubMessagePersistenceError",
+    "READ_ONLY_EVENT_STATUSES",
+    "create_hub_message",
+    "list_hub_messages",
+]
