@@ -15,7 +15,6 @@ from app.services.geocoding import (
 )
 
 GEOCODIO_GEOCODE_URL = "https://api.geocod.io/v2/geocode"
-GEOCODIO_TIMEOUT_SECONDS = 5.0
 
 
 class GeocodioVenueGeocoder:
@@ -47,16 +46,17 @@ class GeocodioVenueGeocoder:
             "limit": 1,
             "api_key": api_key,
         }
+        timeout = self._settings.outbound_http_timeout_seconds
 
         try:
             if self._client is not None:
                 response = self._client.get(
                     GEOCODIO_GEOCODE_URL,
                     params=params,
-                    timeout=GEOCODIO_TIMEOUT_SECONDS,
+                    timeout=timeout,
                 )
             else:
-                with httpx.Client(timeout=GEOCODIO_TIMEOUT_SECONDS) as client:
+                with httpx.Client(timeout=timeout) as client:
                     response = client.get(
                         GEOCODIO_GEOCODE_URL,
                         params=params,
