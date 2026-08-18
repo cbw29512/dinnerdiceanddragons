@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime, time
 
+from event_lifecycle_player_seed import seed_lifecycle_players
 from sqlalchemy.orm import Session
 
 from app.models.event import Event
@@ -13,7 +14,6 @@ from app.models.player_demand_signal import PlayerDemandSignal
 from app.models.player_profile import PlayerProfile
 from app.models.recurring_availability_rule import RecurringAvailabilityRule
 from app.models.table_match import TableMatch
-from app.models.table_match_player import TableMatchPlayer
 from app.models.user import AccountStatus, User
 from app.models.user_role import UserRole, UserRoleType
 from app.models.venue import Venue
@@ -37,7 +37,11 @@ def seed_lifecycle_inputs(session: Session, player_count: int) -> LifecycleSeed:
 
     try:
         system = GameSystem(name="D&D", edition="5e 2024", slug="dnd-5e-2024")
-        gm_user = _user("gm")
+        gm_user = User(
+            auth_provider_user_id="lifecycle-gm",
+            email="lifecycle-gm@example.test",
+            status=AccountStatus.ACTIVE.value,
+        )
         venue = Venue(
             name="Lifecycle Cafe",
             slug="lifecycle-cafe",
@@ -100,13 +104,13 @@ def seed_lifecycle_inputs(session: Session, player_count: int) -> LifecycleSeed:
         )
         session.add(match)
         session.flush()
-
-        player_users, player_profiles, player_demands = _seed_players(
+        player_users, player_profiles, player_demands = seed_lifecycle_players(
             session,
             system,
             match,
             player_count,
         )
+
         event = Event(
             table_match_id=match.id,
             slug="lifecycle-event",
@@ -149,50 +153,6 @@ def seed_lifecycle_inputs(session: Session, player_count: int) -> LifecycleSeed:
         )
     except Exception:
         raise
-
-
-def _seed_players(session, system, match, player_count):
-    player_users = []
-    player_profiles = []
-    player_demands = []
-    for index in range(player_count):
-        user = _user(f"player-{index}")
-        session.add(user)
-        session.flush()
-        session.add(UserRole(user_id=user.id, role=UserRoleType.PLAYER.value))
-        profile = PlayerProfile(
-            user_id=user.id,
-            postal_code="29501",
-            travel_radius_miles=25,
-        )
-        session.add(profile)
-        session.flush()
-        demand = PlayerDemandSignal(
-            player_profile_id=profile.id,
-            game_system_id=system.id,
-            preferred_format="one_shot",
-        )
-        session.add(demand)
-        session.flush()
-        session.add(
-            TableMatchPlayer(
-                table_match_id=match.id,
-                player_demand_signal_id=demand.id,
-                distance_miles=5,
-            )
-        )
-        player_users.append(user)
-        player_profiles.append(profile)
-        player_demands.append(demand)
-    return player_users, player_profiles, player_demands
-
-
-def _user(name: str) -> User:
-    return User(
-        auth_provider_user_id=f"lifecycle-{name}",
-        email=f"lifecycle-{name}@example.test",
-        status=AccountStatus.ACTIVE.value,
-    )
 
 
 __all__ = ["LifecycleSeed", "seed_lifecycle_inputs"]
