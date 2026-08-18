@@ -62,7 +62,6 @@ class VenueBookingRequest(Base):
         Uuid,
         ForeignKey("table_matches.id", ondelete="SET NULL"),
         nullable=True,
-        index=True,
     )
     game_series_id: Mapped[UUID | None] = mapped_column(
         Uuid,
@@ -74,7 +73,6 @@ class VenueBookingRequest(Base):
         Uuid,
         ForeignKey("events.id", ondelete="SET NULL"),
         nullable=True,
-        index=True,
     )
     requested_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     requested_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
