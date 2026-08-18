@@ -7,9 +7,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies.roles import require_venue_manager
+from app.api.rate_limit import enforce_user_rate_limit
 from app.db.session import get_db_session
 from app.models.user import User
 from app.schemas.event_lifecycle import VenueBookingAction, VenueBookingResponse
+from app.services.api_rate_limit_policy import RateLimitScope
 from app.services.event_access import EventForbiddenError, EventNotFoundError
 from app.services.venue_booking_capacity import VenueCapacityConflictError
 from app.services.venue_booking_service import (
@@ -30,6 +32,7 @@ def patch_venue_booking(
     session: Annotated[Session, Depends(get_db_session)],
 ) -> VenueBookingResponse:
     try:
+        enforce_user_rate_limit(session, user, RateLimitScope.VENUE_BOOKING)
         return decide_venue_booking(
             session,
             user,
@@ -37,6 +40,8 @@ def patch_venue_booking(
             payload.action,
             payload.message,
         )
+    except HTTPException:
+        raise
     except (VenueBookingNotFoundError, EventNotFoundError) as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
