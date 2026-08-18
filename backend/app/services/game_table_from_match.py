@@ -1,6 +1,7 @@
 """Create a persistent GameTable from one fully viable TableMatch."""
 
 import logging
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -84,7 +85,10 @@ def create_game_table_from_match(
         raise
 
 
-def _current_player_invitations(session: Session, match: TableMatch) -> dict:
+def _current_player_invitations(
+    session: Session,
+    match: TableMatch,
+) -> dict[UUID, UUID]:
     """Return one current demand signal per eligible Player for the match."""
 
     rows = session.execute(
