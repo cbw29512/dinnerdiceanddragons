@@ -35,6 +35,27 @@ class VenueType(StrEnum):
     OTHER = "other"
 
 
+class VenueSupportOffering(StrEnum):
+    """Common ways a Venue may add value beyond merely supplying an address."""
+
+    CONSISTENT_SPACE = "consistent_space"
+    DEDICATED_RPG_AREA = "dedicated_rpg_area"
+    PRIVATE_ROOM = "private_room"
+    FOOD = "food"
+    SNACKS = "snacks"
+    BEVERAGES = "beverages"
+    DISCOUNTS = "discounts"
+    LOYALTY_REWARDS = "loyalty_rewards"
+    PRIZE_SUPPORT = "prize_support"
+    STORE_CREDIT = "store_credit"
+    TABLETOP_SUPPLIES = "tabletop_supplies"
+    TERRAIN_MINIS = "terrain_minis"
+    STORAGE = "storage"
+    EVENT_PROMOTION = "event_promotion"
+    STAFF_SUPPORT = "staff_support"
+    OTHER = "other"
+
+
 class VenueManagerRole(StrEnum):
     """Relationship label for a person authorized to represent a Venue."""
 
@@ -116,6 +137,13 @@ class Venue(Base):
         default=list,
         server_default=text("'[]'"),
     )
+    host_support_offerings: Mapped[list[str]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=list,
+        server_default=text("'[]'"),
+    )
+    host_support_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     accessibility_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     parking_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     noise_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
