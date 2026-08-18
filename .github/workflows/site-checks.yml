@@ -99,6 +99,9 @@ jobs:
       - name: Apply production database migrations
         run: docker compose exec -T api alembic -c alembic.ini upgrade head
 
+      - name: Verify transaction-local PostgreSQL timeouts
+        run: docker compose exec -T api python - < backend/tests/db_timeout_postgres_contract.py
+
       - name: Verify durable identity constraints in PostgreSQL
         run: bash backend/scripts/verify_identity_schema.sh
 
