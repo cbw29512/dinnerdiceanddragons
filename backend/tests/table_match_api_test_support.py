@@ -21,6 +21,8 @@ from app.models.user_role import UserRole, UserRoleType
 from app.models.venue import Venue, VenueManager
 from app.models.venue_table_window import VenueTableWindow
 
+FIXTURE_DATE = "2099-08-21"
+
 
 def seed_api_matches(factory: sessionmaker[Session]) -> tuple[UUID, UUID, UUID, UUID]:
     """Create one shared Alice/Bob match and one Bob-only match."""
@@ -87,8 +89,8 @@ def seed_api_matches(factory: sessionmaker[Session]) -> tuple[UUID, UUID, UUID, 
                 fit_flags=["system", "schedule", "distance"],
                 distance_miles=Decimal("5.25"),
                 availability_overlap={
-                    "start": "2026-08-21T18:00:00-04:00",
-                    "end": "2026-08-21T22:00:00-04:00",
+                    "start": f"{FIXTURE_DATE}T18:00:00-04:00",
+                    "end": f"{FIXTURE_DATE}T22:00:00-04:00",
                 },
             )
         )
@@ -160,8 +162,8 @@ def _seed_venue_match(
         gm_supply_signal_id=supply.id,
         venue_table_window_id=window.id,
         game_system_id=system.id,
-        proposed_start=datetime(2026, 8, 21, start_hour, 0, tzinfo=UTC),
-        proposed_end=datetime(2026, 8, 21, 23, 0, tzinfo=UTC),
+        proposed_start=datetime(2099, 8, 21, start_hour, 0, tzinfo=UTC),
+        proposed_end=datetime(2099, 8, 21, 23, 0, tzinfo=UTC),
         timezone="America/New_York",
         minimum_players=1,
         maximum_players=5,
