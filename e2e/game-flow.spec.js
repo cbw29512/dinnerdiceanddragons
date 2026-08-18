@@ -51,3 +51,29 @@ test("DM can match Players and venue, create a table, and hand off to the produc
   await expect(page.locator("#hub-content")).toBeHidden();
   await expect(page.locator("#hub-index")).toBeHidden();
 });
+
+test("forming-table browser storage values render as inert text", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("ddd-selected-venue-slot", JSON.stringify({
+      venueName: '<img id="stored-xss" src=x onerror="window.__dddStoredXss=1">',
+      policy: '<svg id="policy-xss" onload="window.__dddStoredXss=2"></svg>',
+      system: "D&D 5e (2024)",
+      day: "Tuesday",
+      gmStart: "18:00",
+      durationMinutes: 240,
+      playerCapacity: 5,
+      usablePlayers: 4,
+      eligiblePlayers: 4,
+      matchScore: '</strong><img id="score-xss" src=x onerror="window.__dddStoredXss=3">'
+    }));
+  });
+
+  await page.goto("/create-game.html");
+
+  const summary = page.locator("#selected-slot");
+  await expect(summary).toContainText('<img id="stored-xss"');
+  await expect(summary).toContainText('<svg id="policy-xss"');
+  await expect(summary).toContainText('</strong><img id="score-xss"');
+  await expect(summary.locator("#stored-xss, #policy-xss, #score-xss")).toHaveCount(0);
+  expect(await page.evaluate(() => window.__dddStoredXss || 0)).toBe(0);
+});
