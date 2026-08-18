@@ -11,6 +11,7 @@ on:
       - "package-lock.json"
       - "backend/Dockerfile"
       - "backend/pyproject.toml"
+      - "backend/requirements.lock"
       - "scripts/check_supply_chain.py"
   pull_request:
     branches: [main]
@@ -22,15 +23,19 @@ on:
       - "package-lock.json"
       - "backend/Dockerfile"
       - "backend/pyproject.toml"
+      - "backend/requirements.lock"
       - "scripts/check_supply_chain.py"
 
 permissions:
   contents: read
 
 jobs:
-  dependency-and-workflow-audit:
+  dependency-and-image-audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
+    env:
+      TRIVY_VERSION: "0.74.0"
+      TRIVY_CHECKSUMS_SHA256: "bc701c3c3ee8b9acbea2c23257e41381e3854888f51281616a6ba5dc96963821"
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -43,34 +48,31 @@ jobs:
       - name: Verify immutable supply-chain inputs
         run: python scripts/check_supply_chain.py
 
-      - name: Install pinned Python vulnerability auditor
-        run: python -m pip install --disable-pip-version-check --no-cache-dir pip-audit==2.10.1
+      - name: Install pinned lock and vulnerability tooling
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir pip==26.1
+          python -m pip install --disable-pip-version-check --no-cache-dir pip-tools==7.6.0 pip-audit==2.10.1
 
-      - name: Prepare production Python requirement set
+      - name: Prove committed Python lock matches pyproject
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p security-sbom
-          python - <<'PY'
-          from pathlib import Path
-          import tomllib
+          pip-compile \
+            --generate-hashes \
+            --resolver=backtracking \
+            --strip-extras \
+            --output-file backend/requirements.lock \
+            backend/pyproject.toml
+          git diff --exit-code -- backend/requirements.lock
 
-          pyproject = tomllib.loads(Path('backend/pyproject.toml').read_text(encoding='utf-8'))
-          requirements = [
-              *pyproject['project']['dependencies'],
-              *pyproject['build-system']['requires'],
-          ]
-          Path('/tmp/ddd-production-requirements.txt').write_text(
-              '\n'.join(requirements) + '\n',
-              encoding='utf-8',
-          )
-          PY
+      - name: Prepare security artifacts
+        run: mkdir -p security-sbom
 
-      - name: Audit production Python dependencies
-        run: pip-audit --requirement /tmp/ddd-production-requirements.txt
+      - name: Audit locked production Python dependencies
+        run: pip-audit --requirement backend/requirements.lock
 
       - name: Generate Python CycloneDX SBOM
-        run: pip-audit --requirement /tmp/ddd-production-requirements.txt --format cyclonedx-json --output security-sbom/python-production.cdx.json
+        run: pip-audit --requirement backend/requirements.lock --format cyclonedx-json --output security-sbom/python-production.cdx.json
 
       - name: Set up Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -87,11 +89,36 @@ jobs:
       - name: Generate npm CycloneDX SBOM
         run: npm sbom --sbom-format=cyclonedx > security-sbom/npm-tooling.cdx.json
 
-      - name: Preserve dependency SBOMs
+      - name: Build production application image
+        run: docker build --tag ddd-api-security-scan ./backend
+
+      - name: Install checksum-verified Trivy release binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}"
+          checksums="trivy_${TRIVY_VERSION}_checksums.txt"
+          archive="trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          curl --fail --silent --show-error --location "${base}/${checksums}" --output "/tmp/${checksums}"
+          echo "${TRIVY_CHECKSUMS_SHA256}  /tmp/${checksums}" | sha256sum --check --strict
+          curl --fail --silent --show-error --location "${base}/${archive}" --output "/tmp/${archive}"
+          expected="$(awk -v name="${archive}" '$2 == name {print $1}' "/tmp/${checksums}")"
+          test -n "${expected}"
+          echo "${expected}  /tmp/${archive}" | sha256sum --check --strict
+          tar -xzf "/tmp/${archive}" -C /tmp trivy
+          /tmp/trivy --version
+
+      - name: Generate production image vulnerability report
+        run: /tmp/trivy image --quiet --format json --output security-sbom/container-vulnerabilities.json ddd-api-security-scan
+
+      - name: Block HIGH or CRITICAL production image vulnerabilities
+        run: /tmp/trivy image --quiet --exit-code 1 --severity HIGH,CRITICAL ddd-api-security-scan
+
+      - name: Preserve dependency and image security artifacts
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: dependency-sboms
+          name: supply-chain-security-artifacts
           path: security-sbom
           if-no-files-found: warn
           retention-days: 14
