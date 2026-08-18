@@ -7,9 +7,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies.current_user import require_active_user
+from app.api.rate_limit import enforce_user_rate_limit
 from app.db.session import get_db_session
 from app.models.user import User
 from app.schemas.venue_onboarding import VenueOnboardingRequest, VenueOnboardingResponse
+from app.services.api_rate_limit_policy import RateLimitScope
 from app.services.onboarding_common import OnboardingConflictError, OnboardingPersistenceError
 from app.services.venue_onboarding import save_venue_onboarding
 
@@ -30,6 +32,7 @@ def post_venue_onboarding(
     """Create a public Venue and pending manager claim for the caller."""
 
     try:
+        enforce_user_rate_limit(session, current_user, RateLimitScope.ONBOARDING)
         result = save_venue_onboarding(session, current_user, payload)
         return VenueOnboardingResponse(
             venue_id=result.venue_id,
