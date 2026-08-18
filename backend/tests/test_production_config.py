@@ -43,7 +43,7 @@ def test_valid_production_settings_construct_successfully() -> None:
         ),
         (
             "postgresql://ddd_app:secret@db.example.com:5432/ddd",
-            "postgresql+psycopg",
+            r"postgresql\+psycopg",
         ),
         (
             "postgresql+psycopg://db.example.com:5432/ddd",
