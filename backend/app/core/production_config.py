@@ -28,8 +28,8 @@ def _database_errors(database_url: str) -> list[str]:
     errors: list[str] = []
     if parsed.scheme != "postgresql+psycopg":
         errors.append("DATABASE_URL must use postgresql+psycopg")
-    if not parsed.hostname or _is_unsafe_database_host(parsed.hostname):
-        errors.append("DATABASE_URL must use a public non-local database host")
+    if not parsed.hostname or _is_loopback_host(parsed.hostname):
+        errors.append("DATABASE_URL must use a non-loopback database host")
     if not parsed.username or parsed.password is None:
         errors.append("DATABASE_URL must include managed database credentials")
     elif parsed.username == "ddd" and parsed.password == "ddd":
@@ -56,23 +56,9 @@ def _cors_errors(origins: list[str]) -> list[str]:
     return []
 
 
-def _is_unsafe_database_host(hostname: str) -> bool:
-    """Reject local names and any non-global IP literal for production PostgreSQL."""
-
-    normalized = hostname.strip("[]").lower()
-    if normalized == "localhost" or normalized.endswith((".localhost", ".local")):
-        return True
-    try:
-        return not ip_address(normalized).is_global
-    except ValueError:
-        # Managed database DNS names are allowed; connection policy still applies
-        # connect/session timeouts before any network operation can block indefinitely.
-        return False
-
-
 def _is_loopback_host(hostname: str) -> bool:
     normalized = hostname.strip("[]").lower()
-    if normalized == "localhost" or normalized.endswith(".localhost"):
+    if normalized == "localhost" or normalized.endswith((".localhost", ".local")):
         return True
     try:
         return ip_address(normalized).is_loopback
