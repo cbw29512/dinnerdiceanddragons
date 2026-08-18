@@ -79,7 +79,7 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert "ck_player_system_experiences_years_playing" in result.stdout
     assert "ck_player_system_experiences_comfort_level" in result.stdout
     assert "CREATE TABLE gm_system_experiences" in result.stdout
-    assert "uq_gm_system_experiences_years_gming" in result.stdout
+    assert "ck_gm_system_experiences_years_gming" in result.stdout
     assert "ck_gm_system_experiences_preferred_player_experience" in result.stdout
     assert "CREATE TABLE gm_system_formats" in result.stdout
     assert "ck_gm_system_formats_format" in result.stdout
