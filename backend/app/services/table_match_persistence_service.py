@@ -22,6 +22,10 @@ from app.services.table_match_persistence_rows import (
 
 LOGGER = logging.getLogger(__name__)
 SessionFactory = Callable[[], Session]
+REFRESHABLE_STATUSES = {
+    TableMatchStatus.POTENTIAL.value,
+    TableMatchStatus.EXPIRED.value,
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,13 +68,14 @@ def _persist_one(
                     raise
                 created = False
 
-        if match.status != TableMatchStatus.POTENTIAL.value:
+        if match.status not in REFRESHABLE_STATUSES:
             return PersistedMatchResult(
                 table_match_id=match.id,
                 created=False,
                 refreshed=False,
             )
 
+        match.status = TableMatchStatus.POTENTIAL.value
         _refresh_match(match, opportunity)
         session.execute(
             delete(TableMatchPlayer).where(TableMatchPlayer.table_match_id == match.id)
