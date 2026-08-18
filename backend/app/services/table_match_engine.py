@@ -9,6 +9,7 @@ from app.services.table_match_computation_context import TableMatchComputationCo
 from app.services.table_match_engine_policy import (
     MAX_MATCH_HORIZON_DAYS,
     TableMatchHorizonError,
+    validate_match_candidate_budget,
     validate_match_horizon,
 )
 from app.services.table_match_hard_fit import (
@@ -35,6 +36,7 @@ def build_match_opportunities(
     """Compute minimum-qualified opportunities capped by physical Venue tables."""
 
     validate_match_horizon(window_start, window_end)
+    validate_match_candidate_budget(snapshot)
     context = TableMatchComputationContext(postal_resolver)
     candidates: list[VenueOccurrenceCandidate] = []
 
