@@ -8,7 +8,10 @@ from sqlalchemy.orm import Session
 from app.models.event import Event, EventStatus
 from app.models.game_table import GameTable, GameTableStatus
 from app.models.venue_booking_request import VenueBookingRequest, VenueBookingStatus
-from app.services.game_table_requirement_state import transition_game_table_to_ready
+from app.services.game_table_requirement_state import (
+    GameTableRequirements,
+    transition_game_table_to_ready,
+)
 from app.services.game_table_requirements import evaluate_game_table_requirements
 
 LOGGER = logging.getLogger(__name__)
@@ -71,7 +74,11 @@ def synchronize_game_table_from_event(
         raise
 
 
-def _promote_confirmed_table(game_table, event, requirements) -> None:
+def _promote_confirmed_table(
+    game_table: GameTable,
+    event: Event,
+    requirements: GameTableRequirements,
+) -> None:
     if not requirements.ready_to_confirm:
         LOGGER.warning(
             "Confirmed Event has unmet GameTable requirements event_id=%s table_id=%s",
