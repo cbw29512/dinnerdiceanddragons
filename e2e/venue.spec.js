@@ -1,6 +1,6 @@
 const { test, expect } = require("@playwright/test");
 
-test("Venue can save an open table and continue to its game-night view", async ({ page }) => {
+test("Venue can save an open table and hand off to the private production Game Hub", async ({ page }) => {
   await page.goto("/venues.html#signup");
   const form = page.locator("#venue-form");
 
@@ -28,7 +28,11 @@ test("Venue can save an open table and continue to its game-night view", async (
   const hubLink = page.getByRole("link", { name: "See the Venue Game Hub" });
   await expect(hubLink).toBeVisible();
   await hubLink.click();
-  await expect(page).toHaveURL(/game-hub\.html\?role=venue$/);
-  await expect(page.locator('.hub-role[data-role="venue"]')).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator("#venue-view")).toBeVisible();
+  await expect(page).toHaveURL(/game-hub\.html\?role=venue_manager$/);
+
+  // The legacy Venue form now hands off to the real authenticated application.
+  // A signed-out browser must fail closed instead of revealing a sample Venue dashboard.
+  await expect(page.locator("#hub-error-title")).toHaveText("Sign in to open your Game Hubs.");
+  await expect(page.locator("#hub-content")).toBeHidden();
+  await expect(page.locator("#hub-index")).toBeHidden();
 });
