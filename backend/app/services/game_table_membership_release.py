@@ -27,10 +27,7 @@ def release_unestablished_membership(
             GameTablePlayer,
             (event.game_table_id, player_profile_id),
         )
-        if (
-            membership is None
-            or membership.status != GameTablePlayerStatus.CONFIRMED.value
-        ):
+        if membership is None or membership.status != GameTablePlayerStatus.CONFIRMED.value:
             return
 
         completed_event_id = session.scalar(
@@ -64,8 +61,7 @@ def release_unestablished_membership(
         session.flush()
     except Exception:
         LOGGER.exception(
-            "Failed to release unestablished membership "
-            "event_id=%s player_profile_id=%s",
+            "Failed to release unestablished membership event_id=%s player_profile_id=%s",
             event.id,
             player_profile_id,
         )
