@@ -82,9 +82,7 @@ def test_table_candidate_passes_required_state_schedule_travel_and_capacity() ->
 
 def test_shared_gm_distance_explanation_does_not_expose_private_mileage() -> None:
     evaluation = evaluate_table_candidate(valid_table_facts())
-    decision = next(
-        item for item in evaluation.decisions if item.criterion == "gm_distance"
-    )
+    decision = next(item for item in evaluation.decisions if item.criterion == "gm_distance")
 
     assert decision.passed is True
     assert decision.summary == "Venue is within the GM's configured travel radius."
