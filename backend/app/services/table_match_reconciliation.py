@@ -63,7 +63,7 @@ def _inside_local_horizon(match: TableMatch, window_start: date, window_end: dat
     except (ZoneInfoNotFoundError, ValueError):
         LOGGER.warning("Skipping stale-match reconciliation for invalid timezone on %s", match.id)
         return False
-    local_date = match.proposed_start.astimezone(zone).date()
+    local_date = _as_utc(match.proposed_start).astimezone(zone).date()
     return window_start <= local_date <= window_end
 
 
@@ -71,8 +71,8 @@ def _key_from_opportunity(opportunity: MatchOpportunity) -> tuple[object, ...]:
     return (
         opportunity.gm_supply_signal_id,
         opportunity.venue_table_window_id,
-        opportunity.proposed_start,
-        opportunity.proposed_end,
+        _as_utc(opportunity.proposed_start),
+        _as_utc(opportunity.proposed_end),
     )
 
 
@@ -80,9 +80,17 @@ def _key_from_match(match: TableMatch) -> tuple[object, ...]:
     return (
         match.gm_supply_signal_id,
         match.venue_table_window_id,
-        match.proposed_start,
-        match.proposed_end,
+        _as_utc(match.proposed_start),
+        _as_utc(match.proposed_end),
     )
+
+
+def _as_utc(value: datetime) -> datetime:
+    """Normalize PostgreSQL-aware and SQLite-naive persisted timestamps equally."""
+
+    if value.utcoffset() is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
 
 
 __all__ = ["expire_stale_potential_matches"]
