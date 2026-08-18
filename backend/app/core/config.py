@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     supabase_url: AnyHttpUrl | None = None
     supabase_jwt_audience: str = "authenticated"
     geocodio_api_key: SecretStr | None = None
+    rate_limit_hmac_key: SecretStr | None = None
     cors_allowed_origins: str = ""
 
     def cors_origins(self) -> list[str]:
@@ -63,7 +64,25 @@ class Settings(BaseSettings):
         except Exception:
             raise
 
-    def safe_summary(self) -> dict[str, str | int | None]:
+    def rate_limits_enabled(self) -> bool:
+        """Enable distributed rate limiting only in shared deployed environments."""
+
+        return self.app_env in {"staging", "production"}
+
+    def rate_limit_secret(self) -> bytes:
+        """Return a strong HMAC key required to pseudonymize limiter subjects."""
+
+        try:
+            if self.rate_limit_hmac_key is None:
+                raise ValueError("RATE_LIMIT_HMAC_KEY is required when rate limiting is enabled.")
+            secret = self.rate_limit_hmac_key.get_secret_value().strip()
+            if len(secret) < 32:
+                raise ValueError("RATE_LIMIT_HMAC_KEY must contain at least 32 characters.")
+            return secret.encode("utf-8")
+        except Exception:
+            raise
+
+    def safe_summary(self) -> dict[str, str | int | bool | None]:
         """Return only configuration values safe to write to logs."""
 
         return {
@@ -72,6 +91,7 @@ class Settings(BaseSettings):
             "supabase_url": str(self.supabase_url) if self.supabase_url else None,
             "supabase_jwt_audience": self.supabase_jwt_audience,
             "cors_allowed_origin_count": len(self.cors_origins()),
+            "rate_limits_enabled": self.rate_limits_enabled(),
         }
 
 
