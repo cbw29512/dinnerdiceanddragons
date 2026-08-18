@@ -15,6 +15,7 @@ from app.services.geocoding import (
 )
 
 GEOCODIO_GEOCODE_URL = "https://api.geocod.io/v2/geocode"
+GEOCODIO_TIMEOUT_SECONDS = 5.0  # Backward-compatible default; runtime uses Settings.
 
 
 class GeocodioVenueGeocoder:
