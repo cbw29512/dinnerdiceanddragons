@@ -29,6 +29,10 @@ from app.models.gm_system_experience import (
 )
 from app.models.match_explanation import MatchCriterionResult, MatchExplanation
 from app.models.matching_signal import SignalStatus
+from app.models.matching_signal_availability import (
+    GMSupplyAvailabilityWindow,
+    PlayerDemandAvailabilityWindow,
+)
 from app.models.message import Message, MessageChannel, MessageModerationStatus
 from app.models.player_demand_signal import PlayerDemandSignal
 from app.models.player_profile import PlayerProfile, PreferredGameFormat
@@ -81,6 +85,7 @@ __all__ = [
     "GMComfortLevel",
     "GMGameFormat",
     "GMProfile",
+    "GMSupplyAvailabilityWindow",
     "GMSupplySignal",
     "GMSystemExperience",
     "GMSystemFormat",
@@ -92,6 +97,7 @@ __all__ = [
     "MonthlyOrdinal",
     "PlayerAvailabilityWindow",
     "PlayerComfortLevel",
+    "PlayerDemandAvailabilityWindow",
     "PlayerDemandSignal",
     "PlayerProfile",
     "PlayerSystemExperience",
