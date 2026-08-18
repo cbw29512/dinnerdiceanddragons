@@ -7,6 +7,13 @@ from one place.
 from app.db.base import Base
 from app.models.availability_window import GMAvailabilityWindow, PlayerAvailabilityWindow
 from app.models.game_system import GameSystem
+from app.models.game_table import (
+    GameTable,
+    TableGameFormat,
+    TableJoinPolicy,
+    TableLifecycleStatus,
+    TableVisibility,
+)
 from app.models.gm_profile import GMProfile
 from app.models.gm_supply_signal import GMSupplySignal
 from app.models.gm_system_experience import (
@@ -39,6 +46,7 @@ __all__ = [
     "AvailabilityDay",
     "AvailabilityPatternType",
     "GameSystem",
+    "GameTable",
     "GMAvailabilityWindow",
     "GMComfortLevel",
     "GMGameFormat",
@@ -57,6 +65,10 @@ __all__ = [
     "PrivilegedAuditEvent",
     "RecurringAvailabilityRule",
     "SignalStatus",
+    "TableGameFormat",
+    "TableJoinPolicy",
+    "TableLifecycleStatus",
+    "TableVisibility",
     "User",
     "UserRole",
     "UserRoleType",
