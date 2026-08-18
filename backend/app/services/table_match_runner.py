@@ -8,6 +8,10 @@ from datetime import date
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.session import get_session_factory
+from app.services.game_table_match_materializer import (
+    MaterializedGameTableResult,
+    materialize_match_game_tables,
+)
 from app.services.geocodio_postal_resolver import GeocodioPostalCentroidResolver
 from app.services.postal_centroid_cache import PostalCentroidCache
 from app.services.postal_centroids import PostalCentroidResolver
@@ -29,6 +33,7 @@ class TableMatchRunResult:
 
     computed_opportunities: int
     persisted: tuple[PersistedMatchResult, ...]
+    materialized_tables: tuple[MaterializedGameTableResult, ...] = ()
     expired_count: int = 0
 
 
@@ -39,7 +44,7 @@ def run_table_match(
     session_factory: SessionFactory | sessionmaker[Session] | None = None,
     postal_resolver: PostalCentroidResolver | None = None,
 ) -> TableMatchRunResult:
-    """Load inputs, compute outside the read transaction, persist, and reconcile."""
+    """Load inputs, compute outside the read transaction, persist, and materialize Tables."""
 
     factory = session_factory or get_session_factory()
     try:
@@ -67,6 +72,10 @@ def run_table_match(
             opportunities,
             session_factory=factory,
         )
+        materialized_tables = materialize_match_game_tables(
+            (item.table_match_id for item in persisted),
+            session_factory=factory,
+        )
         expired_count = expire_stale_potential_matches(
             opportunities,
             window_start=window_start,
@@ -74,12 +83,13 @@ def run_table_match(
             session_factory=factory,
         )
     except Exception:
-        LOGGER.exception("Table Match computation, persistence, or reconciliation failed")
+        LOGGER.exception("Table Match computation, persistence, or materialization failed")
         raise
 
     return TableMatchRunResult(
         computed_opportunities=len(opportunities),
         persisted=persisted,
+        materialized_tables=materialized_tables,
         expired_count=expired_count,
     )
 
