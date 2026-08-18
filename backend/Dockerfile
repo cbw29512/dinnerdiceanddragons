@@ -6,12 +6,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY pyproject.toml ./
+COPY requirements.lock ./
+RUN python -m pip install --no-cache-dir --require-hashes --only-binary=:all: -r requirements.lock
+
 COPY app ./app
 COPY alembic.ini ./
 COPY alembic ./alembic
-
-RUN python -m pip install --no-cache-dir .
 
 EXPOSE 8000
 
