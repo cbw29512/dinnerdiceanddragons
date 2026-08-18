@@ -72,12 +72,12 @@ POLICIES: dict[RateLimitScope, RateLimitPolicy] = {
         refill_tokens=1,
         refill_seconds=10,
     ),
-    # Verification consumes an external geocoding request and is intentionally very tight.
+    # Verification uses an external provider but admins still need to clear small queues efficiently.
     RateLimitScope.VENUE_VERIFICATION: RateLimitPolicy(
         scope=RateLimitScope.VENUE_VERIFICATION,
-        capacity=2,
+        capacity=6,
         refill_tokens=1,
-        refill_seconds=300,
+        refill_seconds=30,
     ),
     # Global matching is admin/internal and materially more expensive than ordinary writes.
     RateLimitScope.MATCHING_RUN: RateLimitPolicy(
