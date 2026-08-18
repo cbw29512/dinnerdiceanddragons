@@ -16,11 +16,15 @@ from app.models.game_system import GameSystem
 from app.models.gm_profile import GMProfile
 from app.models.gm_supply_signal import GMSupplySignal
 from app.models.gm_system_experience import GMSystemExperience, GMSystemFormat
+from app.models.match_explanation import MatchExplanation
 from app.models.player_demand_signal import PlayerDemandSignal
 from app.models.player_profile import PlayerProfile
 from app.models.player_system_experience import PlayerSystemExperience
+from app.models.postal_code_centroid import PostalCodeCentroid
 from app.models.privileged_audit_event import PrivilegedAuditEvent
 from app.models.recurring_availability_rule import RecurringAvailabilityRule
+from app.models.table_match import TableMatch
+from app.models.table_match_player import TableMatchPlayer
 from app.models.user import User
 from app.models.user_role import UserRole
 from app.models.venue import Venue, VenueManager
@@ -88,6 +92,10 @@ def build_onboarding_client():
             PlayerDemandSignal.__table__,
             GMSupplySignal.__table__,
             VenueTableWindow.__table__,
+            TableMatch.__table__,
+            TableMatchPlayer.__table__,
+            MatchExplanation.__table__,
+            PostalCodeCentroid.__table__,
             PrivilegedAuditEvent.__table__,
         ):
             table.create(engine)
