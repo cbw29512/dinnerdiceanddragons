@@ -17,6 +17,7 @@ from app.models.recurring_availability_rule import RecurringAvailabilityRule
 from app.models.table_match import TableMatch
 from app.models.table_match_player import TableMatchPlayer
 from app.models.user import AccountStatus, User
+from app.models.user_role import UserRole, UserRoleType
 from app.models.venue import Venue
 from app.models.venue_table_window import VenueTableWindow
 
@@ -32,6 +33,7 @@ def build_runner_factory(
     engine = create_engine("sqlite+pysqlite:///:memory:", poolclass=StaticPool)
     for table in (
         User.__table__,
+        UserRole.__table__,
         PlayerProfile.__table__,
         GMProfile.__table__,
         Venue.__table__,
@@ -83,6 +85,7 @@ def _seed_runner_data(
     )
     session.add_all([system, gm_user, venue])
     session.flush()
+    session.add(UserRole(user_id=gm_user.id, role=UserRoleType.GM.value))
 
     gm_profile = GMProfile(
         user_id=gm_user.id,
@@ -121,6 +124,7 @@ def _seed_runner_data(
         user = _user(f"player-{index}", f"player-{index}@example.test")
         session.add(user)
         session.flush()
+        session.add(UserRole(user_id=user.id, role=UserRoleType.PLAYER.value))
         profile = PlayerProfile(
             user_id=user.id,
             postal_code="29501",
