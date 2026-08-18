@@ -214,11 +214,12 @@ SOURCE_WIRING: dict[str, tuple[str, ...]] = {
         'DDDGameHubRuntime',
         'hub-status',
         'handleApiError',
+        'addEventListener("click"',
     ),
     "game-hub-messages.js": (
         'addEventListener("submit"',
-        'addEventListener("click"',
         'postHubMessage',
+        'DDDGameHubMessages',
     ),
     "game-hub-actions.js": (
         'DDDGameHubActions',
@@ -235,7 +236,7 @@ SOURCE_WIRING: dict[str, tuple[str, ...]] = {
     "game-hub-render.js": (
         'hub-role-button',
         'addEventListener("click"',
-        'renderMessageChannels',
+        'DDDGameHubMessages.renderChannels',
     ),
     "game-hub.js": ('DDDGameHubActions.initialize',),
     "venue-feedback.js": ('#venue-feedback-form', 'addEventListener("submit"'),
