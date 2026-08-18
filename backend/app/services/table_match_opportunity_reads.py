@@ -19,7 +19,8 @@ from app.schemas.table_match_opportunities import (
     TableMatchOpportunityDetailResponse,
     TableMatchOpportunityResponse,
 )
-from app.services.table_match_access import opportunity_query, user_roles, viewer_facts
+from app.services.table_match_access_query import opportunity_query, user_roles
+from app.services.table_match_viewer_context import viewer_facts
 
 LOGGER = logging.getLogger(__name__)
 
