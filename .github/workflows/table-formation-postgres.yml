@@ -1,0 +1,95 @@
+name: Table Formation PostgreSQL Contract
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/app/models/event.py"
+      - "backend/app/models/game_series.py"
+      - "backend/app/models/registration.py"
+      - "backend/app/models/table_expectations.py"
+      - "backend/app/models/venue_booking_request.py"
+      - "backend/app/services/event_formation_*.py"
+      - "backend/app/services/event_registration_*.py"
+      - "backend/app/services/table_formation_*.py"
+      - "backend/app/services/venue_booking_transitions.py"
+      - "backend/alembic/versions/0017_table_formation.py"
+      - "backend/scripts/verify_table_formation_*"
+      - ".github/workflows/table-formation-postgres.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/app/models/event.py"
+      - "backend/app/models/game_series.py"
+      - "backend/app/models/registration.py"
+      - "backend/app/models/table_expectations.py"
+      - "backend/app/models/venue_booking_request.py"
+      - "backend/app/services/event_formation_*.py"
+      - "backend/app/services/event_registration_*.py"
+      - "backend/app/services/table_formation_*.py"
+      - "backend/app/services/venue_booking_transitions.py"
+      - "backend/alembic/versions/0017_table_formation.py"
+      - "backend/scripts/verify_table_formation_*"
+      - ".github/workflows/table-formation-postgres.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  table-formation-postgres-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+
+      - name: Build and start PostgreSQL API stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! docker compose up --build --detach; then
+            docker compose ps --all || true
+            docker compose logs api db || true
+            exit 1
+          fi
+
+      - name: Wait for API health
+        shell: bash
+        run: |
+          set -euo pipefail
+          api_id="$(docker compose ps --quiet api)"
+          test -n "$api_id"
+
+          for attempt in {1..30}; do
+            status="$(docker inspect --format '{{.State.Health.Status}}' "$api_id")"
+            echo "API health attempt ${attempt}: ${status}"
+            if [[ "$status" == "healthy" ]]; then
+              exit 0
+            fi
+            if [[ "$status" == "unhealthy" ]]; then
+              docker compose logs api db
+              exit 1
+            fi
+            sleep 2
+          done
+
+          docker compose logs api db
+          echo "API did not become healthy in the expected window."
+          exit 1
+
+      - name: Apply migrations through table formation
+        run: docker compose exec -T api alembic -c alembic.ini upgrade head
+
+      - name: Verify formation schema and RLS in PostgreSQL
+        run: bash backend/scripts/verify_table_formation_schema.sh
+
+      - name: Prove Venue and seat races serialize correctly
+        shell: bash
+        run: docker compose exec -T api python - < backend/scripts/verify_table_formation_concurrency.py
+
+      - name: Tear down contract stack
+        if: always()
+        run: docker compose down --volumes --remove-orphans
