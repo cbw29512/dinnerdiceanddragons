@@ -23,6 +23,7 @@ from app.services.matching_signal_common import (
     require_verified_venue_manager,
 )
 from app.services.onboarding_common import recurring_rule_from_input
+from app.services.query_limits import MAX_OWNER_MATCHING_SIGNAL_ITEMS
 
 LOGGER = logging.getLogger(__name__)
 
@@ -111,7 +112,7 @@ def list_venue_table_windows(
     user: User,
     venue_id: UUID,
 ) -> list[VenueTableWindowResponse]:
-    """Return table windows only for a verified Venue Manager relationship."""
+    """Return a bounded list of table windows for a verified Venue Manager."""
 
     try:
         require_verified_venue_manager(session, user, venue_id)
@@ -122,7 +123,8 @@ def list_venue_table_windows(
                 RecurringAvailabilityRule.id == VenueTableWindow.recurring_rule_id,
             )
             .where(VenueTableWindow.venue_id == venue_id)
-            .order_by(VenueTableWindow.id)
+            .order_by(VenueTableWindow.active.desc(), VenueTableWindow.id)
+            .limit(MAX_OWNER_MATCHING_SIGNAL_ITEMS)
         ).all()
         return [_response(window, rule) for window, rule in rows]
     except (MatchingSignalValidationError, MatchingSignalConflictError, HTTPException):
