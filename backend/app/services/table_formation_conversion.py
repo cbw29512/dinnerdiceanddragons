@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.models.game_series import GameSeries
 from app.models.table_expectations import TableExpectations
 from app.models.table_match import TableMatch, TableMatchStatus
 from app.models.user import User
@@ -68,7 +69,15 @@ def form_table_match(
         session.flush()
         session.add(TableExpectations(event_id=event.id, **payload.expectations.model_dump()))
 
-        booking = _new_booking(match, parents.window.id, parents.gm.id, event.id, series, payload)
+        booking = _new_booking(
+            match=match,
+            window_id=parents.window.id,
+            gm_id=parents.gm.id,
+            event_id=event.id,
+            series=series,
+            approval_required=parents.window.approval_required,
+            payload=payload,
+        )
         session.add(booking)
         session.flush()
         if booking.status == VenueBookingStatus.APPROVED.value:
@@ -98,7 +107,16 @@ def form_table_match(
         raise FormationPersistenceError("Table formation could not be persisted.") from exc
 
 
-def _new_booking(match, window_id, gm_id, event_id, series, payload) -> VenueBookingRequest:
+def _new_booking(
+    *,
+    match: TableMatch,
+    window_id: UUID,
+    gm_id: UUID,
+    event_id: UUID,
+    series: GameSeries | None,
+    approval_required: bool,
+    payload: FormTableMatchRequest,
+) -> VenueBookingRequest:
     return VenueBookingRequest(
         venue_table_window_id=window_id,
         gm_profile_id=gm_id,
@@ -111,17 +129,11 @@ def _new_booking(match, window_id, gm_id, event_id, series, payload) -> VenueBoo
         expected_guests=1,
         status=(
             VenueBookingStatus.REQUESTED.value
-            if load_approval_required(match, window_id, payload)  # replaced below
+            if approval_required
             else VenueBookingStatus.APPROVED.value
         ),
         gm_message=payload.gm_message,
     )
-
-
-def load_approval_required(match, window_id, payload) -> bool:
-    """Sentinel replaced by caller-specific window state; kept out of request trust."""
-    del match, window_id, payload
-    raise RuntimeError("Approval state must be supplied from the persisted Venue window.")
 
 
 def _recover_after_race(
