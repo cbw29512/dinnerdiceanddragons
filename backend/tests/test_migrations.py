@@ -20,7 +20,7 @@ def test_alembic_configuration_discovers_current_head() -> None:
     script = load_script_directory()
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == ["0017_table_formation_lifecycle"]
+    assert script.get_heads() == ["0018_game_hub_messages"]
 
 
 def test_revision_ids_fit_alembic_version_column() -> None:
@@ -118,6 +118,11 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert "CREATE TABLE venue_booking_requests" in result.stdout
     assert "uq_venue_booking_requests_table_match_id" in result.stdout
     assert "ck_venue_booking_requests_status" in result.stdout
+    assert "CREATE TABLE messages" in result.stdout
+    assert "ck_messages_channel_type" in result.stdout
+    assert "ck_messages_moderation_status" in result.stdout
+    assert "ck_messages_body_length" in result.stdout
+    assert "ix_messages_event_channel_created" in result.stdout
     assert "INSERT INTO game_systems" in result.stdout
     assert "dnd-5e-2014" in result.stdout
     assert "dnd-5e-2024" in result.stdout
@@ -137,6 +142,7 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
         "table_expectations",
         "registrations",
         "venue_booking_requests",
+        "messages",
     ):
         assert f'ALTER TABLE public."{table}" ENABLE ROW LEVEL SECURITY' in result.stdout
     assert "deny_privileged_audit_event_mutation" in result.stdout
