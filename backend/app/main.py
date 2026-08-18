@@ -19,6 +19,7 @@ from app.api.routes.venue_bookings import router as venue_bookings_router
 from app.api.routes.venue_onboarding import router as venue_onboarding_router
 from app.api.routes.venue_verification import router as venue_verification_router
 from app.core.config import get_settings
+from app.security.rate_limit_middleware import RateLimitMiddleware
 
 LOGGER = logging.getLogger(__name__)
 
@@ -37,6 +38,10 @@ def create_app() -> FastAPI:
             ),
         )
 
+        if settings.rate_limits_enabled():
+            settings.rate_limit_secret()
+            application.add_middleware(RateLimitMiddleware, settings=settings)
+
         allowed_origins = settings.cors_origins()
         if allowed_origins:
             application.add_middleware(
@@ -45,6 +50,7 @@ def create_app() -> FastAPI:
                 allow_credentials=False,
                 allow_methods=["GET", "POST", "PUT", "PATCH", "OPTIONS"],
                 allow_headers=["Accept", "Authorization", "Content-Type"],
+                expose_headers=["Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining"],
             )
 
         application.include_router(health_router, prefix="/api/v1")
