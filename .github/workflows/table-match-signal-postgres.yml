@@ -1,4 +1,4 @@
-name: Table Match PostgreSQL Contract
+name: Matching and Formation PostgreSQL Contract
 
 on:
   push:
@@ -10,13 +10,22 @@ on:
       - "backend/app/services/postal_centroid*.py"
       - "backend/app/services/postal_centroids.py"
       - "backend/app/services/table_match_*.py"
+      - "backend/app/services/table_formation_*.py"
+      - "backend/app/services/event_*.py"
+      - "backend/app/services/*registration*.py"
+      - "backend/app/services/venue_booking_*.py"
       - "backend/alembic/**"
       - "backend/scripts/verify_table_match_signal_schema.sh"
       - "backend/scripts/verify_postal_centroid_schema.sh"
+      - "backend/scripts/verify_table_formation_schema.sh"
       - "backend/tests/test_geo_distance.py"
       - "backend/tests/test_geocodio_postal_resolver.py"
       - "backend/tests/test_postal_centroid_cache.py"
       - "backend/tests/test_table_match_*.py"
+      - "backend/tests/test_table_formation_*.py"
+      - "backend/tests/test_registration_lifecycle.py"
+      - "backend/tests/test_venue_booking_capacity.py"
+      - "backend/tests/table_formation_postgres_contract.py"
       - ".github/workflows/table-match-signal-postgres.yml"
   pull_request:
     branches: [main]
@@ -27,20 +36,29 @@ on:
       - "backend/app/services/postal_centroid*.py"
       - "backend/app/services/postal_centroids.py"
       - "backend/app/services/table_match_*.py"
+      - "backend/app/services/table_formation_*.py"
+      - "backend/app/services/event_*.py"
+      - "backend/app/services/*registration*.py"
+      - "backend/app/services/venue_booking_*.py"
       - "backend/alembic/**"
       - "backend/scripts/verify_table_match_signal_schema.sh"
       - "backend/scripts/verify_postal_centroid_schema.sh"
+      - "backend/scripts/verify_table_formation_schema.sh"
       - "backend/tests/test_geo_distance.py"
       - "backend/tests/test_geocodio_postal_resolver.py"
       - "backend/tests/test_postal_centroid_cache.py"
       - "backend/tests/test_table_match_*.py"
+      - "backend/tests/test_table_formation_*.py"
+      - "backend/tests/test_registration_lifecycle.py"
+      - "backend/tests/test_venue_booking_capacity.py"
+      - "backend/tests/table_formation_postgres_contract.py"
       - ".github/workflows/table-match-signal-postgres.yml"
 
 permissions:
   contents: read
 
 jobs:
-  table-match-postgres-contract:
+  matching-formation-postgres-contract:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -84,7 +102,7 @@ jobs:
           echo "API did not become healthy in the expected window."
           exit 1
 
-      - name: Apply migrations through Table Match persistence
+      - name: Apply migrations through table formation
         run: docker compose exec -T api alembic -c alembic.ini upgrade head
 
       - name: Verify Table Match persistence in PostgreSQL
@@ -92,6 +110,12 @@ jobs:
 
       - name: Verify postal centroid cache in PostgreSQL
         run: bash backend/scripts/verify_postal_centroid_schema.sh
+
+      - name: Verify table formation persistence in PostgreSQL
+        run: bash backend/scripts/verify_table_formation_schema.sh
+
+      - name: Verify table formation concurrency in PostgreSQL
+        run: docker compose exec -T api python - < backend/tests/table_formation_postgres_contract.py
 
       - name: Tear down contract stack
         if: always()
