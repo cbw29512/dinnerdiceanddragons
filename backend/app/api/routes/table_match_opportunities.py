@@ -40,7 +40,10 @@ def get_match_runner() -> MatchRunner:
 
 def _raise_read_error(exc: Exception) -> NoReturn:
     if isinstance(exc, TableMatchOpportunityNotFoundError):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Opportunity not found.") from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Opportunity not found.",
+        ) from exc
     if isinstance(exc, TableMatchOpportunityReadError):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -81,6 +84,7 @@ def post_matching_run(
         persisted_count=len(result.persisted),
         created_count=sum(item.created for item in result.persisted),
         refreshed_count=sum(item.refreshed for item in result.persisted),
+        expired_count=result.expired_count,
     )
 
 
