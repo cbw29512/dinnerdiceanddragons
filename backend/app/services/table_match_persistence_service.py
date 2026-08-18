@@ -11,10 +11,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.session import get_session_factory
-from app.models.match_explanation import MatchCriterionResult, MatchExplanation
+from app.models.match_explanation import MatchExplanation
 from app.models.table_match import TableMatch, TableMatchStatus
 from app.models.table_match_player import TableMatchPlayer
 from app.services.table_match_opportunity import MatchOpportunity
+from app.services.table_match_persistence_rows import (
+    build_explanation_rows,
+    build_player_rows,
+)
 
 LOGGER = logging.getLogger(__name__)
 SessionFactory = Callable[[], Session]
@@ -74,8 +78,8 @@ def _persist_one(
         session.execute(
             delete(MatchExplanation).where(MatchExplanation.table_match_id == match.id)
         )
-        session.add_all(_player_rows(match.id, opportunity))
-        session.add_all(_explanation_rows(match.id, opportunity))
+        session.add_all(build_player_rows(match.id, opportunity))
+        session.add_all(build_explanation_rows(match.id, opportunity))
 
         try:
             session.commit()
@@ -123,34 +127,6 @@ def _refresh_match(match: TableMatch, opportunity: MatchOpportunity) -> None:
     match.compatible_player_count = opportunity.compatible_player_count
     match.distance_summary = opportunity.distance_summary
     match.fit_score = Decimal("0.00")
-
-
-def _player_rows(match_id: UUID, opportunity: MatchOpportunity) -> list[TableMatchPlayer]:
-    return [
-        TableMatchPlayer(
-            table_match_id=match_id,
-            player_demand_signal_id=player.demand_id,
-            fit_flags=list(player.fit_flags),
-            distance_miles=Decimal(f"{player.distance_miles:.2f}"),
-            availability_overlap={
-                "start": player.overlap.start_at.isoformat(),
-                "end": player.overlap.end_at.isoformat(),
-            },
-        )
-        for player in opportunity.players
-    ]
-
-
-def _explanation_rows(match_id: UUID, opportunity: MatchOpportunity) -> list[MatchExplanation]:
-    return [
-        MatchExplanation(
-            table_match_id=match_id,
-            criterion=decision.criterion,
-            result=MatchCriterionResult.PASS.value,
-            summary=decision.summary,
-        )
-        for decision in opportunity.explanations
-    ]
 
 
 __all__ = ["PersistedMatchResult", "persist_match_opportunities"]
