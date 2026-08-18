@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_vali
 
 from app.models.gm_system_experience import GMGameFormat
 from app.models.player_profile import PreferredGameFormat
+from app.models.venue import VenueSupportOffering
 from app.schemas.availability import AvailabilityWindowInput
 
 ShortPreference = Annotated[
@@ -81,7 +82,21 @@ class VenueTableWindowCreate(BaseModel):
     max_people_per_table: int = Field(ge=1, le=100)
     purchase_policy: str | None = Field(default=None, max_length=2000)
     approval_required: bool = True
+    special_support_offerings: list[VenueSupportOffering] = Field(
+        default_factory=list,
+        max_length=30,
+    )
+    special_support_notes: str | None = Field(default=None, max_length=2000)
     environment_notes: str | None = Field(default=None, max_length=2000)
+
+    @model_validator(mode="after")
+    def reject_duplicate_support_offerings(self) -> Self:
+        """Keep per-window support values deterministic for display and matching."""
+
+        values = [item.value for item in self.special_support_offerings]
+        if len(values) != len(set(values)):
+            raise ValueError("Each special Venue support offering may appear only once.")
+        return self
 
 
 class VenueTableWindowResponse(VenueTableWindowCreate):
