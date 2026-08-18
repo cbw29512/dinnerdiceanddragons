@@ -41,7 +41,9 @@ def get_event(
     try:
         return get_event_for_user(session, user, event_id)
     except EventNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found.") from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Event not found."
+        ) from exc
     except EventReadError as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -97,7 +99,9 @@ def _raise_registration_http(exc: Exception) -> None:
     if isinstance(exc, HTTPException):
         raise exc
     if isinstance(exc, (EventNotFoundError, RegistrationNotFoundError)):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found.") from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found."
+        ) from exc
     if isinstance(exc, EventForbiddenError):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
