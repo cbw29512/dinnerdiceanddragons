@@ -1,6 +1,7 @@
 """Role-safe API schemas for explainable Table Match opportunities."""
 
 from datetime import date, datetime
+from typing import Self
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -15,7 +16,7 @@ class TableMatchRunRequest(BaseModel):
     window_end: date
 
     @model_validator(mode="after")
-    def validate_order(self):
+    def validate_order(self) -> Self:
         if self.window_end < self.window_start:
             raise ValueError("window_end cannot be before window_start.")
         return self
@@ -28,6 +29,7 @@ class TableMatchRunResponse(BaseModel):
     persisted_count: int = Field(ge=0)
     created_count: int = Field(ge=0)
     refreshed_count: int = Field(ge=0)
+    expired_count: int = Field(ge=0)
 
 
 class OpportunitySystemResponse(BaseModel):
