@@ -132,10 +132,12 @@ jobs:
       - name: Verify privileged audit immutability in PostgreSQL
         run: bash backend/scripts/verify_privileged_audit_schema.sh
 
-      - name: Verify HTTP health endpoint
+      - name: Verify HTTP liveness and readiness endpoints
         run: |
           curl --fail --silent --show-error http://127.0.0.1:8000/api/v1/health \
             | grep '"status":"ok"'
+          curl --fail --silent --show-error http://127.0.0.1:8000/api/v1/ready \
+            | grep '"status":"ready"'
 
       - name: Tear down development stack
         if: always()
