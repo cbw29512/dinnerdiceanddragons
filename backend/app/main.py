@@ -51,6 +51,7 @@ def create_app() -> FastAPI:
                 allow_credentials=False,
                 allow_methods=["GET", "POST", "PUT", "PATCH", "OPTIONS"],
                 allow_headers=["Accept", "Authorization", "Content-Type"],
+                expose_headers=["X-Request-ID"],
             )
 
         application.add_middleware(RequestObservabilityMiddleware)
