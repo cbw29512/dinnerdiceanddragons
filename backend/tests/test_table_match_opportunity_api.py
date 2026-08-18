@@ -6,12 +6,12 @@ from uuid import UUID, uuid4
 import pytest
 from onboarding_test_support import build_onboarding_client
 from sqlalchemy.orm import Session
+from table_match_api_test_support import seed_api_matches
 
 from app.api.routes.table_match_opportunities import get_match_runner
 from app.models.user_role import UserRole, UserRoleType
 from app.services.table_match_persistence_service import PersistedMatchResult
 from app.services.table_match_runner import TableMatchRunResult
-from table_match_api_test_support import seed_api_matches
 
 
 @pytest.fixture()
