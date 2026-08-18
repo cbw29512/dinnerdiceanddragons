@@ -124,6 +124,7 @@ class EventFormationDetailResponse(EventFormationResponse):
 
 class GMRegistrationQueueItemResponse(BaseModel):
     id: UUID
+    player_profile_id: UUID
     status: str
     requested_at: datetime
     expectations_acknowledged: bool
