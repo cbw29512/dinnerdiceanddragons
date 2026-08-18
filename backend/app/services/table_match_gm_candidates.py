@@ -98,6 +98,7 @@ def _base_query():
 
     return (
         select(GMSupplySignal, GMProfile, RecurringAvailabilityRule)
+        .select_from(GMSupplySignal)
         .join(GMProfile, GMProfile.id == GMSupplySignal.gm_profile_id)
         .join(User, User.id == GMProfile.user_id)
         .join(UserRole, UserRole.user_id == User.id)
