@@ -1,7 +1,7 @@
 """Transaction-level tests for Player seats, waitlists, and Event state."""
 
-from sqlalchemy import select
 from event_lifecycle_test_support import build_lifecycle_factory
+from sqlalchemy import select
 
 from app.models.event import Event
 from app.models.registration import Registration, RegistrationStatus
