@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, UniqueConstraint, Uuid, func
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -26,11 +26,6 @@ class GameTablePlayer(Base):
 
     __tablename__ = "game_table_players"
     __table_args__ = (
-        UniqueConstraint(
-            "game_table_id",
-            "player_profile_id",
-            name="uq_game_table_players_table_player",
-        ),
         CheckConstraint(
             "status IN ('requested', 'invited', 'confirmed', 'declined', 'removed', 'left')",
             name="ck_game_table_players_status",
