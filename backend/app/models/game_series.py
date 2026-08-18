@@ -35,7 +35,6 @@ class GameSeries(Base):
         Uuid,
         ForeignKey("table_matches.id", ondelete="SET NULL"),
         nullable=True,
-        index=True,
     )
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     gm_profile_id: Mapped[UUID] = mapped_column(
