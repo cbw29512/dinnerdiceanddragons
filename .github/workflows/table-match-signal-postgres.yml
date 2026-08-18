@@ -5,8 +5,14 @@ on:
     branches: [main]
     paths:
       - "backend/app/models/**"
+      - "backend/app/api/rate_limit.py"
+      - "backend/app/api/routes/events.py"
       - "backend/app/api/routes/game_hub.py"
+      - "backend/app/api/routes/table_formation.py"
+      - "backend/app/api/routes/table_match_opportunities.py"
+      - "backend/app/api/routes/venue_bookings.py"
       - "backend/app/schemas/game_hub.py"
+      - "backend/app/services/api_rate_limit_*.py"
       - "backend/app/services/geo_distance.py"
       - "backend/app/services/geocodio_postal_resolver.py"
       - "backend/app/services/postal_centroid*.py"
@@ -23,6 +29,8 @@ on:
       - "backend/scripts/verify_postal_centroid_schema.sh"
       - "backend/scripts/verify_table_formation_schema.sh"
       - "backend/scripts/verify_game_hub_schema.sh"
+      - "backend/tests/test_api_rate_limits.py"
+      - "backend/tests/api_rate_limit_postgres_contract.py"
       - "backend/tests/test_geo_distance.py"
       - "backend/tests/test_geocodio_postal_resolver.py"
       - "backend/tests/test_postal_centroid_cache.py"
@@ -37,8 +45,14 @@ on:
     branches: [main]
     paths:
       - "backend/app/models/**"
+      - "backend/app/api/rate_limit.py"
+      - "backend/app/api/routes/events.py"
       - "backend/app/api/routes/game_hub.py"
+      - "backend/app/api/routes/table_formation.py"
+      - "backend/app/api/routes/table_match_opportunities.py"
+      - "backend/app/api/routes/venue_bookings.py"
       - "backend/app/schemas/game_hub.py"
+      - "backend/app/services/api_rate_limit_*.py"
       - "backend/app/services/geo_distance.py"
       - "backend/app/services/geocodio_postal_resolver.py"
       - "backend/app/services/postal_centroid*.py"
@@ -55,6 +69,8 @@ on:
       - "backend/scripts/verify_postal_centroid_schema.sh"
       - "backend/scripts/verify_table_formation_schema.sh"
       - "backend/scripts/verify_game_hub_schema.sh"
+      - "backend/tests/test_api_rate_limits.py"
+      - "backend/tests/api_rate_limit_postgres_contract.py"
       - "backend/tests/test_geo_distance.py"
       - "backend/tests/test_geocodio_postal_resolver.py"
       - "backend/tests/test_postal_centroid_cache.py"
@@ -131,6 +147,9 @@ jobs:
 
       - name: Verify table formation concurrency in PostgreSQL
         run: docker compose exec -T api python - < backend/tests/table_formation_postgres_contract.py
+
+      - name: Verify distributed API rate-limit concurrency in PostgreSQL
+        run: docker compose exec -T api python - < backend/tests/api_rate_limit_postgres_contract.py
 
       - name: Tear down contract stack
         if: always()
