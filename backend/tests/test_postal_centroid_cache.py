@@ -1,10 +1,12 @@
 """Persistence tests for the server-side ZIP-centroid cache."""
 
+import pytest
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.models.postal_code_centroid import PostalCodeCentroid
+from app.services.geocoding import GeocodingProviderError
 from app.services.postal_centroid_cache import PostalCentroidCache
 from app.services.postal_centroids import PostalCentroidResult
 
@@ -21,6 +23,20 @@ class FakeResolver:
         self.calls.append(postal_code)
         return PostalCentroidResult(
             postal_code=postal_code,
+            latitude=34.1954,
+            longitude=-79.7626,
+            accuracy=1.0,
+            accuracy_type="place",
+            provider="fake",
+        )
+
+
+class MismatchedPostalResolver:
+    """Return an otherwise valid centroid for the wrong ZIP code."""
+
+    def resolve(self, _: str) -> PostalCentroidResult:
+        return PostalCentroidResult(
+            postal_code="99999",
             latitude=34.1954,
             longitude=-79.7626,
             accuracy=1.0,
@@ -48,6 +64,7 @@ def test_cache_resolves_once_then_reuses_persisted_centroid() -> None:
 
     assert first == second
     assert resolver.calls == [POSTAL_CODE]
+    assert isinstance(second.accuracy, float)
 
     with factory() as session:
         record = session.scalar(select(PostalCodeCentroid))
@@ -67,4 +84,17 @@ def test_cache_normalizes_surrounding_whitespace_before_provider_call() -> None:
 
     assert result.postal_code == POSTAL_CODE
     assert resolver.calls == [POSTAL_CODE]
+    engine.dispose()
+
+
+def test_cache_rejects_mismatched_provider_zip_without_persisting() -> None:
+    factory, engine = build_factory()
+    cache = PostalCentroidCache(MismatchedPostalResolver(), session_factory=factory)
+
+    with pytest.raises(GeocodingProviderError):
+        cache.resolve(POSTAL_CODE)
+
+    with factory() as session:
+        assert session.scalar(select(PostalCodeCentroid)) is None
+
     engine.dispose()
