@@ -40,13 +40,21 @@ def evaluate_requirements_snapshot(
 
     try:
         if confirmed_players < 0:
-            raise GameTableRequirementsError("Confirmed Player count cannot be negative.")
+            raise GameTableRequirementsError(
+                "Confirmed Player count cannot be negative."
+            )
         if confirmed_players > game_table.maximum_players:
-            raise GameTableRequirementsError("Confirmed Players exceed Table capacity.")
+            raise GameTableRequirementsError(
+                "Confirmed Players exceed Table capacity."
+            )
         if game_table.minimum_players < 1:
-            raise GameTableRequirementsError("Table minimum Players must be at least one.")
+            raise GameTableRequirementsError(
+                "Table minimum Players must be at least one."
+            )
         if game_table.maximum_players < game_table.minimum_players:
-            raise GameTableRequirementsError("Table maximum Players cannot be below minimum.")
+            raise GameTableRequirementsError(
+                "Table maximum Players cannot be below minimum."
+            )
 
         needs_gm = game_table.gm_profile_id is None
         needs_venue = game_table.venue_id is None
@@ -93,9 +101,13 @@ def transition_game_table_to_ready(
 
     try:
         if game_table.lifecycle_status != GameTableStatus.FORMING.value:
-            raise GameTableTransitionError("Only a forming Table can transition to ready.")
+            raise GameTableTransitionError(
+                "Only a forming Table can transition to ready."
+            )
         if not requirements.ready_to_confirm:
-            raise GameTableTransitionError("Table still has unmet formation requirements.")
+            raise GameTableTransitionError(
+                "Table still has unmet formation requirements."
+            )
 
         game_table.lifecycle_status = GameTableStatus.READY.value
         return game_table
