@@ -35,7 +35,7 @@ def test_candidate_work_budget_allows_small_snapshot() -> None:
 
 def test_candidate_work_budget_rejects_excessive_nested_work() -> None:
     players = 20
-    side = 50
+    side = 110
     assert side * side * (players + 1) > MAX_MATCH_COMBINATION_BUDGET
     snapshot = _snapshot(gms=side, venues=side, players=players)
 
