@@ -25,10 +25,10 @@ def find_compatible_players(
     window_start: date,
     window_end: date,
 ) -> tuple[CompatiblePlayerOpportunity, ...]:
-    """Return one deterministic eligible record per Player demand signal."""
+    """Return one deterministic eligible record per durable Player profile."""
 
     venue_point = GeoPoint(latitude=venue.latitude, longitude=venue.longitude)
-    best_by_demand: dict[UUID, CompatiblePlayerOpportunity] = {}
+    best_by_profile: dict[UUID, CompatiblePlayerOpportunity] = {}
 
     for player in players:
         if player.game_system_id != gm.game_system_id:
@@ -77,17 +77,17 @@ def find_compatible_players(
                     if decision.passed
                 ),
             )
-            current = best_by_demand.get(player.demand_id)
-            if current is None or _is_better_overlap(candidate, current):
-                best_by_demand[player.demand_id] = candidate
+            current = best_by_profile.get(player.player_profile_id)
+            if current is None or _is_better_candidate(candidate, current):
+                best_by_profile[player.player_profile_id] = candidate
 
     return tuple(
-        best_by_demand[demand_id]
-        for demand_id in sorted(best_by_demand, key=str)
+        best_by_profile[profile_id]
+        for profile_id in sorted(best_by_profile, key=str)
     )
 
 
-def _is_better_overlap(
+def _is_better_candidate(
     candidate: CompatiblePlayerOpportunity,
     current: CompatiblePlayerOpportunity,
 ) -> bool:
@@ -95,7 +95,9 @@ def _is_better_overlap(
     current_duration = current.overlap.end_at - current.overlap.start_at
     if candidate_duration != current_duration:
         return candidate_duration > current_duration
-    return candidate.overlap.start_at < current.overlap.start_at
+    if candidate.overlap.start_at != current.overlap.start_at:
+        return candidate.overlap.start_at < current.overlap.start_at
+    return str(candidate.demand_id) < str(current.demand_id)
 
 
 __all__ = ["find_compatible_players"]
