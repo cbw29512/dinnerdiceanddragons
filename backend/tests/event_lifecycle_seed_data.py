@@ -1,17 +1,15 @@
 """Canonical seed records for Event lifecycle and registration tests."""
 
-from dataclasses import dataclass
 from datetime import UTC, datetime, time
 
 from event_lifecycle_player_seed import seed_lifecycle_players
+from event_lifecycle_seed_types import LifecycleSeed
 from sqlalchemy.orm import Session
 
 from app.models.event import Event
 from app.models.game_system import GameSystem
 from app.models.gm_profile import GMProfile
 from app.models.gm_supply_signal import GMSupplySignal
-from app.models.player_demand_signal import PlayerDemandSignal
-from app.models.player_profile import PlayerProfile
 from app.models.recurring_availability_rule import RecurringAvailabilityRule
 from app.models.table_match import TableMatch
 from app.models.user import AccountStatus, User
@@ -19,17 +17,6 @@ from app.models.user_role import UserRole, UserRoleType
 from app.models.venue import Venue
 from app.models.venue_booking_request import VenueBookingRequest
 from app.models.venue_table_window import VenueTableWindow
-
-
-@dataclass(frozen=True, slots=True)
-class LifecycleSeed:
-    event_id: object
-    booking_id: object
-    match_id: object
-    gm_user: User
-    player_users: tuple[User, ...]
-    player_profiles: tuple[PlayerProfile, ...]
-    player_demands: tuple[PlayerDemandSignal, ...]
 
 
 def seed_lifecycle_inputs(session: Session, player_count: int) -> LifecycleSeed:
