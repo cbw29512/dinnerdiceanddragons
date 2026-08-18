@@ -11,6 +11,7 @@ from app.api.dependencies.auth import get_supabase_jwt_verifier
 from app.auth.supabase_jwt import TokenVerificationError
 from app.db.session import get_db_session
 from app.main import create_app
+from app.models.api_rate_limit_bucket import ApiRateLimitBucket
 from app.models.availability_window import GMAvailabilityWindow, PlayerAvailabilityWindow
 from app.models.event import Event
 from app.models.game_series import GameSeries
@@ -83,6 +84,7 @@ def build_onboarding_client():
         for table in (
             User.__table__,
             UserRole.__table__,
+            ApiRateLimitBucket.__table__,
             PlayerProfile.__table__,
             GMProfile.__table__,
             Venue.__table__,
