@@ -86,6 +86,12 @@ class Event(Base):
         nullable=True,
         index=True,
     )
+    game_table_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("game_tables.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     table_match_id: Mapped[UUID | None] = mapped_column(
         Uuid,
         ForeignKey("table_matches.id", ondelete="SET NULL"),
