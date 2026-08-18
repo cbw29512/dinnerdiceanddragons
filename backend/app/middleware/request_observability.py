@@ -46,7 +46,7 @@ class RequestObservabilityMiddleware:
         try:
             await self.app(scope, receive, observed_send)
         except Exception as exc:
-            LOGGER.exception(
+            LOGGER.error(
                 _event_json(
                     event="http_request_unhandled_exception",
                     request_id=request_id,
