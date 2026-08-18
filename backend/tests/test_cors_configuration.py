@@ -47,8 +47,34 @@ def test_allowed_github_pages_origin_can_preflight_bearer_put(monkeypatch) -> No
                 },
             )
             assert response.status_code == 200
-            assert response.headers["access-control-allow-origin"] == ("https://cbw29512.github.io")
-            assert "authorization" in response.headers["access-control-allow-headers"].lower()
+            assert response.headers["access-control-allow-origin"] == (
+                "https://cbw29512.github.io"
+            )
+            assert "authorization" in response.headers[
+                "access-control-allow-headers"
+            ].lower()
+    finally:
+        get_settings.cache_clear()
+
+
+def test_allowed_github_pages_origin_can_preflight_bearer_patch(monkeypatch) -> None:
+    monkeypatch.setenv("CORS_ALLOWED_ORIGINS", "https://cbw29512.github.io")
+    get_settings.cache_clear()
+    try:
+        with TestClient(create_app()) as client:
+            response = client.options(
+                "/api/v1/events/00000000-0000-0000-0000-000000000001/registrations/me",
+                headers={
+                    "Origin": "https://cbw29512.github.io",
+                    "Access-Control-Request-Method": "PATCH",
+                    "Access-Control-Request-Headers": "authorization,content-type",
+                },
+            )
+            assert response.status_code == 200
+            assert response.headers["access-control-allow-origin"] == (
+                "https://cbw29512.github.io"
+            )
+            assert "PATCH" in response.headers["access-control-allow-methods"]
     finally:
         get_settings.cache_clear()
 
