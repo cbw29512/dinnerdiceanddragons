@@ -1,7 +1,7 @@
 """Real PostgreSQL race checks for Venue capacity and Event seat serialization."""
 
 from concurrent.futures import ThreadPoolExecutor
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, time, timedelta
 from threading import Barrier
 from uuid import uuid4
 
@@ -42,7 +42,7 @@ def main() -> None:
 def seed_booking_race():
     with FACTORY() as session:
         system = _system(session)
-        gm_user, gm_profile = _gm(session, "booking-race")
+        _, gm_profile = _gm(session, "booking-race")
         manager = _user("booking-manager")
         session.add(manager)
         session.flush()
@@ -251,8 +251,8 @@ def _venue_window(session, label: str, *, table_count: int):
     )
     rule = RecurringAvailabilityRule(
         day_of_week="friday",
-        start_time=START.time().replace(tzinfo=None),
-        end_time=END.time().replace(tzinfo=None),
+        start_time=time(18, 0),
+        end_time=time(22, 0),
         pattern_type="weekly_interval",
         week_interval=1,
         timezone="America/New_York",
