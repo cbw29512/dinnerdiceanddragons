@@ -32,13 +32,11 @@ def load_player_candidates(session: Session) -> list[PlayerCandidate]:
             _base_query()
             .join(
                 PlayerDemandAvailabilityWindow,
-                PlayerDemandAvailabilityWindow.player_demand_signal_id
-                == PlayerDemandSignal.id,
+                PlayerDemandAvailabilityWindow.player_demand_signal_id == PlayerDemandSignal.id,
             )
             .join(
                 RecurringAvailabilityRule,
-                RecurringAvailabilityRule.id
-                == PlayerDemandAvailabilityWindow.recurring_rule_id,
+                RecurringAvailabilityRule.id == PlayerDemandAvailabilityWindow.recurring_rule_id,
             )
             .where(
                 PlayerDemandAvailabilityWindow.active.is_(True),
