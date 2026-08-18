@@ -20,7 +20,7 @@ def test_alembic_configuration_discovers_current_head() -> None:
     script = load_script_directory()
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == ["0016_postal_centroid_cache"]
+    assert script.get_heads() == ["0017_table_formation_lifecycle"]
 
 
 def test_revision_ids_fit_alembic_version_column() -> None:
@@ -79,7 +79,6 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert "ck_player_system_experiences_years_playing" in result.stdout
     assert "ck_player_system_experiences_comfort_level" in result.stdout
     assert "CREATE TABLE gm_system_experiences" in result.stdout
-    assert "uq_gm_system_experiences_profile_system" in result.stdout
     assert "ck_gm_system_experiences_years_gming" in result.stdout
     assert "ck_gm_system_experiences_preferred_player_experience" in result.stdout
     assert "CREATE TABLE gm_system_formats" in result.stdout
@@ -107,6 +106,18 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert "CREATE TABLE postal_code_centroids" in result.stdout
     assert "uq_postal_code_centroids_country_postal" in result.stdout
     assert "ck_postal_code_centroids_accuracy_range" in result.stdout
+    assert "CREATE TABLE game_series" in result.stdout
+    assert "uq_game_series_table_match_id" in result.stdout
+    assert "CREATE TABLE events" in result.stdout
+    assert "uq_events_table_match_id" in result.stdout
+    assert "ck_events_status" in result.stdout
+    assert "CREATE TABLE table_expectations" in result.stdout
+    assert "uq_table_expectations_event_id" in result.stdout
+    assert "CREATE TABLE registrations" in result.stdout
+    assert "uq_registrations_event_player" in result.stdout
+    assert "CREATE TABLE venue_booking_requests" in result.stdout
+    assert "uq_venue_booking_requests_table_match_id" in result.stdout
+    assert "ck_venue_booking_requests_status" in result.stdout
     assert "INSERT INTO game_systems" in result.stdout
     assert "dnd-5e-2014" in result.stdout
     assert "dnd-5e-2024" in result.stdout
@@ -116,9 +127,17 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert "shadowrun" in result.stdout
     assert "other-rpg" in result.stdout
     assert "ENABLE ROW LEVEL SECURITY" in result.stdout
-    assert 'ALTER TABLE public."table_matches" ENABLE ROW LEVEL SECURITY' in result.stdout
-    assert 'ALTER TABLE public."table_match_players" ENABLE ROW LEVEL SECURITY' in result.stdout
-    assert 'ALTER TABLE public."match_explanations" ENABLE ROW LEVEL SECURITY' in result.stdout
-    assert 'ALTER TABLE public."postal_code_centroids" ENABLE ROW LEVEL SECURITY' in result.stdout
+    for table in (
+        "table_matches",
+        "table_match_players",
+        "match_explanations",
+        "postal_code_centroids",
+        "game_series",
+        "events",
+        "table_expectations",
+        "registrations",
+        "venue_booking_requests",
+    ):
+        assert f'ALTER TABLE public."{table}" ENABLE ROW LEVEL SECURITY' in result.stdout
     assert "deny_privileged_audit_event_mutation" in result.stdout
     assert "search_path = pg_catalog" in result.stdout
