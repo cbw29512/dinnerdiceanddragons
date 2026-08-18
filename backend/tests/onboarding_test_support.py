@@ -12,6 +12,8 @@ from app.auth.supabase_jwt import TokenVerificationError
 from app.db.session import get_db_session
 from app.main import create_app
 from app.models.availability_window import GMAvailabilityWindow, PlayerAvailabilityWindow
+from app.models.event import Event
+from app.models.game_series import GameSeries
 from app.models.game_system import GameSystem
 from app.models.gm_profile import GMProfile
 from app.models.gm_supply_signal import GMSupplySignal
@@ -23,11 +25,14 @@ from app.models.player_system_experience import PlayerSystemExperience
 from app.models.postal_code_centroid import PostalCodeCentroid
 from app.models.privileged_audit_event import PrivilegedAuditEvent
 from app.models.recurring_availability_rule import RecurringAvailabilityRule
+from app.models.registration import Registration
+from app.models.table_expectations import TableExpectations
 from app.models.table_match import TableMatch
 from app.models.table_match_player import TableMatchPlayer
 from app.models.user import User
 from app.models.user_role import UserRole
 from app.models.venue import Venue, VenueManager
+from app.models.venue_booking_request import VenueBookingRequest
 from app.models.venue_table_window import VenueTableWindow
 
 ALICE_SUBJECT = "11111111-1111-1111-1111-111111111111"
@@ -96,6 +101,11 @@ def build_onboarding_client():
             TableMatchPlayer.__table__,
             MatchExplanation.__table__,
             PostalCodeCentroid.__table__,
+            GameSeries.__table__,
+            Event.__table__,
+            TableExpectations.__table__,
+            Registration.__table__,
+            VenueBookingRequest.__table__,
             PrivilegedAuditEvent.__table__,
         ):
             table.create(engine)
