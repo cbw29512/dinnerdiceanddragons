@@ -68,7 +68,7 @@ def list_game_hubs(session: Session, user: User) -> list[HubIndexItem]:
             Event.status.in_(LIVE_HUB_STATUSES),
             or_(gm_access, player_access, venue_access),
         )
-        .order_by(Event.starts_at.desc(), Event.id)
+        .order_by(Event.starts_at.asc(), Event.id)
         .limit(MAX_HUB_INDEX_ITEMS)
     ).all()
     return [
