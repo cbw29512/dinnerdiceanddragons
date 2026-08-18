@@ -17,9 +17,14 @@ class TableFormationConflictError(TableFormationError):
     """The requested transition conflicts with current durable state."""
 
 
+class TableFormationReadError(TableFormationError):
+    """Persisted formation state is incomplete or could not be rendered safely."""
+
+
 __all__ = [
     "TableFormationConflictError",
     "TableFormationError",
     "TableFormationForbiddenError",
     "TableFormationNotFoundError",
+    "TableFormationReadError",
 ]
