@@ -1,13 +1,14 @@
 """Authenticated APIs for the three production Table Match input types."""
 
-import logging
-from typing import Annotated, NoReturn
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies.roles import require_dm, require_player, require_venue_manager
+from app.api.matching_signal_errors import raise_matching_signal_http
+from app.api.rate_limit import enforce_user_rate_limit
 from app.db.session import get_db_session
 from app.models.user import User
 from app.schemas.matching_signals import (
@@ -18,38 +19,15 @@ from app.schemas.matching_signals import (
     VenueTableWindowCreate,
     VenueTableWindowResponse,
 )
+from app.services.api_rate_limit_policy import RateLimitScope
 from app.services.gm_supply import create_gm_supply, list_gm_supplies
-from app.services.matching_signal_common import (
-    MatchingSignalConflictError,
-    MatchingSignalPersistenceError,
-    MatchingSignalValidationError,
-)
 from app.services.player_demand import create_player_demand, list_player_demands
 from app.services.venue_table_windows import (
     create_venue_table_window,
     list_venue_table_windows,
 )
 
-LOGGER = logging.getLogger(__name__)
 router = APIRouter(prefix="/matching", tags=["matching"])
-
-
-def _raise_signal_error(exc: Exception) -> NoReturn:
-    """Translate service-layer matching errors into stable HTTP responses."""
-
-    if isinstance(exc, MatchingSignalValidationError):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=str(exc),
-        ) from exc
-    if isinstance(exc, MatchingSignalConflictError):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
-    if isinstance(exc, MatchingSignalPersistenceError):
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Matching input could not be processed.",
-        ) from exc
-    raise exc
 
 
 @router.post(
@@ -65,11 +43,12 @@ def post_player_demand(
     """Create one demand signal owned by the authenticated Player."""
 
     try:
+        enforce_user_rate_limit(session, user, RateLimitScope.MATCHING_INPUT)
         return create_player_demand(session, user, payload)
     except HTTPException:
         raise
     except Exception as exc:
-        _raise_signal_error(exc)
+        raise_matching_signal_http(exc)
 
 
 @router.get("/player-demands", response_model=list[PlayerDemandResponse])
@@ -84,7 +63,7 @@ def get_player_demands(
     except HTTPException:
         raise
     except Exception as exc:
-        _raise_signal_error(exc)
+        raise_matching_signal_http(exc)
 
 
 @router.post(
@@ -100,11 +79,12 @@ def post_gm_supply(
     """Create one supply signal owned by the authenticated GM."""
 
     try:
+        enforce_user_rate_limit(session, user, RateLimitScope.MATCHING_INPUT)
         return create_gm_supply(session, user, payload)
     except HTTPException:
         raise
     except Exception as exc:
-        _raise_signal_error(exc)
+        raise_matching_signal_http(exc)
 
 
 @router.get("/gm-supplies", response_model=list[GMSupplyResponse])
@@ -119,7 +99,7 @@ def get_gm_supplies(
     except HTTPException:
         raise
     except Exception as exc:
-        _raise_signal_error(exc)
+        raise_matching_signal_http(exc)
 
 
 @router.post(
@@ -136,11 +116,12 @@ def post_venue_table_window(
     """Create one table window for a verified Venue Manager relationship."""
 
     try:
+        enforce_user_rate_limit(session, user, RateLimitScope.MATCHING_INPUT)
         return create_venue_table_window(session, user, venue_id, payload)
     except HTTPException:
         raise
     except Exception as exc:
-        _raise_signal_error(exc)
+        raise_matching_signal_http(exc)
 
 
 @router.get(
@@ -159,4 +140,4 @@ def get_venue_table_windows(
     except HTTPException:
         raise
     except Exception as exc:
-        _raise_signal_error(exc)
+        raise_matching_signal_http(exc)
