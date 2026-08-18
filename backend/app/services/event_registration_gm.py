@@ -13,7 +13,10 @@ from app.services.event_formation_reconciliation import (
     promote_next_waitlisted_registration,
     reconcile_event_formation,
 )
-from app.services.event_registration_access import require_event_gm
+from app.services.event_registration_access import (
+    require_event_gm,
+    require_player_profile_eligible,
+)
 from app.services.event_registration_state import (
     RegistrationMutationResult,
     confirmed_count,
@@ -55,6 +58,16 @@ def decide_event_registration(
         )
         if registration is None:
             raise TableFormationNotFoundError("Registration is not available.")
+
+        if target_status in {
+            RegistrationStatus.CONFIRMED.value,
+            RegistrationStatus.WAITLISTED.value,
+        }:
+            require_player_profile_eligible(
+                session,
+                event=event,
+                player_profile_id=registration.player_profile_id,
+            )
 
         was_confirmed = registration.status == RegistrationStatus.CONFIRMED.value
         _apply_gm_decision(session, event, registration, target_status)
