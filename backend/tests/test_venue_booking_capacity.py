@@ -3,7 +3,6 @@
 from datetime import timedelta
 
 import pytest
-from sqlalchemy import select
 
 from app.models.event import Event
 from app.models.venue_booking_request import VenueBookingRequest
