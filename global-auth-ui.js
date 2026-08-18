@@ -14,6 +14,16 @@
     console.error(`[Dinner Dice & Dragons] ${message}`, error);
   }
 
+  function element(tag, attributes = {}, text = "") {
+    const node = document.createElement(tag);
+    for (const [name, value] of Object.entries(attributes)) {
+      if (value === true) node.setAttribute(name, "");
+      else if (value !== false && value !== null && value !== undefined) node.setAttribute(name, String(value));
+    }
+    if (text) node.textContent = text;
+    return node;
+  }
+
   function roleLabel(role) {
     return role === "gm" ? "DM" : role === "venue" ? "Venue" : "Player";
   }
@@ -43,41 +53,109 @@
     });
   }
 
+  function roleButton(role, icon, label, detail, pressed) {
+    const button = element("button", {
+      type: "button",
+      "data-ddd-role": role,
+      "aria-pressed": String(pressed)
+    });
+    button.append(
+      element("span", { "aria-hidden": "true" }, icon),
+      element("strong", {}, label),
+      element("small", {}, detail)
+    );
+    return button;
+  }
+
+  function labeledInput(labelText, inputAttributes) {
+    const label = element("label");
+    label.append(document.createTextNode(labelText), element("input", inputAttributes));
+    return label;
+  }
+
   function ensureDialogMarkup() {
     if (dialog()) return dialog();
 
-    const markup = document.createElement("dialog");
-    markup.id = "ddd-global-account-dialog";
-    markup.className = "ddd-account-dialog";
-    markup.setAttribute("aria-labelledby", "ddd-account-title");
-    markup.innerHTML = `
-      <div class="ddd-account-shell">
-        <button class="ddd-account-close" type="button" aria-label="Close account panel">×</button>
-        <div class="ddd-account-heading">
-          <p class="ddd-account-kicker">YOUR DDD ACCOUNT</p>
-          <h2 id="ddd-account-title">One login. Every way you play.</h2>
-          <p>Use the same account as a Player, DM, or Venue manager. Pick what you want to do and we keep you on that path.</p>
-        </div>
-        <div class="ddd-role-picker" aria-label="Choose what you want to do">
-          <button type="button" data-ddd-role="player" aria-pressed="true"><span aria-hidden="true">🎲</span><strong>Player</strong><small>Find a table</small></button>
-          <button type="button" data-ddd-role="gm" aria-pressed="false"><span aria-hidden="true">🧙</span><strong>DM</strong><small>Run a game</small></button>
-          <button type="button" data-ddd-role="venue" aria-pressed="false"><span aria-hidden="true">🍽️</span><strong>Venue</strong><small>Host tables</small></button>
-        </div>
-        <form id="ddd-auth-form" class="ddd-auth-form">
-          <label>Email address<input id="ddd-auth-email" type="email" autocomplete="email" required></label>
-          <label>Password<input id="ddd-auth-password" type="password" autocomplete="current-password" minlength="8" required></label>
-          <div class="ddd-auth-actions">
-            <button class="button primary" id="ddd-sign-in" type="submit">Sign In</button>
-            <button class="button secondary" id="ddd-create-account" type="button">Create Account</button>
-            <button class="button secondary" id="ddd-sign-out" type="button" hidden>Sign Out</button>
-          </div>
-          <p class="ddd-account-status" id="ddd-auth-status" role="status" aria-live="polite">Sign in or create an account to continue.</p>
-        </form>
-        <a class="ddd-continue-role" id="ddd-continue-role" href="join.html#player">Continue as Player →</a>
-        <p class="ddd-account-footnote">Your account can hold multiple roles. Choosing one here does not remove your other roles.</p>
-      </div>`;
-    document.body.appendChild(markup);
-    return markup;
+    const panel = element("dialog", {
+      id: "ddd-global-account-dialog",
+      class: "ddd-account-dialog",
+      "aria-labelledby": "ddd-account-title"
+    });
+    const shell = element("div", { class: "ddd-account-shell" });
+    const close = element(
+      "button",
+      { class: "ddd-account-close", type: "button", "aria-label": "Close account panel" },
+      "×"
+    );
+    const heading = element("div", { class: "ddd-account-heading" });
+    heading.append(
+      element("p", { class: "ddd-account-kicker" }, "YOUR DDD ACCOUNT"),
+      element("h2", { id: "ddd-account-title" }, "One login. Every way you play."),
+      element(
+        "p",
+        {},
+        "Use the same account as a Player, DM, or Venue manager. Pick what you want to do and we keep you on that path."
+      )
+    );
+
+    const rolePicker = element("div", {
+      class: "ddd-role-picker",
+      role: "group",
+      "aria-label": "Choose what you want to do"
+    });
+    rolePicker.append(
+      roleButton("player", "🎲", "Player", "Find a table", true),
+      roleButton("gm", "🧙", "DM", "Run a game", false),
+      roleButton("venue", "🍽️", "Venue", "Host tables", false)
+    );
+
+    const form = element("form", { id: "ddd-auth-form", class: "ddd-auth-form" });
+    form.append(
+      labeledInput("Email address", {
+        id: "ddd-auth-email",
+        type: "email",
+        autocomplete: "email",
+        required: true
+      }),
+      labeledInput("Password", {
+        id: "ddd-auth-password",
+        type: "password",
+        autocomplete: "current-password",
+        minlength: "8",
+        required: true
+      })
+    );
+
+    const authActions = element("div", { class: "ddd-auth-actions" });
+    authActions.append(
+      element("button", { class: "button primary", id: "ddd-sign-in", type: "submit" }, "Sign In"),
+      element("button", { class: "button secondary", id: "ddd-create-account", type: "button" }, "Create Account"),
+      element("button", { class: "button secondary", id: "ddd-sign-out", type: "button", hidden: true }, "Sign Out")
+    );
+    form.append(
+      authActions,
+      element(
+        "p",
+        { class: "ddd-account-status", id: "ddd-auth-status", role: "status", "aria-live": "polite" },
+        "Sign in or create an account to continue."
+      )
+    );
+
+    const continueRole = element(
+      "a",
+      { class: "ddd-continue-role", id: "ddd-continue-role", href: ROLE_DESTINATIONS.player },
+      "Continue as Player →"
+    );
+    const footnote = element(
+      "p",
+      { class: "ddd-account-footnote" },
+      "Your account can hold multiple roles. Choosing one here does not remove your other roles."
+    );
+
+    shell.append(close, heading, rolePicker, form, continueRole, footnote);
+    panel.append(shell);
+    document.body.append(panel);
+    return panel;
   }
 
   function ensureHeaderControls() {
@@ -86,25 +164,20 @@
     if (!nav) return;
 
     nav.querySelectorAll('[data-ddd-legacy-role-link="true"]').forEach((node) => node.remove());
+    const roleGroup = element("div", { class: "ddd-header-role-links", "aria-label": "Start by role" });
+    for (const [role, label] of [["player", "Find a Game"], ["gm", "Run a Game"], ["venue", "For Venues"]]) {
+      roleGroup.append(element("a", { href: ROLE_DESTINATIONS[role], "data-ddd-role-link": role }, label));
+    }
 
-    const roleGroup = document.createElement("div");
-    roleGroup.className = "ddd-header-role-links";
-    roleGroup.setAttribute("aria-label", "Start by role");
-    roleGroup.innerHTML = `
-      <a href="${ROLE_DESTINATIONS.player}" data-ddd-role-link="player">Find a Game</a>
-      <a href="${ROLE_DESTINATIONS.gm}" data-ddd-role-link="gm">Run a Game</a>
-      <a href="${ROLE_DESTINATIONS.venue}" data-ddd-role-link="venue">For Venues</a>`;
-
-    const button = document.createElement("button");
-    button.id = "ddd-global-account-button";
-    button.className = "ddd-account-trigger";
-    button.type = "button";
-    button.textContent = "Sign In";
-    button.setAttribute("aria-haspopup", "dialog");
-    button.setAttribute("aria-controls", "ddd-global-account-dialog");
-
+    const button = element("button", {
+      id: "ddd-global-account-button",
+      class: "ddd-account-trigger",
+      type: "button",
+      "aria-haspopup": "dialog",
+      "aria-controls": "ddd-global-account-dialog"
+    }, "Sign In");
     nav.prepend(roleGroup);
-    nav.appendChild(button);
+    nav.append(button);
   }
 
   function syncRole(role) {
@@ -233,7 +306,6 @@
   function bindUi() {
     ensureHeaderControls();
     const panel = ensureDialogMarkup();
-
     accountButton()?.addEventListener("click", () => openAccount(selectedRole));
     panel.querySelector(".ddd-account-close")?.addEventListener("click", () => panel.close());
     panel.addEventListener("click", (event) => {
@@ -247,7 +319,6 @@
         try { sessionStorage.setItem("ddd-role-intent", link.dataset.dddRole || "player"); } catch {}
       });
     });
-
     document.getElementById("ddd-auth-form")?.addEventListener("submit", handleSignIn);
     document.getElementById("ddd-create-account")?.addEventListener("click", handleCreateAccount);
     document.getElementById("ddd-sign-out")?.addEventListener("click", handleSignOut);
@@ -280,7 +351,6 @@
   }
 
   window.DDDGlobalAuthUI = Object.freeze({ init, openAccount, syncRole });
-
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
   else init();
 })();

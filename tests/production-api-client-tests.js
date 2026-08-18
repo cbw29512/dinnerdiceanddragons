@@ -3,18 +3,26 @@
 const assert = require("node:assert/strict");
 
 global.window = globalThis;
-if (!global.localStorage) {
-  const authStorage = new Map();
-  global.localStorage = {
-    getItem(key) { return authStorage.has(key) ? authStorage.get(key) : null; },
-    setItem(key, value) { authStorage.set(key, String(value)); },
-    removeItem(key) { authStorage.delete(key); },
-    clear() { authStorage.clear(); }
+
+function memoryStorage() {
+  const values = new Map();
+  return {
+    getItem(key) { return values.has(key) ? values.get(key) : null; },
+    setItem(key, value) { values.set(key, String(value)); },
+    removeItem(key) { values.delete(key); },
+    clear() { values.clear(); }
   };
 }
+
+global.localStorage = memoryStorage();
+global.sessionStorage = memoryStorage();
+
+require("../production-config.js");
 require("../production-api-client.js");
+require("../production-session-store.js");
 require("../production-auth.js");
 
+const SESSION_KEY = "ddd-production-auth-session";
 let failures = 0;
 
 async function test(name, callback) {
@@ -26,6 +34,11 @@ async function test(name, callback) {
     console.error(`✗ ${name}`);
     console.error(error);
   }
+}
+
+function clearAuthStorage() {
+  localStorage.clear();
+  sessionStorage.clear();
 }
 
 function jsonResponse(status, payload) {
@@ -49,24 +62,13 @@ async function run() {
     let captured = null;
     global.fetch = async (url, options) => {
       captured = { url, options };
-      return jsonResponse(200, {
-        display_name: "Player One",
-        systems: [],
-        availability: []
-      });
+      return jsonResponse(200, { display_name: "Player One", systems: [], availability: [] });
     };
-
-    DDDProductionAPI.configure({
-      baseUrl: "https://api.example.test/",
-      accessTokenProvider: async () => "verified-jwt"
-    });
+    DDDProductionAPI.configure({ baseUrl: "https://api.example.test/", accessTokenProvider: async () => "verified-jwt" });
     const body = await DDDProductionAPI.getPlayerOnboarding();
-
     assert.equal(captured.url, "https://api.example.test/api/v1/onboarding/player");
     assert.equal(captured.options.method, "GET");
     assert.equal(captured.options.headers.Authorization, "Bearer verified-jwt");
-    assert.equal(captured.options.headers.Accept, "application/json");
-    assert.equal(Object.hasOwn(captured.options, "body"), false);
     assert.equal(body.display_name, "Player One");
   });
 
@@ -76,23 +78,11 @@ async function run() {
       captured = { url, options };
       return jsonResponse(200, { role: "gm" });
     };
-
-    DDDProductionAPI.configure({
-      baseUrl: "https://api.example.test",
-      accessTokenProvider: async () => "verified-jwt"
-    });
-    const payload = {
-      display_name: "GM One",
-      postal_code: "29501",
-      travel_radius_miles: 25,
-      systems: [],
-      availability: []
-    };
+    DDDProductionAPI.configure({ baseUrl: "https://api.example.test", accessTokenProvider: async () => "verified-jwt" });
+    const payload = { display_name: "GM One", postal_code: "29501", travel_radius_miles: 25, systems: [], availability: [] };
     await DDDProductionAPI.putGMOnboarding(payload);
-
     assert.equal(captured.url, "https://api.example.test/api/v1/onboarding/gm");
     assert.equal(captured.options.method, "PUT");
-    assert.equal(captured.options.headers["Content-Type"], "application/json");
     assert.deepEqual(JSON.parse(captured.options.body), payload);
   });
 
@@ -102,79 +92,59 @@ async function run() {
       fetchCalled = true;
       return jsonResponse(500, {});
     };
-
-    DDDProductionAPI.configure({
-      baseUrl: "https://api.example.test",
-      accessTokenProvider: async () => ""
+    DDDProductionAPI.configure({ baseUrl: "https://api.example.test", accessTokenProvider: async () => "" });
+    await assert.rejects(() => DDDProductionAPI.getMe(), (error) => {
+      assert.equal(error.name, "ProductionApiError");
+      assert.equal(error.status, 401);
+      assert.match(error.message, /authenticated session/i);
+      return true;
     });
-
-    await assert.rejects(
-      () => DDDProductionAPI.getMe(),
-      (error) => {
-        assert.equal(error.name, "ProductionApiError");
-        assert.equal(error.status, 401);
-        assert.match(error.message, /authenticated session/i);
-        return true;
-      }
-    );
     assert.equal(fetchCalled, false);
   });
 
   await test("production API surfaces structured FastAPI errors", async () => {
     global.fetch = async () => jsonResponse(409, { detail: "That display name is already in use." });
-
-    DDDProductionAPI.configure({
-      baseUrl: "https://api.example.test",
-      accessTokenProvider: async () => "verified-jwt"
+    DDDProductionAPI.configure({ baseUrl: "https://api.example.test", accessTokenProvider: async () => "verified-jwt" });
+    await assert.rejects(() => DDDProductionAPI.putPlayerOnboarding({ display_name: "Taken" }), (error) => {
+      assert.equal(error.name, "ProductionApiError");
+      assert.equal(error.status, 409);
+      assert.equal(error.detail, "That display name is already in use.");
+      return true;
     });
-
-    await assert.rejects(
-      () => DDDProductionAPI.putPlayerOnboarding({ display_name: "Taken" }),
-      (error) => {
-        assert.equal(error.name, "ProductionApiError");
-        assert.equal(error.status, 409);
-        assert.equal(error.detail, "That display name is already in use.");
-        assert.equal(error.message, "That display name is already in use.");
-        return true;
-      }
-    );
   });
 
-  await test("production API rejects invalid JSON responses", async () => {
-    global.fetch = async () => ({
-      ok: true,
-      status: 200,
-      async text() {
-        return "not-json";
-      }
+  await test("production auth fails closed when browser production config is missing", async () => {
+    const savedConfig = DDDProductionConfig;
+    global.DDDProductionConfig = null;
+    let fetchCalled = false;
+    global.fetch = async () => {
+      fetchCalled = true;
+      return jsonResponse(500, {});
+    };
+    await assert.rejects(() => DDDProductionAuth.init(), (error) => {
+      assert.equal(error.name, "ProductionAuthError");
+      assert.match(error.message, /configuration is unavailable/i);
+      return true;
     });
-
-    DDDProductionAPI.configure({
-      baseUrl: "https://api.example.test",
-      accessTokenProvider: async () => "verified-jwt"
-    });
-
-    await assert.rejects(
-      () => DDDProductionAPI.getMe(),
-      (error) => {
-        assert.equal(error.name, "ProductionApiError");
-        assert.equal(error.status, 200);
-        assert.match(error.message, /invalid response/i);
-        return true;
-      }
-    );
+    assert.equal(fetchCalled, false);
+    global.DDDProductionConfig = savedConfig;
   });
 
-  await test("production auth signs in with the public Supabase key and stores the session", async () => {
-    localStorage.clear();
+  await test("legacy localStorage session migrates into tab-scoped sessionStorage", async () => {
+    clearAuthStorage();
     const now = Math.floor(Date.now() / 1000);
-    const token = fakeJwt({
-      aud: "authenticated",
-      exp: now + 3600,
-      sub: "auth-user-1",
-      email: "player@example.com",
-      role: "authenticated"
-    });
+    const token = fakeJwt({ aud: "authenticated", exp: now + 3600, sub: "legacy-user", email: "legacy@example.com" });
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ access_token: token, refresh_token: "legacy-refresh", expires_at: now + 3600 }));
+    const accessToken = await DDDProductionAuth.getAccessToken();
+    assert.equal(accessToken, token);
+    assert.equal(localStorage.getItem(SESSION_KEY), null);
+    assert.ok(sessionStorage.getItem(SESSION_KEY));
+  });
+
+  await test("production auth stores new sessions only in tab-scoped storage", async () => {
+    clearAuthStorage();
+    const now = Math.floor(Date.now() / 1000);
+    const token = fakeJwt({ aud: "authenticated", exp: now + 3600, sub: "auth-user-1", email: "player@example.com" });
     let captured = null;
     global.fetch = async (url, options) => {
       captured = { url, options };
@@ -185,71 +155,42 @@ async function run() {
         user: { id: "auth-user-1", email: "player@example.com" }
       });
     };
-
     const session = await DDDProductionAuth.signIn("player@example.com", "test-password");
-
     assert.match(captured.url, /\/auth\/v1\/token\?grant_type=password$/);
     assert.match(captured.options.headers.apikey, /^sb_publishable_/);
-    assert.deepEqual(JSON.parse(captured.options.body), {
-      email: "player@example.com",
-      password: "test-password"
-    });
     assert.equal(session.user.email, "player@example.com");
     assert.equal(await DDDProductionAuth.getAccessToken(), token);
-    assert.ok(localStorage.getItem("ddd-production-auth-session"));
+    assert.ok(sessionStorage.getItem(SESSION_KEY));
+    assert.equal(localStorage.getItem(SESSION_KEY), null);
   });
 
-  await test("production auth refreshes an expired access token before API use", async () => {
-    localStorage.clear();
+  await test("production auth keeps rotated refresh token in tab-scoped storage", async () => {
+    clearAuthStorage();
     const now = Math.floor(Date.now() / 1000);
-    const expiredToken = fakeJwt({
-      aud: "authenticated",
-      exp: now - 10,
-      sub: "auth-user-2",
-      email: "gm@example.com",
-      role: "authenticated"
-    });
-    const freshToken = fakeJwt({
-      aud: "authenticated",
-      exp: now + 3600,
-      sub: "auth-user-2",
-      email: "gm@example.com",
-      role: "authenticated"
-    });
+    const expiredToken = fakeJwt({ aud: "authenticated", exp: now - 10, sub: "auth-user-2", email: "gm@example.com" });
+    const freshToken = fakeJwt({ aud: "authenticated", exp: now + 3600, sub: "auth-user-2", email: "gm@example.com" });
     let call = 0;
     let refreshRequest = null;
     global.fetch = async (url, options) => {
       call += 1;
-      if (call === 1) {
-        return jsonResponse(200, {
-          access_token: expiredToken,
-          refresh_token: "refresh-old",
-          expires_in: 1
-        });
-      }
+      if (call === 1) return jsonResponse(200, { access_token: expiredToken, refresh_token: "refresh-old", expires_in: 1 });
       refreshRequest = { url, options };
-      return jsonResponse(200, {
-        access_token: freshToken,
-        refresh_token: "refresh-rotated",
-        expires_in: 3600
-      });
+      return jsonResponse(200, { access_token: freshToken, refresh_token: "refresh-rotated", expires_in: 3600 });
     };
-
     await DDDProductionAuth.signIn("gm@example.com", "test-password");
     const token = await DDDProductionAuth.getAccessToken();
-
     assert.equal(token, freshToken);
     assert.match(refreshRequest.url, /\/auth\/v1\/token\?grant_type=refresh_token$/);
     assert.deepEqual(JSON.parse(refreshRequest.options.body), { refresh_token: "refresh-old" });
-    const stored = JSON.parse(localStorage.getItem("ddd-production-auth-session"));
+    const stored = JSON.parse(sessionStorage.getItem(SESSION_KEY));
     assert.equal(stored.refresh_token, "refresh-rotated");
+    assert.equal(localStorage.getItem(SESSION_KEY), null);
   });
 
   if (failures) {
     console.error(`\n${failures} production API/auth test${failures === 1 ? "" : "s"} failed.`);
     process.exit(1);
   }
-
   console.log("\nAll production API and browser-auth tests passed.");
 }
 

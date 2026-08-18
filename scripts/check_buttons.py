@@ -98,19 +98,25 @@ def check_generic_controls(page: Path, parser: InteractionParser) -> list[str]:
     return errors
 
 
+AUTH_SCRIPT_REQUIREMENTS = (
+    "production-config.js",
+    "production-api-client.js",
+    "production-session-store.js",
+    "production-auth.js",
+)
+
 PAGE_SCRIPT_REQUIREMENTS: dict[str, tuple[str, ...]] = {
-    "index.html": ("shared-registration.js", "shared-games.js"),
+    "index.html": (*AUTH_SCRIPT_REQUIREMENTS, "shared-registration.js", "shared-games.js"),
     "dashboard-prototype.html": ("dashboard.js",),
     "join.html": (
-        "production-api-client.js",
+        *AUTH_SCRIPT_REQUIREMENTS,
         "production-onboarding-adapters.js",
-        "production-auth.js",
         "production-onboarding.js",
         "experience-profiles.js",
         "availability.js",
         "forms.js",
     ),
-    "venues.html": ("form-pilot.js", "forms.js"),
+    "venues.html": (*AUTH_SCRIPT_REQUIREMENTS, "form-pilot.js", "forms.js"),
     "create-game.html": ("form-pilot.js", "forms.js", "create-game.js"),
     "find-venue.html": (
         "table-match-profile.js",
@@ -127,8 +133,7 @@ PAGE_SCRIPT_REQUIREMENTS: dict[str, tuple[str, ...]] = {
         "table-lifecycle.js",
     ),
     "game-hub.html": (
-        "production-api-client.js",
-        "production-auth.js",
+        *AUTH_SCRIPT_REQUIREMENTS,
         "game-hub-core.js",
         "game-hub-messages.js",
         "game-hub-actions.js",
@@ -139,67 +144,34 @@ PAGE_SCRIPT_REQUIREMENTS: dict[str, tuple[str, ...]] = {
     "venue-feedback.html": ("venue-feedback.js",),
 }
 
-
 SOURCE_WIRING: dict[str, tuple[str, ...]] = {
     "dashboard.js": ('.role-btn', 'addEventListener("click"', '#role-select'),
-    "experience-profiles.js": (
-        '.add-experience',
-        '.remove-experience',
-        'addEventListener("click"',
-    ),
-    "availability.js": (
-        '.add-availability',
-        '.remove-availability',
-        'addEventListener("click"',
-    ),
+    "experience-profiles.js": ('.add-experience', '.remove-experience', 'addEventListener("click"'),
+    "availability.js": ('.add-availability', '.remove-availability', 'addEventListener("click"'),
     "forms.js": ('.prototype-form', 'addEventListener("submit"', 'ddd:save-success'),
     "form-pilot.js": ('player.save', 'gm.save', 'venue.save', 'game.save'),
+    "production-config.js": ('apiBaseUrl', 'supabaseUrl', 'supabasePublishableKey'),
+    "production-session-store.js": ('sessionStorage', 'localStorage.removeItem', 'DDDProductionSessionStore'),
     "production-auth.js": (
+        'DDDProductionConfig',
+        'DDDProductionSessionStore',
         'token?grant_type=password',
         'token?grant_type=refresh_token',
         'DDDProductionAPI.configure',
-        'ddd-production-auth-session',
     ),
     "production-onboarding.js": (
-        'ddd-auth-form',
-        'DDDProductionAuth.signIn',
+        'DDDProductionOnboardingAdapters',
+        'ProductionAuthRequiredError',
         'putPlayerOnboarding',
         'putGMOnboarding',
     ),
     "create-game.js": ('ddd:save-success', '#player-seats', '#min-players'),
-    "table-match-ui.js": (
-        '#table-match-form',
-        'addEventListener("click"',
-        'Start Forming This Table',
-    ),
-    "recurring-match.js": (
-        '#recurring-match-form',
-        'data-series-action',
-        '.form-series-button',
-    ),
-    "form-series.js": (
-        '#series-form',
-        'addEventListener("submit"',
-        'series-commitments.html',
-    ),
-    "series-commitments.js": (
-        '#add-player-request',
-        'data-request-action',
-        'data-venue-action',
-        'data-remove-core',
-    ),
-    "shared-lifecycle-view.js": (
-        'actionButton',
-        'addEventListener("click"',
-        'Open Game Hub',
-    ),
-    "shared-lifecycle.js": (
-        '#shared-lifecycle-role',
-        'addEventListener("change"',
-        'gmManage',
-        'venueManage',
-        'playerCancel',
-    ),
+    "table-match-ui.js": ('#table-match-form', 'addEventListener("click"', 'Start Forming This Table'),
+    "recurring-match.js": ('#recurring-match-form', 'data-series-action', '.form-series-button'),
+    "form-series.js": ('#series-form', 'addEventListener("submit"', 'series-commitments.html'),
+    "series-commitments.js": ('#add-player-request', 'data-request-action', 'data-venue-action', 'data-remove-core'),
+    "shared-lifecycle-view.js": ('actionButton', 'addEventListener("click"', 'Open Game Hub'),
+    "shared-lifecycle.js": ('#shared-lifecycle-role', 'addEventListener("change"', 'gmManage', 'venueManage', 'playerCancel'),
     "table-lifecycle.js": (
         'game-hub-link',
         'toggle-venue',
@@ -210,43 +182,32 @@ SOURCE_WIRING: dict[str, tuple[str, ...]] = {
         'complete-game',
         'reset-lifecycle',
     ),
-    "game-hub-core.js": (
-        'DDDGameHubRuntime',
-        'hub-status',
-        'handleApiError',
-        'addEventListener("click"',
-    ),
-    "game-hub-messages.js": (
-        'addEventListener("submit"',
-        'postHubMessage',
-        'DDDGameHubMessages',
-    ),
-    "game-hub-actions.js": (
-        'DDDGameHubActions',
-        'getGameHubs',
-        'getGameHub',
-        'decideVenueBooking',
-    ),
-    "game-hub-role-views.js": (
-        'venue-question-form',
-        'cancel-seat',
-        'mutateRegistration',
-        'mutateBooking',
-    ),
-    "game-hub-render.js": (
-        'hub-role-button',
-        'addEventListener("click"',
-        'DDDGameHubMessages.renderChannels',
-    ),
+    "game-hub-core.js": ('DDDGameHubRuntime', 'hub-status', 'handleApiError', 'addEventListener("click"'),
+    "game-hub-messages.js": ('addEventListener("submit"', 'postHubMessage', 'DDDGameHubMessages'),
+    "game-hub-actions.js": ('DDDGameHubActions', 'getGameHubs', 'getGameHub', 'decideVenueBooking'),
+    "game-hub-role-views.js": ('venue-question-form', 'cancel-seat', 'mutateRegistration', 'mutateBooking'),
+    "game-hub-render.js": ('hub-role-button', 'addEventListener("click"', 'DDDGameHubMessages.renderChannels'),
     "game-hub.js": ('DDDGameHubActions.initialize',),
     "venue-feedback.js": ('#venue-feedback-form', 'addEventListener("submit"'),
     "shared-registration.js": ('game.join', 'game.cancel_registration'),
-    "shared-games.js": (
-        'DDDSharedRegistration.request',
-        'DDDSharedRegistration.cancel',
-        'addEventListener("click"',
-    ),
+    "shared-games.js": ('DDDSharedRegistration.request', 'DDDSharedRegistration.cancel', 'addEventListener("click"'),
 }
+
+SECURITY_SINK_FREE_SCRIPTS = (
+    "production-config.js",
+    "production-session-store.js",
+    "production-auth.js",
+    "production-api-client.js",
+    "production-onboarding.js",
+    "global-auth-ui.js",
+    "game-hub-core.js",
+    "game-hub-messages.js",
+    "game-hub-actions.js",
+    "game-hub-role-views.js",
+    "game-hub-render.js",
+    "game-hub.js",
+)
+BANNED_SECURITY_SINKS = ("innerHTML", "insertAdjacentHTML", "eval(", "new Function(")
 
 
 def check_page_dependencies(page: Path, parser: InteractionParser) -> list[str]:
@@ -256,9 +217,7 @@ def check_page_dependencies(page: Path, parser: InteractionParser) -> list[str]:
     loaded = set(parser.scripts)
     for script in required:
         if script not in loaded:
-            errors.append(
-                f"{relative}: interactive controls require {script}, but the page does not load it"
-            )
+            errors.append(f"{relative}: interactive controls require {script}, but the page does not load it")
     return errors
 
 
@@ -272,9 +231,17 @@ def check_source_wiring() -> list[str]:
         text = script_text(path)
         for snippet in snippets:
             if snippet not in text:
-                errors.append(
-                    f"{path}: expected interaction wiring snippet is missing: {snippet}"
-                )
+                errors.append(f"{path}: expected interaction wiring snippet is missing: {snippet}")
+    return errors
+
+
+def check_security_sinks() -> list[str]:
+    errors: list[str] = []
+    for path in SECURITY_SINK_FREE_SCRIPTS:
+        text = script_text(path)
+        for sink in BANNED_SECURITY_SINKS:
+            if sink in text:
+                errors.append(f"{path}: security-critical browser module contains banned DOM/code sink {sink!r}")
     return errors
 
 
@@ -288,7 +255,6 @@ def main() -> int:
             "test-results",
             ".lighthouseci",
         }
-
         pages = sorted(
             page
             for page in ROOT.rglob("*.html")
@@ -306,22 +272,23 @@ def main() -> int:
             errors.extend(check_page_dependencies(page, parser))
 
         errors.extend(check_source_wiring())
+        errors.extend(check_security_sinks())
 
         if errors:
             for error in errors:
                 LOGGER.error(error)
-            LOGGER.error("Button QA failed with %d issue(s).", len(errors))
+            LOGGER.error("Button/security QA failed with %d issue(s).", len(errors))
             return 1
 
         LOGGER.info(
-            "Button QA passed across %d HTML pages: %d <button> controls and %d button-style links inspected.",
+            "Button/security QA passed across %d HTML pages: %d <button> controls and %d button-style links inspected.",
             len(pages),
             button_count,
             button_link_count,
         )
         return 0
     except Exception:
-        LOGGER.exception("Unexpected button-QA failure")
+        LOGGER.exception("Unexpected button/security-QA failure")
         return 1
 
 
