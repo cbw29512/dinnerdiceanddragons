@@ -20,6 +20,7 @@ from app.models.gm_system_experience import (
 )
 from app.models.match_explanation import MatchCriterionResult, MatchExplanation
 from app.models.matching_signal import SignalStatus
+from app.models.message import Message, MessageChannelType, MessageModerationStatus
 from app.models.player_demand_signal import PlayerDemandSignal
 from app.models.player_profile import PlayerProfile, PreferredGameFormat
 from app.models.player_system_experience import PlayerComfortLevel, PlayerSystemExperience
@@ -62,6 +63,9 @@ __all__ = [
     "GMSystemFormat",
     "MatchCriterionResult",
     "MatchExplanation",
+    "Message",
+    "MessageChannelType",
+    "MessageModerationStatus",
     "MonthlyOrdinal",
     "PlayerAvailabilityWindow",
     "PlayerComfortLevel",
