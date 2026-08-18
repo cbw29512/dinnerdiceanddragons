@@ -25,7 +25,10 @@ from app.services.table_formation_errors import (
     FormationNotFoundError,
     FormationPersistenceError,
 )
-from app.services.table_formation_existing import existing_formation_response
+from app.services.table_formation_existing import (
+    existing_formation_response,
+    recover_existing_formation,
+)
 from app.services.venue_booking_capacity import (
     VenueCapacityConflictError,
     require_booking_capacity,
@@ -96,7 +99,7 @@ def form_table_match(
         raise
     except IntegrityError as exc:
         session.rollback()
-        recovered = _recover_after_race(session, user, table_match_id)
+        recovered = recover_existing_formation(session, user, table_match_id)
         if recovered is not None:
             return recovered
         LOGGER.exception("Table formation unique-key recovery failed")
@@ -134,20 +137,6 @@ def _new_booking(
         ),
         gm_message=payload.gm_message,
     )
-
-
-def _recover_after_race(
-    session: Session,
-    user: User,
-    table_match_id: UUID,
-) -> FormTableMatchResponse | None:
-    match = session.get(TableMatch, table_match_id)
-    if match is None:
-        return None
-    parents = load_formation_parents(session, match)
-    if parents.gm.user_id != user.id:
-        return None
-    return existing_formation_response(session, match)
 
 
 __all__ = ["form_table_match"]
