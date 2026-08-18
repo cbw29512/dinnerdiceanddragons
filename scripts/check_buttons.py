@@ -73,10 +73,21 @@ def check_generic_controls(page: Path, parser: InteractionParser) -> list[str]:
         if kind in {"submit", "reset"} and not button.in_form:
             errors.append(f"{relative}: {kind} button {descriptor!r} is not inside a form")
         if kind == "button":
-            classes = set(button.attrs.get("class", "").split()) - {"button", "primary", "secondary", "interested"}
-            has_identity = bool(button.attrs.get("id") or classes or any(key.startswith("data-") for key in button.attrs))
+            classes = set(button.attrs.get("class", "").split()) - {
+                "button",
+                "primary",
+                "secondary",
+                "interested",
+            }
+            has_identity = bool(
+                button.attrs.get("id")
+                or classes
+                or any(key.startswith("data-") for key in button.attrs)
+            )
             if not has_identity:
-                errors.append(f"{relative}: type=button {descriptor!r} has no id/class/data hook for JavaScript wiring")
+                errors.append(
+                    f"{relative}: type=button {descriptor!r} has no id/class/data hook for JavaScript wiring"
+                )
 
     for link in parser.button_links:
         href = link.get("href", "").strip()
@@ -101,20 +112,46 @@ PAGE_SCRIPT_REQUIREMENTS: dict[str, tuple[str, ...]] = {
     ),
     "venues.html": ("form-pilot.js", "forms.js"),
     "create-game.html": ("form-pilot.js", "forms.js", "create-game.js"),
-    "find-venue.html": ("table-match-profile.js", "table-match-calculator.js", "table-match-ui.js"),
+    "find-venue.html": (
+        "table-match-profile.js",
+        "table-match-calculator.js",
+        "table-match-ui.js",
+    ),
     "recurring-match.html": ("recurring-match.js",),
     "form-series.html": ("form-series.js",),
     "series-commitments.html": ("series-commitments.js",),
-    "table-lifecycle.html": ("shared-lifecycle-data.js", "shared-lifecycle-view.js", "shared-lifecycle.js", "table-lifecycle.js"),
-    "game-hub.html": ("game-hub.js",),
+    "table-lifecycle.html": (
+        "shared-lifecycle-data.js",
+        "shared-lifecycle-view.js",
+        "shared-lifecycle.js",
+        "table-lifecycle.js",
+    ),
+    "game-hub.html": (
+        "production-api-client.js",
+        "production-auth.js",
+        "game-hub-core.js",
+        "game-hub-messages.js",
+        "game-hub-actions.js",
+        "game-hub-role-views.js",
+        "game-hub-render.js",
+        "game-hub.js",
+    ),
     "venue-feedback.html": ("venue-feedback.js",),
 }
 
 
 SOURCE_WIRING: dict[str, tuple[str, ...]] = {
     "dashboard.js": ('.role-btn', 'addEventListener("click"', '#role-select'),
-    "experience-profiles.js": ('.add-experience', '.remove-experience', 'addEventListener("click"'),
-    "availability.js": ('.add-availability', '.remove-availability', 'addEventListener("click"'),
+    "experience-profiles.js": (
+        '.add-experience',
+        '.remove-experience',
+        'addEventListener("click"',
+    ),
+    "availability.js": (
+        '.add-availability',
+        '.remove-availability',
+        'addEventListener("click"',
+    ),
     "forms.js": ('.prototype-form', 'addEventListener("submit"', 'ddd:save-success'),
     "form-pilot.js": ('player.save', 'gm.save', 'venue.save', 'game.save'),
     "production-auth.js": (
@@ -130,17 +167,84 @@ SOURCE_WIRING: dict[str, tuple[str, ...]] = {
         'putGMOnboarding',
     ),
     "create-game.js": ('ddd:save-success', '#player-seats', '#min-players'),
-    "table-match-ui.js": ('#table-match-form', 'addEventListener("click"', 'Start Forming This Table'),
-    "recurring-match.js": ('#recurring-match-form', 'data-series-action', '.form-series-button'),
-    "form-series.js": ('#series-form', 'addEventListener("submit"', 'series-commitments.html'),
-    "series-commitments.js": ('#add-player-request', 'data-request-action', 'data-venue-action', 'data-remove-core'),
-    "shared-lifecycle-view.js": ('actionButton', 'addEventListener("click"', 'Open Game Hub'),
-    "shared-lifecycle.js": ('#shared-lifecycle-role', 'addEventListener("change"', 'gmManage', 'venueManage', 'playerCancel'),
-    "table-lifecycle.js": ('game-hub-link', 'toggle-venue', 'add-player', 'cancel-player', 'cancel-gm', 'restore-gm', 'complete-game', 'reset-lifecycle'),
-    "game-hub.js": ('.hub-role', '.quick-message', 'addEventListener("click"', 'addEventListener("submit"'),
+    "table-match-ui.js": (
+        '#table-match-form',
+        'addEventListener("click"',
+        'Start Forming This Table',
+    ),
+    "recurring-match.js": (
+        '#recurring-match-form',
+        'data-series-action',
+        '.form-series-button',
+    ),
+    "form-series.js": (
+        '#series-form',
+        'addEventListener("submit"',
+        'series-commitments.html',
+    ),
+    "series-commitments.js": (
+        '#add-player-request',
+        'data-request-action',
+        'data-venue-action',
+        'data-remove-core',
+    ),
+    "shared-lifecycle-view.js": (
+        'actionButton',
+        'addEventListener("click"',
+        'Open Game Hub',
+    ),
+    "shared-lifecycle.js": (
+        '#shared-lifecycle-role',
+        'addEventListener("change"',
+        'gmManage',
+        'venueManage',
+        'playerCancel',
+    ),
+    "table-lifecycle.js": (
+        'game-hub-link',
+        'toggle-venue',
+        'add-player',
+        'cancel-player',
+        'cancel-gm',
+        'restore-gm',
+        'complete-game',
+        'reset-lifecycle',
+    ),
+    "game-hub-core.js": (
+        'DDDGameHubRuntime',
+        'hub-status',
+        'handleApiError',
+    ),
+    "game-hub-messages.js": (
+        'addEventListener("submit"',
+        'addEventListener("click"',
+        'postHubMessage',
+    ),
+    "game-hub-actions.js": (
+        'DDDGameHubActions',
+        'getGameHubs',
+        'getGameHub',
+        'decideVenueBooking',
+    ),
+    "game-hub-role-views.js": (
+        'venue-question-form',
+        'cancel-seat',
+        'mutateRegistration',
+        'mutateBooking',
+    ),
+    "game-hub-render.js": (
+        'hub-role-button',
+        'addEventListener("click"',
+        'renderMessageChannels',
+    ),
+    "game-hub.js": ('DDDGameHubActions.initialize',),
     "venue-feedback.js": ('#venue-feedback-form', 'addEventListener("submit"'),
     "shared-registration.js": ('game.join', 'game.cancel_registration'),
-    "shared-games.js": ('DDDSharedRegistration.request', 'DDDSharedRegistration.cancel', 'addEventListener("click"'),
+    "shared-games.js": (
+        'DDDSharedRegistration.request',
+        'DDDSharedRegistration.cancel',
+        'addEventListener("click"',
+    ),
 }
 
 
@@ -151,7 +255,9 @@ def check_page_dependencies(page: Path, parser: InteractionParser) -> list[str]:
     loaded = set(parser.scripts)
     for script in required:
         if script not in loaded:
-            errors.append(f"{relative}: interactive controls require {script}, but the page does not load it")
+            errors.append(
+                f"{relative}: interactive controls require {script}, but the page does not load it"
+            )
     return errors
 
 
@@ -165,7 +271,9 @@ def check_source_wiring() -> list[str]:
         text = script_text(path)
         for snippet in snippets:
             if snippet not in text:
-                errors.append(f"{path}: expected interaction wiring snippet is missing: {snippet}")
+                errors.append(
+                    f"{path}: expected interaction wiring snippet is missing: {snippet}"
+                )
     return errors
 
 
