@@ -17,15 +17,19 @@ from app.models.registration import Registration
 from app.models.table_expectations import TableExpectations
 from app.models.table_match import TableMatch
 from app.models.user import AccountStatus, User
-from app.models.venue import Venue
+from app.models.user_role import UserRole, UserRoleType
+from app.models.venue import Venue, VenueManager
 from app.models.venue_booking_request import VenueBookingRequest
 from app.models.venue_table_window import VenueTableWindow
 
 
 @dataclass(frozen=True, slots=True)
 class FormationSeed:
-    """Parent state required to persist one formed Event."""
+    """Parent state required to persist and authorize one formed Event."""
 
+    gm_user: User
+    player_user: User
+    venue_manager_user: User
     gm_profile: GMProfile
     player_profile: PlayerProfile
     system: GameSystem
@@ -49,9 +53,11 @@ def create_formation_session() -> tuple[Session, Engine]:
 
     for table in (
         User.__table__,
+        UserRole.__table__,
         PlayerProfile.__table__,
         GMProfile.__table__,
         Venue.__table__,
+        VenueManager.__table__,
         GameSystem.__table__,
         RecurringAvailabilityRule.__table__,
         GMSupplySignal.__table__,
@@ -69,18 +75,11 @@ def create_formation_session() -> tuple[Session, Engine]:
 
 
 def seed_formation_parents(session: Session) -> FormationSeed:
-    """Persist one compatible GM, Player, Venue, system, and TableMatch."""
+    """Persist one compatible GM, Player, verified Venue Manager, and TableMatch."""
 
-    gm_user = User(
-        auth_provider_user_id="formation-gm",
-        email="formation-gm@example.test",
-        status=AccountStatus.ACTIVE.value,
-    )
-    player_user = User(
-        auth_provider_user_id="formation-player",
-        email="formation-player@example.test",
-        status=AccountStatus.ACTIVE.value,
-    )
+    gm_user = _user("formation-gm", "formation-gm@example.test")
+    player_user = _user("formation-player", "formation-player@example.test")
+    venue_manager_user = _user("formation-venue", "formation-venue@example.test")
     system = GameSystem(name="D&D", edition="5e 2024", slug="dnd-5e-2024")
     venue = Venue(
         name="Formation Test Cafe",
@@ -94,8 +93,21 @@ def seed_formation_parents(session: Session) -> FormationSeed:
         longitude=-79.7626,
         verified=True,
     )
-    session.add_all([gm_user, player_user, system, venue])
+    session.add_all([gm_user, player_user, venue_manager_user, system, venue])
     session.flush()
+    session.add_all(
+        [
+            UserRole(user_id=gm_user.id, role=UserRoleType.GM.value),
+            UserRole(user_id=player_user.id, role=UserRoleType.PLAYER.value),
+            UserRole(user_id=venue_manager_user.id, role=UserRoleType.VENUE_MANAGER.value),
+            VenueManager(
+                venue_id=venue.id,
+                user_id=venue_manager_user.id,
+                role="manager",
+                verified_at=datetime.now(UTC),
+            ),
+        ]
+    )
 
     gm_profile = GMProfile(
         user_id=gm_user.id,
@@ -151,10 +163,21 @@ def seed_formation_parents(session: Session) -> FormationSeed:
     session.commit()
 
     return FormationSeed(
+        gm_user=gm_user,
+        player_user=player_user,
+        venue_manager_user=venue_manager_user,
         gm_profile=gm_profile,
         player_profile=player_profile,
         system=system,
         venue=venue,
         venue_window=venue_window,
         table_match=table_match,
+    )
+
+
+def _user(subject: str, email: str) -> User:
+    return User(
+        auth_provider_user_id=subject,
+        email=email,
+        status=AccountStatus.ACTIVE.value,
     )
