@@ -108,6 +108,8 @@ def test_verified_venue_manager_can_create_and_list_table_window(matching_contex
     assert body["venue_id"] == str(venue_id)
     assert body["table_count"] == 2
     assert body["max_people_per_table"] == 6
+    assert body["special_support_offerings"] == ["loyalty_rewards", "prize_support"]
+    assert "extra loyalty punch" in body["special_support_notes"]
     assert body["active"] is True
     assert "user_id" not in body
 
@@ -117,3 +119,7 @@ def test_verified_venue_manager_can_create_and_list_table_window(matching_contex
     )
     assert listed.status_code == 200
     assert [item["id"] for item in listed.json()] == [body["id"]]
+    assert listed.json()[0]["special_support_offerings"] == [
+        "loyalty_rewards",
+        "prize_support",
+    ]
