@@ -144,7 +144,6 @@ PAGE_SCRIPT_REQUIREMENTS: dict[str, tuple[str, ...]] = {
     "venue-feedback.html": ("venue-feedback.js",),
 }
 
-
 SOURCE_WIRING: dict[str, tuple[str, ...]] = {
     "dashboard.js": ('.role-btn', 'addEventListener("click"', '#role-select'),
     "experience-profiles.js": ('.add-experience', '.remove-experience', 'addEventListener("click"'),
@@ -152,11 +151,7 @@ SOURCE_WIRING: dict[str, tuple[str, ...]] = {
     "forms.js": ('.prototype-form', 'addEventListener("submit"', 'ddd:save-success'),
     "form-pilot.js": ('player.save', 'gm.save', 'venue.save', 'game.save'),
     "production-config.js": ('apiBaseUrl', 'supabaseUrl', 'supabasePublishableKey'),
-    "production-session-store.js": (
-        'sessionStorage',
-        'localStorage.removeItem',
-        'DDDProductionSessionStore',
-    ),
+    "production-session-store.js": ('sessionStorage', 'localStorage.removeItem', 'DDDProductionSessionStore'),
     "production-auth.js": (
         'DDDProductionConfig',
         'DDDProductionSessionStore',
@@ -165,8 +160,8 @@ SOURCE_WIRING: dict[str, tuple[str, ...]] = {
         'DDDProductionAPI.configure',
     ),
     "production-onboarding.js": (
-        'ddd-auth-form',
-        'DDDProductionAuth.signIn',
+        'DDDProductionOnboardingAdapters',
+        'ProductionAuthRequiredError',
         'putPlayerOnboarding',
         'putGMOnboarding',
     ),
@@ -174,20 +169,9 @@ SOURCE_WIRING: dict[str, tuple[str, ...]] = {
     "table-match-ui.js": ('#table-match-form', 'addEventListener("click"', 'Start Forming This Table'),
     "recurring-match.js": ('#recurring-match-form', 'data-series-action', '.form-series-button'),
     "form-series.js": ('#series-form', 'addEventListener("submit"', 'series-commitments.html'),
-    "series-commitments.js": (
-        '#add-player-request',
-        'data-request-action',
-        'data-venue-action',
-        'data-remove-core',
-    ),
+    "series-commitments.js": ('#add-player-request', 'data-request-action', 'data-venue-action', 'data-remove-core'),
     "shared-lifecycle-view.js": ('actionButton', 'addEventListener("click"', 'Open Game Hub'),
-    "shared-lifecycle.js": (
-        '#shared-lifecycle-role',
-        'addEventListener("change"',
-        'gmManage',
-        'venueManage',
-        'playerCancel',
-    ),
+    "shared-lifecycle.js": ('#shared-lifecycle-role', 'addEventListener("change"', 'gmManage', 'venueManage', 'playerCancel'),
     "table-lifecycle.js": (
         'game-hub-link',
         'toggle-venue',
@@ -209,6 +193,22 @@ SOURCE_WIRING: dict[str, tuple[str, ...]] = {
     "shared-games.js": ('DDDSharedRegistration.request', 'DDDSharedRegistration.cancel', 'addEventListener("click"'),
 }
 
+SECURITY_SINK_FREE_SCRIPTS = (
+    "production-config.js",
+    "production-session-store.js",
+    "production-auth.js",
+    "production-api-client.js",
+    "production-onboarding.js",
+    "global-auth-ui.js",
+    "game-hub-core.js",
+    "game-hub-messages.js",
+    "game-hub-actions.js",
+    "game-hub-role-views.js",
+    "game-hub-render.js",
+    "game-hub.js",
+)
+BANNED_SECURITY_SINKS = ("innerHTML", "insertAdjacentHTML", "eval(", "new Function(")
+
 
 def check_page_dependencies(page: Path, parser: InteractionParser) -> list[str]:
     errors: list[str] = []
@@ -217,9 +217,7 @@ def check_page_dependencies(page: Path, parser: InteractionParser) -> list[str]:
     loaded = set(parser.scripts)
     for script in required:
         if script not in loaded:
-            errors.append(
-                f"{relative}: interactive controls require {script}, but the page does not load it"
-            )
+            errors.append(f"{relative}: interactive controls require {script}, but the page does not load it")
     return errors
 
 
@@ -234,6 +232,16 @@ def check_source_wiring() -> list[str]:
         for snippet in snippets:
             if snippet not in text:
                 errors.append(f"{path}: expected interaction wiring snippet is missing: {snippet}")
+    return errors
+
+
+def check_security_sinks() -> list[str]:
+    errors: list[str] = []
+    for path in SECURITY_SINK_FREE_SCRIPTS:
+        text = script_text(path)
+        for sink in BANNED_SECURITY_SINKS:
+            if sink in text:
+                errors.append(f"{path}: security-critical browser module contains banned DOM/code sink {sink!r}")
     return errors
 
 
@@ -264,22 +272,23 @@ def main() -> int:
             errors.extend(check_page_dependencies(page, parser))
 
         errors.extend(check_source_wiring())
+        errors.extend(check_security_sinks())
 
         if errors:
             for error in errors:
                 LOGGER.error(error)
-            LOGGER.error("Button QA failed with %d issue(s).", len(errors))
+            LOGGER.error("Button/security QA failed with %d issue(s).", len(errors))
             return 1
 
         LOGGER.info(
-            "Button QA passed across %d HTML pages: %d <button> controls and %d button-style links inspected.",
+            "Button/security QA passed across %d HTML pages: %d <button> controls and %d button-style links inspected.",
             len(pages),
             button_count,
             button_link_count,
         )
         return 0
     except Exception:
-        LOGGER.exception("Unexpected button-QA failure")
+        LOGGER.exception("Unexpected button/security-QA failure")
         return 1
 
 
