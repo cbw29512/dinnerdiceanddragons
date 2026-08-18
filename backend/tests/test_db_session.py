@@ -11,7 +11,26 @@ def make_settings(database_url: str) -> Settings:
     return Settings(
         _env_file=None,
         database_url=SecretStr(database_url),
+        db_connect_timeout_seconds=7,
+        db_statement_timeout_ms=22_000,
+        db_lock_timeout_ms=4_000,
+        db_idle_transaction_timeout_ms=12_000,
+        db_pool_size=4,
+        db_max_overflow=3,
+        db_pool_timeout_seconds=6,
+        db_pool_recycle_seconds=240,
     )
+
+
+def expected_connect_args() -> dict[str, object]:
+    return {
+        "connect_timeout": 7,
+        "options": (
+            "-c statement_timeout=22000 "
+            "-c lock_timeout=4000 "
+            "-c idle_in_transaction_session_timeout=12000"
+        ),
+    }
 
 
 def test_build_engine_uses_postgresql_psycopg_without_connecting() -> None:
@@ -33,27 +52,39 @@ def test_supabase_transaction_pooler_uses_serverless_safe_options() -> None:
         "postgresql+psycopg://postgres.project-ref:secret@"
         "aws-0-us-east-1.pooler.supabase.com:6543/postgres"
     )
+    settings = make_settings(database_url)
 
-    options = _engine_options(database_url)
-    engine = build_engine(make_settings(database_url))
+    options = _engine_options(database_url, settings)
+    engine = build_engine(settings)
 
     try:
         assert options["poolclass"] is NullPool
-        assert options["connect_args"] == {"prepare_threshold": None}
+        assert options["connect_args"] == {
+            **expected_connect_args(),
+            "prepare_threshold": None,
+        }
         assert isinstance(engine.pool, NullPool)
     finally:
         engine.dispose()
 
 
-def test_session_pooler_keeps_standard_engine_pooling() -> None:
+def test_non_transaction_pooler_uses_bounded_engine_pooling() -> None:
     database_url = (
         "postgresql+psycopg://postgres.project-ref:secret@"
         "aws-0-us-east-1.pooler.supabase.com:5432/postgres"
     )
+    settings = make_settings(database_url)
 
-    options = _engine_options(database_url)
+    options = _engine_options(database_url, settings)
 
-    assert options == {"pool_pre_ping": True}
+    assert options == {
+        "pool_pre_ping": True,
+        "pool_size": 4,
+        "max_overflow": 3,
+        "pool_timeout": 6,
+        "pool_recycle": 240,
+        "connect_args": expected_connect_args(),
+    }
 
 
 def test_session_factory_can_bind_to_lazy_engine() -> None:
