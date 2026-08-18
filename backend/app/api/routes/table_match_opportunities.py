@@ -20,7 +20,10 @@ from app.schemas.table_match_opportunities import (
     TableMatchRunResponse,
 )
 from app.services.api_rate_limit_policy import RateLimitScope
-from app.services.table_match_engine_policy import TableMatchHorizonError
+from app.services.table_match_engine_policy import (
+    TableMatchCapacityError,
+    TableMatchHorizonError,
+)
 from app.services.table_match_opportunity_reads import (
     TableMatchOpportunityNotFoundError,
     TableMatchOpportunityReadError,
@@ -73,6 +76,12 @@ def post_matching_run(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
+        ) from exc
+    except TableMatchCapacityError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Matching candidate volume exceeds the safe synchronous processing budget.",
+            headers={"Retry-After": "300"},
         ) from exc
     except HTTPException:
         raise
