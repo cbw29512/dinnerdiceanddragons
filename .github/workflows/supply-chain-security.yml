@@ -1,0 +1,79 @@
+name: Supply Chain Security
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/dependabot.yml"
+      - ".github/workflows/**"
+      - "SECURITY.md"
+      - "package.json"
+      - "package-lock.json"
+      - "backend/Dockerfile"
+      - "backend/pyproject.toml"
+      - "scripts/check_supply_chain.py"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/dependabot.yml"
+      - ".github/workflows/**"
+      - "SECURITY.md"
+      - "package.json"
+      - "package-lock.json"
+      - "backend/Dockerfile"
+      - "backend/pyproject.toml"
+      - "scripts/check_supply_chain.py"
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-and-workflow-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+
+      - name: Verify immutable supply-chain inputs
+        run: python scripts/check_supply_chain.py
+
+      - name: Install pinned Python vulnerability auditor
+        run: python -m pip install --disable-pip-version-check --no-cache-dir pip-audit==2.10.1
+
+      - name: Audit production Python dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import tomllib
+
+          pyproject = tomllib.loads(Path('backend/pyproject.toml').read_text(encoding='utf-8'))
+          requirements = [
+              *pyproject['project']['dependencies'],
+              *pyproject['build-system']['requires'],
+          ]
+          Path('/tmp/ddd-production-requirements.txt').write_text(
+              '\n'.join(requirements) + '\n',
+              encoding='utf-8',
+          )
+          PY
+          pip-audit --requirement /tmp/ddd-production-requirements.txt
+
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install locked frontend/QA dependencies
+        run: npm ci
+
+      - name: Audit npm dependency graph
+        run: npm audit --audit-level=high
