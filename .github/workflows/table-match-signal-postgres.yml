@@ -25,6 +25,7 @@ on:
       - "backend/app/services/game_hub_*.py"
       - "backend/app/services/message_cursor.py"
       - "backend/alembic/**"
+      - "backend/scripts/verify_api_rate_limit_schema.sh"
       - "backend/scripts/verify_table_match_signal_schema.sh"
       - "backend/scripts/verify_postal_centroid_schema.sh"
       - "backend/scripts/verify_table_formation_schema.sh"
@@ -65,6 +66,7 @@ on:
       - "backend/app/services/game_hub_*.py"
       - "backend/app/services/message_cursor.py"
       - "backend/alembic/**"
+      - "backend/scripts/verify_api_rate_limit_schema.sh"
       - "backend/scripts/verify_table_match_signal_schema.sh"
       - "backend/scripts/verify_postal_centroid_schema.sh"
       - "backend/scripts/verify_table_formation_schema.sh"
@@ -132,6 +134,9 @@ jobs:
 
       - name: Apply migrations through live Game Hub
         run: docker compose exec -T api alembic -c alembic.ini upgrade head
+
+      - name: Verify distributed API rate-limit persistence in PostgreSQL
+        run: bash backend/scripts/verify_api_rate_limit_schema.sh
 
       - name: Verify Table Match persistence in PostgreSQL
         run: bash backend/scripts/verify_table_match_signal_schema.sh
