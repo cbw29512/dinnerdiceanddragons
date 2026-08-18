@@ -2,12 +2,13 @@
 
 import logging
 
-from sqlalchemy import select
+from sqlalchemy import exists, select
 from sqlalchemy.orm import Session
 
 from app.models.availability_window import PlayerAvailabilityWindow
 from app.models.game_system import GameSystem
 from app.models.matching_signal import SignalStatus
+from app.models.matching_signal_availability import PlayerDemandAvailabilityWindow
 from app.models.player_demand_signal import PlayerDemandSignal
 from app.models.player_profile import PlayerProfile
 from app.models.recurring_availability_rule import RecurringAvailabilityRule
@@ -24,15 +25,32 @@ LOGGER = logging.getLogger(__name__)
 
 
 def load_player_candidates(session: Session) -> list[PlayerCandidate]:
-    """Load active Player candidates without allowing an unbounded result set."""
+    """Load active Player candidates using signal-owned time windows when available."""
 
     try:
-        rows = session.execute(
-            select(PlayerDemandSignal, PlayerProfile, RecurringAvailabilityRule)
-            .join(PlayerProfile, PlayerProfile.id == PlayerDemandSignal.player_profile_id)
-            .join(User, User.id == PlayerProfile.user_id)
-            .join(UserRole, UserRole.user_id == User.id)
-            .join(GameSystem, GameSystem.id == PlayerDemandSignal.game_system_id)
+        specific_rows = session.execute(
+            _base_query()
+            .join(
+                PlayerDemandAvailabilityWindow,
+                PlayerDemandAvailabilityWindow.player_demand_signal_id
+                == PlayerDemandSignal.id,
+            )
+            .join(
+                RecurringAvailabilityRule,
+                RecurringAvailabilityRule.id
+                == PlayerDemandAvailabilityWindow.recurring_rule_id,
+            )
+            .where(
+                PlayerDemandAvailabilityWindow.active.is_(True),
+                RecurringAvailabilityRule.active.is_(True),
+            )
+            .order_by(PlayerDemandSignal.id, RecurringAvailabilityRule.id)
+            .limit(MAX_MATCH_CANDIDATE_ROWS_PER_KIND + 1)
+        ).all()
+
+        # Preserve pre-migration signal behavior until those signals are replaced.
+        legacy_rows = session.execute(
+            _base_query()
             .join(
                 PlayerAvailabilityWindow,
                 PlayerAvailabilityWindow.player_profile_id == PlayerProfile.id,
@@ -42,16 +60,23 @@ def load_player_candidates(session: Session) -> list[PlayerCandidate]:
                 RecurringAvailabilityRule.id == PlayerAvailabilityWindow.recurring_rule_id,
             )
             .where(
-                PlayerDemandSignal.status == SignalStatus.ACTIVE.value,
-                User.status == AccountStatus.ACTIVE.value,
-                UserRole.role == UserRoleType.PLAYER.value,
-                GameSystem.active.is_(True),
+                ~exists(
+                    select(PlayerDemandAvailabilityWindow.id).where(
+                        PlayerDemandAvailabilityWindow.player_demand_signal_id
+                        == PlayerDemandSignal.id
+                    )
+                ),
                 PlayerAvailabilityWindow.active.is_(True),
                 RecurringAvailabilityRule.active.is_(True),
             )
             .order_by(PlayerDemandSignal.id, RecurringAvailabilityRule.id)
             .limit(MAX_MATCH_CANDIDATE_ROWS_PER_KIND + 1)
         ).all()
+
+        rows = sorted(
+            [*specific_rows, *legacy_rows],
+            key=lambda row: (str(row[0].id), str(row[2].id)),
+        )
         bounded_rows = require_bounded_candidate_rows(rows, kind="Player")
         return [
             PlayerCandidate(
@@ -69,6 +94,24 @@ def load_player_candidates(session: Session) -> list[PlayerCandidate]:
     except Exception:
         LOGGER.exception("Failed to load bounded Player match candidates")
         raise
+
+
+def _base_query():
+    """Apply identity/system eligibility once for both availability ownership modes."""
+
+    return (
+        select(PlayerDemandSignal, PlayerProfile, RecurringAvailabilityRule)
+        .join(PlayerProfile, PlayerProfile.id == PlayerDemandSignal.player_profile_id)
+        .join(User, User.id == PlayerProfile.user_id)
+        .join(UserRole, UserRole.user_id == User.id)
+        .join(GameSystem, GameSystem.id == PlayerDemandSignal.game_system_id)
+        .where(
+            PlayerDemandSignal.status == SignalStatus.ACTIVE.value,
+            User.status == AccountStatus.ACTIVE.value,
+            UserRole.role == UserRoleType.PLAYER.value,
+            GameSystem.active.is_(True),
+        )
+    )
 
 
 __all__ = ["load_player_candidates"]
