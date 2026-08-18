@@ -9,8 +9,8 @@ from game_hub_live_test_support import auth, build_hub_client
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.routes.game_hub import router as game_hub_router
 from app.api.rate_limit import enforce_user_rate_limit
+from app.api.routes.game_hub import router as game_hub_router
 from app.models.api_rate_limit_bucket import ApiRateLimitBucket
 from app.models.message import Message
 from app.models.user import AccountStatus, User
