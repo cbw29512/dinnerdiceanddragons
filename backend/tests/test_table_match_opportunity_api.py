@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from table_match_api_test_support import seed_api_matches
 
 from app.api.routes.table_match_opportunities import get_match_runner
+from app.models.table_match import TableMatch, TableMatchStatus
 from app.models.user_role import UserRole, UserRoleType
 from app.services.table_match_persistence_service import PersistedMatchResult
 from app.services.table_match_runner import TableMatchRunResult
@@ -73,6 +74,29 @@ def test_inaccessible_opportunity_returns_non_leaking_404(api_context) -> None:
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Opportunity not found."}
+
+
+def test_expired_match_is_not_returned_as_an_active_opportunity(api_context) -> None:
+    client, factory, shared_id, _, _ = api_context
+    with factory() as session:
+        match = session.get(TableMatch, shared_id)
+        assert match is not None
+        match.status = TableMatchStatus.EXPIRED.value
+        session.commit()
+
+    listing = client.get(
+        "/api/v1/matching/opportunities",
+        headers=_auth("alice-token"),
+    )
+    detail = client.get(
+        f"/api/v1/matching/opportunities/{shared_id}",
+        headers=_auth("alice-token"),
+    )
+
+    assert listing.status_code == 200
+    assert listing.json() == []
+    assert detail.status_code == 404
+    assert detail.json() == {"detail": "Opportunity not found."}
 
 
 def test_player_detail_contains_explanation_and_only_own_match_facts(api_context) -> None:
