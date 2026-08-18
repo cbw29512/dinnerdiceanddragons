@@ -6,7 +6,12 @@ from uuid import uuid4
 from sqlalchemy import select
 
 from app.models.table_match import TableMatch
-from app.services import gm_supply, player_demand, table_match_opportunity_reads, venue_table_windows
+from app.services import (
+    gm_supply,
+    player_demand,
+    table_match_opportunity_reads,
+    venue_table_windows,
+)
 from app.services.query_limits import (
     MAX_MATCH_OPPORTUNITY_LIST_ITEMS,
     MAX_OWNER_MATCHING_SIGNAL_ITEMS,
@@ -63,7 +68,11 @@ def test_gm_supply_history_query_is_bounded(monkeypatch) -> None:
 def test_venue_table_window_query_is_bounded(monkeypatch) -> None:
     session = _CaptureSession()
     user = SimpleNamespace(id=uuid4())
-    monkeypatch.setattr(venue_table_windows, "require_verified_venue_manager", lambda *_args: None)
+    monkeypatch.setattr(
+        venue_table_windows,
+        "require_verified_venue_manager",
+        lambda *_args: None,
+    )
 
     assert venue_table_windows.list_venue_table_windows(  # type: ignore[arg-type]
         session,
@@ -76,7 +85,11 @@ def test_venue_table_window_query_is_bounded(monkeypatch) -> None:
 def test_table_match_opportunity_list_query_is_bounded(monkeypatch) -> None:
     session = _CaptureSession()
     user = SimpleNamespace(id=uuid4())
-    monkeypatch.setattr(table_match_opportunity_reads, "user_roles", lambda *_args: frozenset())
+    monkeypatch.setattr(
+        table_match_opportunity_reads,
+        "user_roles",
+        lambda *_args: frozenset(),
+    )
     monkeypatch.setattr(
         table_match_opportunity_reads,
         "opportunity_query",
