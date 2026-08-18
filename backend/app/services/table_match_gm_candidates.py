@@ -36,8 +36,7 @@ def load_gm_candidates(session: Session) -> list[GMCandidate]:
             )
             .join(
                 RecurringAvailabilityRule,
-                RecurringAvailabilityRule.id
-                == GMSupplyAvailabilityWindow.recurring_rule_id,
+                RecurringAvailabilityRule.id == GMSupplyAvailabilityWindow.recurring_rule_id,
             )
             .where(
                 GMSupplyAvailabilityWindow.active.is_(True),
