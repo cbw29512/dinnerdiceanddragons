@@ -200,6 +200,9 @@ SECURITY_SINK_FREE_SCRIPTS = (
     "production-api-client.js",
     "production-onboarding.js",
     "global-auth-ui.js",
+    "experience-profiles.js",
+    "availability.js",
+    "create-game.js",
     "game-hub-core.js",
     "game-hub-messages.js",
     "game-hub-actions.js",
@@ -218,6 +221,14 @@ def check_page_dependencies(page: Path, parser: InteractionParser) -> list[str]:
     for script in required:
         if script not in loaded:
             errors.append(f"{relative}: interactive controls require {script}, but the page does not load it")
+
+    if all(script in parser.scripts for script in AUTH_SCRIPT_REQUIREMENTS):
+        positions = [parser.scripts.index(script) for script in AUTH_SCRIPT_REQUIREMENTS]
+        if positions != sorted(positions):
+            errors.append(
+                f"{relative}: production auth scripts must load in order: "
+                + " -> ".join(AUTH_SCRIPT_REQUIREMENTS)
+            )
     return errors
 
 
