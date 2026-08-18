@@ -50,6 +50,35 @@ Do not rename or replace Event solely for terminology consistency. Introduce a n
 
 Venue booking/approval remains authoritative for a scheduled Event and must continue enforcing Venue capacity.
 
+## Venue value is broader than food
+
+A Venue's marketplace value must never be reduced to food service, restaurant spend, or a purchase requirement.
+
+A Venue may add value through any combination of:
+
+- consistent recurring space;
+- dedicated RPG/tabletop areas;
+- private rooms;
+- food, snacks, and/or beverages;
+- discounts;
+- loyalty or punch-card rewards;
+- prize support;
+- store credit or gift-card-style rewards;
+- tabletop supplies;
+- terrain or miniatures;
+- storage;
+- event promotion;
+- staff support;
+- another Venue-defined benefit.
+
+Production Venue onboarding therefore includes structured `host_support_offerings` plus free-form `host_support_notes`.
+
+A recurring `VenueTableWindow` may additionally define `special_support_offerings` and `special_support_notes` for incentives or services that apply only to that RPG night/window.
+
+Examples include a game store providing a stable weekly table and allowing a GM to earn loyalty punches redeemable for prizes. That Venue is fully valuable even if it offers only snacks/drinks rather than restaurant meals.
+
+`purchase_policy` remains optional operational information. It is **not** a measure of Venue quality and is not required for a Venue to participate.
+
 ## New persistent aggregate
 
 ### `GameTable`
