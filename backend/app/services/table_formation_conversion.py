@@ -29,6 +29,7 @@ from app.services.table_formation_existing import (
     existing_formation_response,
     recover_existing_formation,
 )
+from app.services.table_formation_validation import validate_new_formation
 from app.services.venue_booking_capacity import (
     VenueCapacityConflictError,
     require_booking_capacity,
@@ -56,11 +57,16 @@ def form_table_match(
         if parents.gm.user_id != user.id:
             raise FormationForbiddenError("Only the matched GM can form this table.")
 
+        # Idempotent retries return the already-created formation even if source
+        # eligibility later changes. Current-state validation applies only when
+        # creating new formation state.
         existing = existing_formation_response(session, match)
         if existing is not None:
             return existing
         if match.status != TableMatchStatus.POTENTIAL.value:
             raise FormationConflictError("Table Match is no longer available for formation.")
+
+        validate_new_formation(session, user=user, match=match)
 
         series = build_game_series(match, parents, payload)
         if series is not None:

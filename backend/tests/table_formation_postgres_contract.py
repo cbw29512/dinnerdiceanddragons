@@ -19,6 +19,7 @@ from app.models.registration import Registration
 from app.models.table_match import TableMatch
 from app.models.table_match_player import TableMatchPlayer
 from app.models.user import AccountStatus, User
+from app.models.user_role import UserRole, UserRoleType
 from app.models.venue import Venue, VenueManager
 from app.models.venue_booking_request import VenueBookingRequest
 from app.models.venue_table_window import VenueTableWindow
@@ -46,7 +47,9 @@ def main() -> None:
 
 def seed_contract(factory) -> ContractSeed:
     with factory() as session:
-        system = session.scalar(select(GameSystem).where(GameSystem.slug == "dnd-5e-2014"))
+        system = session.scalar(
+            select(GameSystem).where(GameSystem.slug == "dnd-5e-2014")
+        )
         if system is None:
             raise RuntimeError("Seeded D&D game system is missing.")
         gm_user = _user("formation-contract-gm")
@@ -65,6 +68,15 @@ def seed_contract(factory) -> ContractSeed:
         rule = _rule()
         session.add_all([gm_user, venue, rule])
         session.flush()
+        session.add_all(
+            [
+                UserRole(user_id=gm_user.id, role=UserRoleType.GM.value),
+                UserRole(
+                    user_id=gm_user.id,
+                    role=UserRoleType.VENUE_MANAGER.value,
+                ),
+            ]
+        )
         gm = GMProfile(
             user_id=gm_user.id,
             postal_code="29501",
@@ -104,7 +116,12 @@ def seed_contract(factory) -> ContractSeed:
             user = _user(f"formation-contract-player-{index}")
             session.add(user)
             session.flush()
-            profile = PlayerProfile(user_id=user.id, postal_code="29501", travel_radius_miles=25)
+            session.add(UserRole(user_id=user.id, role=UserRoleType.PLAYER.value))
+            profile = PlayerProfile(
+                user_id=user.id,
+                postal_code="29501",
+                travel_radius_miles=25,
+            )
             session.add(profile)
             session.flush()
             demand = PlayerDemandSignal(
@@ -121,8 +138,8 @@ def seed_contract(factory) -> ContractSeed:
             gm_supply_signal_id=supply.id,
             venue_table_window_id=window.id,
             game_system_id=system.id,
-            proposed_start=datetime(2026, 8, 21, 18, tzinfo=UTC),
-            proposed_end=datetime(2026, 8, 21, 20, tzinfo=UTC),
+            proposed_start=datetime(2030, 8, 23, 18, tzinfo=UTC),
+            proposed_end=datetime(2030, 8, 23, 20, tzinfo=UTC),
             timezone="UTC",
             minimum_players=1,
             maximum_players=1,
@@ -160,8 +177,8 @@ def seed_contract(factory) -> ContractSeed:
                 system,
                 venue,
                 slug=f"formation-contract-booking-{index}",
-                starts_at=datetime(2026, 8, 21, 22, tzinfo=UTC),
-                ends_at=datetime(2026, 8, 22, 1, tzinfo=UTC),
+                starts_at=datetime(2030, 8, 23, 22, tzinfo=UTC),
+                ends_at=datetime(2030, 8, 24, 1, tzinfo=UTC),
                 table_match_id=None,
                 join_mode="request_to_join",
             )
@@ -169,7 +186,9 @@ def seed_contract(factory) -> ContractSeed:
         ]
         session.add_all(race_events)
         session.flush()
-        race_bookings = [_booking(window, gm, event, status="requested") for event in race_events]
+        race_bookings = [
+            _booking(window, gm, event, status="requested") for event in race_events
+        ]
         session.add_all(race_bookings)
         session.commit()
         return ContractSeed(
@@ -201,7 +220,9 @@ def verify_final_seat_serialization(factory, seed: ContractSeed) -> None:
             with lock:
                 errors.append(exc)
 
-    threads = [Thread(target=worker, args=(user_id,)) for user_id in seed.player_user_ids]
+    threads = [
+        Thread(target=worker, args=(user_id,)) for user_id in seed.player_user_ids
+    ]
     for thread in threads:
         thread.start()
     for thread in threads:
@@ -209,7 +230,9 @@ def verify_final_seat_serialization(factory, seed: ContractSeed) -> None:
     if errors:
         raise RuntimeError(f"Concurrent seat request failed: {errors!r}")
     if sorted(statuses) != ["confirmed", "waitlisted"]:
-        raise RuntimeError(f"Expected one confirmed and one waitlisted seat, got {statuses!r}")
+        raise RuntimeError(
+            f"Expected one confirmed and one waitlisted seat, got {statuses!r}"
+        )
 
     with factory() as session:
         registrations = session.scalars(
@@ -219,7 +242,9 @@ def verify_final_seat_serialization(factory, seed: ContractSeed) -> None:
         booking = session.get(VenueBookingRequest, seed.seat_booking_id)
         event = session.get(Event, seed.seat_event_id)
         if confirmed != 1 or booking is None or booking.expected_guests != 2:
-            raise RuntimeError("Final-seat transaction overbooked or miscounted headcount.")
+            raise RuntimeError(
+                "Final-seat transaction overbooked or miscounted headcount."
+            )
         if event is None or event.status != "full":
             raise RuntimeError("Final-seat transaction did not mark Event full.")
 
@@ -248,7 +273,9 @@ def verify_venue_approval_serialization(factory, seed: ContractSeed) -> None:
             with lock:
                 errors.append(exc)
 
-    threads = [Thread(target=worker, args=(booking_id,)) for booking_id in seed.booking_ids]
+    threads = [
+        Thread(target=worker, args=(booking_id,)) for booking_id in seed.booking_ids
+    ]
     for thread in threads:
         thread.start()
     for thread in threads:
@@ -256,12 +283,19 @@ def verify_venue_approval_serialization(factory, seed: ContractSeed) -> None:
     if errors:
         raise RuntimeError(f"Concurrent Venue approval failed: {errors!r}")
     if sorted(outcomes) != ["approved", "capacity_conflict"]:
-        raise RuntimeError(f"Expected one approval and one capacity conflict, got {outcomes!r}")
+        raise RuntimeError(
+            f"Expected one approval and one capacity conflict, got {outcomes!r}"
+        )
 
     with factory() as session:
-        statuses = [session.get(VenueBookingRequest, booking_id).status for booking_id in seed.booking_ids]
+        statuses = [
+            session.get(VenueBookingRequest, booking_id).status
+            for booking_id in seed.booking_ids
+        ]
         if statuses.count("approved") != 1:
-            raise RuntimeError(f"Venue capacity race approved {statuses.count('approved')} bookings.")
+            raise RuntimeError(
+                f"Venue capacity race approved {statuses.count('approved')} bookings."
+            )
 
 
 def _user(name: str) -> User:

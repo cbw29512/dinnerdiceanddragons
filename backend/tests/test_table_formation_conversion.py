@@ -43,9 +43,7 @@ def test_multi_session_conversion_creates_one_series_and_is_idempotent() -> None
         assert first.venue_booking_request_id == second.venue_booking_request_id
         assert session.scalar(select(func.count()).select_from(GameSeries)) == 1
         assert session.scalar(select(func.count()).select_from(Event)) == 1
-        assert (
-            session.scalar(select(func.count()).select_from(VenueBookingRequest)) == 1
-        )
+        assert session.scalar(select(func.count()).select_from(VenueBookingRequest)) == 1
     finally:
         session.close()
         engine.dispose()

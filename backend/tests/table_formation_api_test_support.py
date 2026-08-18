@@ -99,8 +99,8 @@ def seed_formation_api_match(factory: sessionmaker[Session]) -> TableMatch:
             gm_supply_signal_id=supply.id,
             venue_table_window_id=window.id,
             game_system_id=system.id,
-            proposed_start=datetime(2026, 8, 21, 22, 0, tzinfo=UTC),
-            proposed_end=datetime(2026, 8, 22, 2, 0, tzinfo=UTC),
+            proposed_start=datetime(2030, 8, 23, 22, 0, tzinfo=UTC),
+            proposed_end=datetime(2030, 8, 24, 2, 0, tzinfo=UTC),
             timezone="America/New_York",
             minimum_players=1,
             maximum_players=1,
@@ -115,8 +115,8 @@ def seed_formation_api_match(factory: sessionmaker[Session]) -> TableMatch:
                 fit_flags=["system", "schedule", "distance"],
                 distance_miles=5.25,
                 availability_overlap={
-                    "start": "2026-08-21T18:00:00-04:00",
-                    "end": "2026-08-21T22:00:00-04:00",
+                    "start": "2030-08-23T18:00:00-04:00",
+                    "end": "2030-08-23T22:00:00-04:00",
                 },
             )
         )

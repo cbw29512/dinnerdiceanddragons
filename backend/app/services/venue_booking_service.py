@@ -64,6 +64,10 @@ def decide_venue_booking(
                 {VenueBookingStatus.REQUESTED.value, VenueBookingStatus.QUESTION.value},
                 "approved",
             )
+            if event.max_players + 1 > window.max_people_per_table:
+                raise VenueBookingConflictError(
+                    "Venue table capacity no longer supports the Event headcount."
+                )
             require_booking_capacity(session, booking, window)
             booking.status = VenueBookingStatus.APPROVED.value
         elif action == "question":
@@ -113,7 +117,9 @@ def decide_venue_booking(
     except SQLAlchemyError as exc:
         session.rollback()
         LOGGER.exception("Venue booking decision failed")
-        raise VenueBookingPersistenceError("Venue booking decision could not be persisted.") from exc
+        raise VenueBookingPersistenceError(
+            "Venue booking decision could not be persisted."
+        ) from exc
 
 
 def _require_transition(current: str, allowed: set[str], label: str) -> None:

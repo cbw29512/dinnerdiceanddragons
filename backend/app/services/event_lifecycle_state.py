@@ -48,6 +48,9 @@ def synchronize_event_state(
 ) -> int:
     """Update headcount and Event lifecycle from authoritative persisted state."""
 
+    # Production sessions intentionally use autoflush=False. Lifecycle state must
+    # therefore flush pending registration mutations before issuing count queries.
+    session.flush()
     booking = booking or booking_for_event(session, event.id)
     confirmed = confirmed_registration_count(session, event.id)
     booking.expected_guests = 1 + confirmed

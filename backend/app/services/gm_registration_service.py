@@ -10,11 +10,14 @@ from sqlalchemy.orm import Session
 from app.models.registration import RegistrationStatus
 from app.models.user import User
 from app.schemas.event_lifecycle import RegistrationResponse
-from app.services.event_access import load_event, require_gm_owner
+from app.services.event_access import EventForbiddenError, load_event, require_gm_owner
 from app.services.event_lifecycle_state import (
     booking_for_event,
     confirmed_registration_count,
     synchronize_event_state,
+)
+from app.services.event_participant_eligibility import (
+    player_profile_is_currently_eligible,
 )
 from app.services.registration_common import (
     RegistrationConflictError,
@@ -59,6 +62,14 @@ def decide_registration(
                 raise RegistrationConflictError(
                     "Closed registration cannot be confirmed."
                 )
+            if not player_profile_is_currently_eligible(
+                session,
+                table_match_id=event.table_match_id,
+                player_profile_id=registration.player_profile_id,
+            ):
+                raise RegistrationConflictError(
+                    "Player is no longer eligible for this matched table."
+                )
             if confirmed_registration_count(session, event.id) >= event.max_players:
                 raise RegistrationConflictError("No confirmed Player seat remains.")
             registration.status = RegistrationStatus.CONFIRMED.value
@@ -96,7 +107,7 @@ def decide_registration(
         synchronize_event_state(session, event, booking)
         session.commit()
         return registration_response(registration)
-    except RegistrationConflictError:
+    except (EventForbiddenError, RegistrationConflictError):
         session.rollback()
         raise
     except SQLAlchemyError as exc:

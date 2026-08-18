@@ -18,6 +18,7 @@ from app.models.registration import Registration
 from app.models.table_match import TableMatch
 from app.models.table_match_player import TableMatchPlayer
 from app.models.user import AccountStatus, User
+from app.models.user_role import UserRole, UserRoleType
 from app.models.venue import Venue
 from app.models.venue_booking_request import VenueBookingRequest
 from app.models.venue_table_window import VenueTableWindow
@@ -27,13 +28,18 @@ from app.models.venue_table_window import VenueTableWindow
 class LifecycleSeed:
     event_id: object
     booking_id: object
+    match_id: object
+    gm_user: User
     player_users: tuple[User, ...]
+    player_profiles: tuple[PlayerProfile, ...]
+    player_demands: tuple[PlayerDemandSignal, ...]
 
 
 def build_lifecycle_factory(*, player_count: int = 2) -> tuple[sessionmaker[Session], LifecycleSeed]:
     engine = create_engine("sqlite+pysqlite:///:memory:", poolclass=StaticPool)
     for table in (
         User.__table__,
+        UserRole.__table__,
         PlayerProfile.__table__,
         GMProfile.__table__,
         Venue.__table__,
@@ -49,7 +55,12 @@ def build_lifecycle_factory(*, player_count: int = 2) -> tuple[sessionmaker[Sess
         VenueBookingRequest.__table__,
     ):
         table.create(engine)
-    factory = sessionmaker(bind=engine, class_=Session, expire_on_commit=False)
+    factory = sessionmaker(
+        bind=engine,
+        class_=Session,
+        autoflush=False,
+        expire_on_commit=False,
+    )
     with factory() as session:
         seed = _seed(session, player_count)
         session.commit()
@@ -81,6 +92,7 @@ def _seed(session: Session, player_count: int) -> LifecycleSeed:
     )
     session.add_all([system, gm_user, venue, rule])
     session.flush()
+    session.add(UserRole(user_id=gm_user.id, role=UserRoleType.GM.value))
     gm = GMProfile(
         user_id=gm_user.id,
         postal_code="29501",
@@ -120,10 +132,13 @@ def _seed(session: Session, player_count: int) -> LifecycleSeed:
     session.flush()
 
     player_users: list[User] = []
+    player_profiles: list[PlayerProfile] = []
+    player_demands: list[PlayerDemandSignal] = []
     for index in range(player_count):
         user = _user(f"player-{index}")
         session.add(user)
         session.flush()
+        session.add(UserRole(user_id=user.id, role=UserRoleType.PLAYER.value))
         profile = PlayerProfile(user_id=user.id, postal_code="29501", travel_radius_miles=25)
         session.add(profile)
         session.flush()
@@ -142,6 +157,8 @@ def _seed(session: Session, player_count: int) -> LifecycleSeed:
             )
         )
         player_users.append(user)
+        player_profiles.append(profile)
+        player_demands.append(demand)
 
     event = Event(
         table_match_id=match.id,
@@ -174,7 +191,15 @@ def _seed(session: Session, player_count: int) -> LifecycleSeed:
     )
     session.add(booking)
     session.flush()
-    return LifecycleSeed(event_id=event.id, booking_id=booking.id, player_users=tuple(player_users))
+    return LifecycleSeed(
+        event_id=event.id,
+        booking_id=booking.id,
+        match_id=match.id,
+        gm_user=gm_user,
+        player_users=tuple(player_users),
+        player_profiles=tuple(player_profiles),
+        player_demands=tuple(player_demands),
+    )
 
 
 def _user(name: str) -> User:

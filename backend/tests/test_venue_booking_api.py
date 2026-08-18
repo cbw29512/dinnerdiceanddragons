@@ -4,6 +4,9 @@ import pytest
 from onboarding_test_support import build_onboarding_client
 from table_formation_api_test_support import seed_formation_api_match
 
+from app.models.venue_booking_request import VenueBookingRequest
+from app.models.venue_table_window import VenueTableWindow
+
 
 @pytest.fixture()
 def booking_api():
@@ -19,7 +22,12 @@ def booking_api():
             json=_formation_payload(),
         )
         assert formed.status_code == 200, formed.text
-        yield client, formed.json()["event_id"], formed.json()["venue_booking_request_id"]
+        yield (
+            client,
+            factory,
+            formed.json()["event_id"],
+            formed.json()["venue_booking_request_id"],
+        )
     finally:
         client.close()
         engine.dispose()
@@ -44,7 +52,7 @@ def _formation_payload() -> dict:
 
 
 def test_venue_question_keeps_event_waiting_for_approval(booking_api) -> None:
-    client, event_id, booking_id = booking_api
+    client, _, event_id, booking_id = booking_api
 
     response = client.patch(
         f"/api/v1/venue-bookings/{booking_id}",
@@ -61,7 +69,7 @@ def test_venue_question_keeps_event_waiting_for_approval(booking_api) -> None:
 
 
 def test_venue_decline_cancels_event(booking_api) -> None:
-    client, event_id, booking_id = booking_api
+    client, _, event_id, booking_id = booking_api
 
     response = client.patch(
         f"/api/v1/venue-bookings/{booking_id}",
@@ -77,7 +85,7 @@ def test_venue_decline_cancels_event(booking_api) -> None:
 
 
 def test_venue_can_cancel_an_already_approved_booking(booking_api) -> None:
-    client, event_id, booking_id = booking_api
+    client, _, event_id, booking_id = booking_api
 
     approved = client.patch(
         f"/api/v1/venue-bookings/{booking_id}",
@@ -97,3 +105,24 @@ def test_venue_can_cancel_an_already_approved_booking(booking_api) -> None:
     event = client.get(f"/api/v1/events/{event_id}", headers=_auth("bob-token"))
     assert event.status_code == 200, event.text
     assert event.json()["status"] == "cancelled"
+
+
+def test_approval_rechecks_current_people_capacity(booking_api) -> None:
+    client, factory, _, booking_id = booking_api
+
+    with factory() as session:
+        booking = session.get(VenueBookingRequest, booking_id)
+        assert booking is not None
+        window = session.get(VenueTableWindow, booking.venue_table_window_id)
+        assert window is not None
+        window.max_people_per_table = 1
+        session.commit()
+
+    response = client.patch(
+        f"/api/v1/venue-bookings/{booking_id}",
+        headers=_auth("bob-token"),
+        json={"action": "approve"},
+    )
+
+    assert response.status_code == 409, response.text
+    assert "capacity" in response.json()["detail"].lower()

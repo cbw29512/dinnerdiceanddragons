@@ -52,9 +52,7 @@ def request_registration(
             raise RegistrationConflictError("Event is not accepting registrations.")
         profile = require_player_profile(session, user)
         if not player_is_matched(session, event, profile):
-            raise EventForbiddenError(
-                "This Player is not eligible for the matched table."
-            )
+            raise EventForbiddenError("This Player is not eligible for the matched table.")
 
         registration = session.scalar(
             select(Registration)
@@ -64,10 +62,7 @@ def request_registration(
             )
             .with_for_update()
         )
-        if (
-            registration is not None
-            and registration.status in ACTIVE_REGISTRATION_STATUSES
-        ):
+        if registration is not None and registration.status in ACTIVE_REGISTRATION_STATUSES:
             return registration_response(registration)
         if registration is not None and registration.status in {
             RegistrationStatus.DECLINED.value,
@@ -153,7 +148,7 @@ def cancel_registration(
         synchronize_event_state(session, event, booking)
         session.commit()
         return registration_response(registration)
-    except (RegistrationNotFoundError, RegistrationConflictError):
+    except (EventForbiddenError, RegistrationNotFoundError, RegistrationConflictError):
         session.rollback()
         raise
     except SQLAlchemyError as exc:

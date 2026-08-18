@@ -4,7 +4,16 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, SmallInteger, String, Text, Uuid, func
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    SmallInteger,
+    String,
+    Text,
+    Uuid,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -72,10 +81,25 @@ class VenueBookingRequest(Base):
         nullable=True,
         unique=True,
     )
-    requested_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
-    requested_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    tables_requested: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=1)
-    expected_guests: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=1)
+    requested_start: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        index=True,
+    )
+    requested_end: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+    tables_requested: Mapped[int] = mapped_column(
+        SmallInteger,
+        nullable=False,
+        default=1,
+    )
+    expected_guests: Mapped[int] = mapped_column(
+        SmallInteger,
+        nullable=False,
+        default=1,
+    )
     status: Mapped[str] = mapped_column(
         String(16),
         nullable=False,
@@ -85,7 +109,14 @@ class VenueBookingRequest(Base):
     )
     venue_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     gm_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
     )

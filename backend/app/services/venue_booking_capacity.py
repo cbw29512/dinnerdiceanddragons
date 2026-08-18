@@ -27,11 +27,14 @@ def require_booking_capacity(
 ) -> CapacitySnapshot:
     """Lock the Venue and reject overlapping reservations beyond table supply."""
 
+    if not window.active:
+        raise VenueCapacityConflictError("Venue table availability is no longer active.")
+
     venue = session.scalar(
         select(Venue).where(Venue.id == window.venue_id).with_for_update()
     )
-    if venue is None or not venue.active:
-        raise VenueCapacityConflictError("Venue is no longer available.")
+    if venue is None or not venue.active or not venue.verified:
+        raise VenueCapacityConflictError("Venue is no longer available for booking.")
 
     overlapping = session.execute(
         select(VenueBookingRequest, VenueTableWindow)
