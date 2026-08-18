@@ -6,6 +6,8 @@ from one place.
 
 from app.db.base import Base
 from app.models.availability_window import GMAvailabilityWindow, PlayerAvailabilityWindow
+from app.models.event import Event, EventJoinMode, EventStatus, EventType
+from app.models.game_series import GameSeries
 from app.models.game_system import GameSystem
 from app.models.gm_profile import GMProfile
 from app.models.gm_supply_signal import GMSupplySignal
@@ -29,11 +31,14 @@ from app.models.recurring_availability_rule import (
     MonthlyOrdinal,
     RecurringAvailabilityRule,
 )
+from app.models.registration import Registration, RegistrationStatus
+from app.models.table_expectations import TableExpectations
 from app.models.table_match import TableMatch, TableMatchStatus
 from app.models.table_match_player import TableMatchPlayer, TableMatchPlayerStatus
 from app.models.user import AccountStatus, User
 from app.models.user_role import UserRole, UserRoleType
 from app.models.venue import Venue, VenueManager, VenueManagerRole, VenueType
+from app.models.venue_booking_request import VenueBookingRequest, VenueBookingStatus
 from app.models.venue_table_window import VenueTableWindow
 
 metadata = Base.metadata
@@ -42,6 +47,11 @@ __all__ = [
     "AccountStatus",
     "AvailabilityDay",
     "AvailabilityPatternType",
+    "Event",
+    "EventJoinMode",
+    "EventStatus",
+    "EventType",
+    "GameSeries",
     "GameSystem",
     "GMAvailabilityWindow",
     "GMComfortLevel",
@@ -63,7 +73,10 @@ __all__ = [
     "PreferredPlayerExperience",
     "PrivilegedAuditEvent",
     "RecurringAvailabilityRule",
+    "Registration",
+    "RegistrationStatus",
     "SignalStatus",
+    "TableExpectations",
     "TableMatch",
     "TableMatchPlayer",
     "TableMatchPlayerStatus",
@@ -72,6 +85,8 @@ __all__ = [
     "UserRole",
     "UserRoleType",
     "Venue",
+    "VenueBookingRequest",
+    "VenueBookingStatus",
     "VenueManager",
     "VenueManagerRole",
     "VenueTableWindow",
