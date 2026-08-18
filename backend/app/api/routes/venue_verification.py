@@ -8,8 +8,10 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies.roles import require_admin
+from app.api.rate_limit import enforce_user_rate_limit
 from app.db.session import get_db_session
 from app.models.user import User
+from app.services.api_rate_limit_policy import RateLimitScope
 from app.services.geocoding import (
     GeocodingConfigurationError,
     GeocodingNoMatchError,
@@ -34,7 +36,11 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 def get_venue_geocoder() -> VenueGeocoder:
     """Return the configured server-side Venue geocoder."""
 
-    return GeocodioVenueGeocoder()
+    try:
+        return GeocodioVenueGeocoder()
+    except Exception:
+        LOGGER.exception("Failed to construct configured Venue geocoder")
+        raise
 
 
 @router.post(
@@ -51,6 +57,8 @@ def post_venue_verification(
     """Approve one pending Venue claim using its persisted public address."""
 
     try:
+        # Consume the admin/provider budget before any external geocoding call.
+        enforce_user_rate_limit(session, admin_user, RateLimitScope.VENUE_VERIFICATION)
         candidate = load_initial_venue_claim_for_verification(
             session,
             venue_id=venue_id,
