@@ -171,18 +171,7 @@ def seed_formation_parents(session: Session) -> FormationSeed:
     )
     session.add(table_match)
     session.flush()
-    session.add(
-        TableMatchPlayer(
-            table_match_id=table_match.id,
-            player_demand_signal_id=player_demand.id,
-            fit_flags=["system", "schedule", "distance"],
-            distance_miles=0,
-            availability_overlap={
-                "start": table_match.proposed_start.isoformat(),
-                "end": table_match.proposed_end.isoformat(),
-            },
-        )
-    )
+    _add_table_match_player(session, table_match, player_demand)
     session.commit()
 
     return FormationSeed(
@@ -196,6 +185,57 @@ def seed_formation_parents(session: Session) -> FormationSeed:
         venue=venue,
         venue_window=venue_window,
         table_match=table_match,
+    )
+
+
+def add_eligible_player(
+    session: Session,
+    seed: FormationSeed,
+    *,
+    suffix: str,
+) -> tuple[User, PlayerProfile]:
+    """Add another active Player who was eligible on the seed TableMatch."""
+
+    user = _user(f"formation-player-{suffix}", f"formation-player-{suffix}@example.test")
+    session.add(user)
+    session.flush()
+    session.add(UserRole(user_id=user.id, role=UserRoleType.PLAYER.value))
+    profile = PlayerProfile(
+        user_id=user.id,
+        postal_code="29501",
+        travel_radius_miles=25,
+    )
+    session.add(profile)
+    session.flush()
+    demand = PlayerDemandSignal(
+        player_profile_id=profile.id,
+        game_system_id=seed.system.id,
+        preferred_format="one_shot",
+    )
+    session.add(demand)
+    session.flush()
+    _add_table_match_player(session, seed.table_match, demand)
+    seed.table_match.compatible_player_count += 1
+    session.commit()
+    return user, profile
+
+
+def _add_table_match_player(
+    session: Session,
+    table_match: TableMatch,
+    demand: PlayerDemandSignal,
+) -> None:
+    session.add(
+        TableMatchPlayer(
+            table_match_id=table_match.id,
+            player_demand_signal_id=demand.id,
+            fit_flags=["system", "schedule", "distance"],
+            distance_miles=0,
+            availability_overlap={
+                "start": table_match.proposed_start.isoformat(),
+                "end": table_match.proposed_end.isoformat(),
+            },
+        )
     )
 
 
