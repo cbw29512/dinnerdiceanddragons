@@ -3,6 +3,7 @@
 from datetime import date, time
 
 from sqlalchemy import func, select
+from table_match_runner_test_support import build_runner_factory
 
 from app.models.availability_window import GMAvailabilityWindow
 from app.models.game_system import GameSystem
@@ -16,7 +17,6 @@ from app.models.table_match_player import TableMatchPlayer
 from app.models.user import AccountStatus, User
 from app.services.postal_centroids import PostalCentroidResult
 from app.services.table_match_runner import run_table_match
-from table_match_runner_test_support import build_runner_factory
 
 MATCH_DATE = date(2026, 8, 21)
 
