@@ -5,6 +5,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.request_limits import MAX_API_REQUEST_BODY_BYTES, RequestBodyLimitMiddleware
 from app.api.routes.events import router as events_router
 from app.api.routes.game_hub import index_router as game_hub_index_router
 from app.api.routes.game_hub import router as game_hub_router
@@ -35,6 +36,12 @@ def create_app() -> FastAPI:
                 "Production API for matching Players, Dungeon Masters, and "
                 "Venues into tabletop games that can actually happen."
             ),
+        )
+
+        # Bound every request before FastAPI/Pydantic parsing can allocate unbounded body state.
+        application.add_middleware(
+            RequestBodyLimitMiddleware,
+            max_body_bytes=MAX_API_REQUEST_BODY_BYTES,
         )
 
         allowed_origins = settings.cors_origins()
