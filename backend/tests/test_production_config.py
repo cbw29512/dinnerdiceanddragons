@@ -2,8 +2,8 @@
 
 import pytest
 from pydantic import ValidationError
-from app.core.config import Settings
 
+from app.core.config import Settings
 
 VALID = {
     "app_env": "production",
