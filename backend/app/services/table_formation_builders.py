@@ -10,7 +10,6 @@ from sqlalchemy.orm import Session
 
 from app.models.event import Event, EventStatus
 from app.models.game_series import GameSeries
-from app.models.game_system import GameSystem
 from app.models.game_table import GameTable
 from app.models.gm_profile import GMProfile
 from app.models.gm_supply_signal import GMSupplySignal
