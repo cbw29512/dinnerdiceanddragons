@@ -11,11 +11,13 @@ from app.models.game_series import GameSeries
 from app.models.game_system import GameSystem
 from app.models.gm_profile import GMProfile
 from app.models.gm_supply_signal import GMSupplySignal
+from app.models.player_demand_signal import PlayerDemandSignal
 from app.models.player_profile import PlayerProfile
 from app.models.recurring_availability_rule import RecurringAvailabilityRule
 from app.models.registration import Registration
 from app.models.table_expectations import TableExpectations
 from app.models.table_match import TableMatch
+from app.models.table_match_player import TableMatchPlayer
 from app.models.user import AccountStatus, User
 from app.models.user_role import UserRole, UserRoleType
 from app.models.venue import Venue, VenueManager
@@ -32,6 +34,7 @@ class FormationSeed:
     venue_manager_user: User
     gm_profile: GMProfile
     player_profile: PlayerProfile
+    player_demand: PlayerDemandSignal
     system: GameSystem
     venue: Venue
     venue_window: VenueTableWindow
@@ -60,9 +63,11 @@ def create_formation_session() -> tuple[Session, Engine]:
         VenueManager.__table__,
         GameSystem.__table__,
         RecurringAvailabilityRule.__table__,
+        PlayerDemandSignal.__table__,
         GMSupplySignal.__table__,
         VenueTableWindow.__table__,
         TableMatch.__table__,
+        TableMatchPlayer.__table__,
         GameSeries.__table__,
         Event.__table__,
         TableExpectations.__table__,
@@ -131,6 +136,11 @@ def seed_formation_parents(session: Session) -> FormationSeed:
     session.add_all([gm_profile, player_profile, rule])
     session.flush()
 
+    player_demand = PlayerDemandSignal(
+        player_profile_id=player_profile.id,
+        game_system_id=system.id,
+        preferred_format="one_shot",
+    )
     gm_supply = GMSupplySignal(
         gm_profile_id=gm_profile.id,
         game_system_id=system.id,
@@ -145,7 +155,7 @@ def seed_formation_parents(session: Session) -> FormationSeed:
         max_people_per_table=6,
         approval_required=True,
     )
-    session.add_all([gm_supply, venue_window])
+    session.add_all([player_demand, gm_supply, venue_window])
     session.flush()
 
     table_match = TableMatch(
@@ -160,6 +170,19 @@ def seed_formation_parents(session: Session) -> FormationSeed:
         compatible_player_count=1,
     )
     session.add(table_match)
+    session.flush()
+    session.add(
+        TableMatchPlayer(
+            table_match_id=table_match.id,
+            player_demand_signal_id=player_demand.id,
+            fit_flags=["system", "schedule", "distance"],
+            distance_miles=0,
+            availability_overlap={
+                "start": table_match.proposed_start.isoformat(),
+                "end": table_match.proposed_end.isoformat(),
+            },
+        )
+    )
     session.commit()
 
     return FormationSeed(
@@ -168,6 +191,7 @@ def seed_formation_parents(session: Session) -> FormationSeed:
         venue_manager_user=venue_manager_user,
         gm_profile=gm_profile,
         player_profile=player_profile,
+        player_demand=player_demand,
         system=system,
         venue=venue,
         venue_window=venue_window,
