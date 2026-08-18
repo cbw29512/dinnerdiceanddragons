@@ -101,6 +101,7 @@ def _base_query():
 
     return (
         select(PlayerDemandSignal, PlayerProfile, RecurringAvailabilityRule)
+        .select_from(PlayerDemandSignal)
         .join(PlayerProfile, PlayerProfile.id == PlayerDemandSignal.player_profile_id)
         .join(User, User.id == PlayerProfile.user_id)
         .join(UserRole, UserRole.user_id == User.id)
