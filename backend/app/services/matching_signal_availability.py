@@ -95,8 +95,7 @@ def player_demand_availability(
         select(RecurringAvailabilityRule)
         .join(
             PlayerDemandAvailabilityWindow,
-            PlayerDemandAvailabilityWindow.recurring_rule_id
-            == RecurringAvailabilityRule.id,
+            PlayerDemandAvailabilityWindow.recurring_rule_id == RecurringAvailabilityRule.id,
         )
         .where(
             PlayerDemandAvailabilityWindow.player_demand_signal_id == signal_id,
