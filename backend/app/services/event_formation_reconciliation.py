@@ -8,7 +8,12 @@ from sqlalchemy.orm import Session
 from app.models.event import Event, EventStatus
 from app.models.registration import Registration, RegistrationStatus
 from app.models.venue_booking_request import VenueBookingRequest, VenueBookingStatus
-from app.services.table_formation_errors import TableFormationConflictError
+from app.services.event_registration_access import require_player_profile_eligible
+from app.services.table_formation_errors import (
+    TableFormationConflictError,
+    TableFormationForbiddenError,
+    TableFormationNotFoundError,
+)
 
 TERMINAL_EVENT_STATUSES = {
     EventStatus.CANCELLED.value,
@@ -61,12 +66,12 @@ def promote_next_waitlisted_registration(
     *,
     event: Event,
 ) -> Registration | None:
-    """Promote the earliest waitlisted Player when a confirmed seat is available."""
+    """Promote the earliest currently eligible waitlisted Player when a seat opens."""
 
     if _confirmed_count(session, event.id) >= event.max_players:
         return None
 
-    registration = session.scalar(
+    waitlisted = session.scalars(
         select(Registration)
         .where(
             Registration.event_id == event.id,
@@ -74,15 +79,21 @@ def promote_next_waitlisted_registration(
         )
         .order_by(Registration.requested_at, Registration.id)
         .with_for_update()
-        .limit(1)
-    )
-    if registration is None:
-        return None
-
-    registration.status = RegistrationStatus.CONFIRMED.value
-    registration.responded_at = datetime.now(UTC)
-    registration.cancelled_at = None
-    return registration
+    ).all()
+    for registration in waitlisted:
+        try:
+            require_player_profile_eligible(
+                session,
+                event=event,
+                player_profile_id=registration.player_profile_id,
+            )
+        except (TableFormationForbiddenError, TableFormationNotFoundError):
+            continue
+        registration.status = RegistrationStatus.CONFIRMED.value
+        registration.responded_at = datetime.now(UTC)
+        registration.cancelled_at = None
+        return registration
+    return None
 
 
 def _confirmed_count(session: Session, event_id) -> int:
