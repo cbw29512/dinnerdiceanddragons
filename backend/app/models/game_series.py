@@ -15,6 +15,7 @@ class GameSeries(Base):
     __tablename__ = "game_series"
     __table_args__ = (
         UniqueConstraint("table_match_id", name="uq_game_series_table_match_id"),
+        UniqueConstraint("recurring_rule_id", name="uq_game_series_recurring_rule_id"),
         CheckConstraint(
             "length(trim(title)) BETWEEN 1 AND 200",
             name="ck_game_series_title_length",
@@ -59,9 +60,18 @@ class GameSeries(Base):
         Uuid,
         ForeignKey("recurring_availability_rules.id", ondelete="SET NULL"),
         nullable=True,
-        unique=True,
     )
-    expected_sessions: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default=text("1"))
+    expected_sessions: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+        server_default=text("1"),
+    )
     starts_on: Mapped[date] = mapped_column(nullable=False)
     ends_on: Mapped[date | None] = mapped_column(nullable=True)
-    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=text("true"))
+    active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default=text("true"),
+    )
