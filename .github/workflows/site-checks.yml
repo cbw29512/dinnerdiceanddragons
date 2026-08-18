@@ -2,7 +2,7 @@ name: API Quality Checks
 
 on:
   push:
-    branches: [main]
+    branches: [main, agent/table-aggregate-v1]
     paths:
       - "backend/**"
       - "docker-compose.yml"
