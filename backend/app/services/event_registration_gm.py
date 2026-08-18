@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models.event import Event, EventStatus
+from app.models.event import EventStatus
 from app.models.registration import Registration, RegistrationStatus
 from app.services.event_formation_reconciliation import (
     promote_next_waitlisted_registration,
@@ -17,9 +17,9 @@ from app.services.event_registration_access import (
     require_event_gm,
     require_player_profile_eligible,
 )
+from app.services.event_registration_decisions import apply_gm_registration_decision
 from app.services.event_registration_state import (
     RegistrationMutationResult,
-    confirmed_count,
     locked_event_and_booking,
     mutation_result,
 )
@@ -70,7 +70,13 @@ def decide_event_registration(
             )
 
         was_confirmed = registration.status == RegistrationStatus.CONFIRMED.value
-        _apply_gm_decision(session, event, registration, target_status)
+        apply_gm_registration_decision(
+            session,
+            event,
+            registration,
+            target_status,
+            datetime.now(UTC),
+        )
         if was_confirmed and registration.status != RegistrationStatus.CONFIRMED.value:
             promote_next_waitlisted_registration(session, event=event)
 
@@ -84,71 +90,6 @@ def decide_event_registration(
         session.rollback()
         LOGGER.exception("GM registration decision failed")
         raise
-
-
-def _apply_gm_decision(
-    session: Session,
-    event: Event,
-    registration: Registration,
-    target_status: str,
-) -> None:
-    now = datetime.now(UTC)
-    if target_status == RegistrationStatus.CONFIRMED.value:
-        _confirm_or_waitlist(session, event, registration, now)
-        return
-    if target_status == RegistrationStatus.WAITLISTED.value:
-        _set_pending_status(registration, RegistrationStatus.WAITLISTED.value, now)
-        return
-    if target_status == RegistrationStatus.DECLINED.value:
-        _set_pending_status(registration, RegistrationStatus.DECLINED.value, now)
-        return
-    if target_status == RegistrationStatus.REMOVED.value:
-        if registration.status not in {
-            RegistrationStatus.REQUESTED.value,
-            RegistrationStatus.WAITLISTED.value,
-            RegistrationStatus.CONFIRMED.value,
-        }:
-            raise TableFormationConflictError("Registration cannot be removed.")
-        registration.status = RegistrationStatus.REMOVED.value
-        registration.responded_at = now
-        return
-    raise TableFormationConflictError("Unsupported registration transition.")
-
-
-def _confirm_or_waitlist(
-    session: Session,
-    event: Event,
-    registration: Registration,
-    now: datetime,
-) -> None:
-    if registration.status == RegistrationStatus.CONFIRMED.value:
-        return
-    if registration.status not in {
-        RegistrationStatus.REQUESTED.value,
-        RegistrationStatus.WAITLISTED.value,
-    }:
-        raise TableFormationConflictError("Registration cannot be confirmed.")
-    registration.status = (
-        RegistrationStatus.WAITLISTED.value
-        if confirmed_count(session, event.id) >= event.max_players
-        else RegistrationStatus.CONFIRMED.value
-    )
-    registration.responded_at = now
-    registration.cancelled_at = None
-
-
-def _set_pending_status(
-    registration: Registration,
-    target_status: str,
-    now: datetime,
-) -> None:
-    if registration.status not in {
-        RegistrationStatus.REQUESTED.value,
-        RegistrationStatus.WAITLISTED.value,
-    }:
-        raise TableFormationConflictError(f"Registration cannot be {target_status}.")
-    registration.status = target_status
-    registration.responded_at = now
 
 
 __all__ = ["decide_event_registration"]
