@@ -1,7 +1,6 @@
 """Contracts for the production mutation request-body size guard."""
 
 import asyncio
-from collections.abc import Awaitable, Callable
 from typing import Any
 
 from fastapi.testclient import TestClient
