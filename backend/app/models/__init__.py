@@ -16,10 +16,12 @@ from app.models.gm_system_experience import (
     GMSystemFormat,
     PreferredPlayerExperience,
 )
+from app.models.match_explanation import MatchCriterionResult, MatchExplanation
 from app.models.matching_signal import SignalStatus
 from app.models.player_demand_signal import PlayerDemandSignal
 from app.models.player_profile import PlayerProfile, PreferredGameFormat
 from app.models.player_system_experience import PlayerComfortLevel, PlayerSystemExperience
+from app.models.postal_code_centroid import PostalCodeCentroid
 from app.models.privileged_audit_event import PrivilegedAuditEvent
 from app.models.recurring_availability_rule import (
     AvailabilityDay,
@@ -27,6 +29,8 @@ from app.models.recurring_availability_rule import (
     MonthlyOrdinal,
     RecurringAvailabilityRule,
 )
+from app.models.table_match import TableMatch, TableMatchStatus
+from app.models.table_match_player import TableMatchPlayer, TableMatchPlayerStatus
 from app.models.user import AccountStatus, User
 from app.models.user_role import UserRole, UserRoleType
 from app.models.venue import Venue, VenueManager, VenueManagerRole, VenueType
@@ -46,17 +50,24 @@ __all__ = [
     "GMSupplySignal",
     "GMSystemExperience",
     "GMSystemFormat",
+    "MatchCriterionResult",
+    "MatchExplanation",
     "MonthlyOrdinal",
     "PlayerAvailabilityWindow",
     "PlayerComfortLevel",
     "PlayerDemandSignal",
     "PlayerProfile",
     "PlayerSystemExperience",
+    "PostalCodeCentroid",
     "PreferredGameFormat",
     "PreferredPlayerExperience",
     "PrivilegedAuditEvent",
     "RecurringAvailabilityRule",
     "SignalStatus",
+    "TableMatch",
+    "TableMatchPlayer",
+    "TableMatchPlayerStatus",
+    "TableMatchStatus",
     "User",
     "UserRole",
     "UserRoleType",

@@ -1,0 +1,107 @@
+name: Supabase Auth Smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/app/api/dependencies/auth.py"
+      - "backend/app/api/dependencies/current_user.py"
+      - "backend/app/api/dependencies/roles.py"
+      - "backend/app/auth/**"
+      - "backend/app/identity/**"
+      - "backend/scripts/verify_supabase_*.sh"
+      - "backend/scripts/verify_two_user_authorization.sh"
+      - "supabase/**"
+      - ".github/workflows/supabase-auth-smoke.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/app/api/dependencies/auth.py"
+      - "backend/app/api/dependencies/current_user.py"
+      - "backend/app/api/dependencies/roles.py"
+      - "backend/app/auth/**"
+      - "backend/app/identity/**"
+      - "backend/scripts/verify_supabase_*.sh"
+      - "backend/scripts/verify_two_user_authorization.sh"
+      - "supabase/**"
+      - ".github/workflows/supabase-auth-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  supabase-auth-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install production API auth dependencies
+        run: python -m pip install -e ./backend
+
+      - name: Verify pinned Supabase CLI
+        run: npx --yes supabase@2.110.0 --version
+
+      - name: Start local Supabase Auth stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes supabase@2.110.0 start \
+            -x realtime,storage-api,imgproxy,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      - name: Verify local Supabase Auth health and configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          eval "$(npx --yes supabase@2.110.0 status -o env)"
+          test -n "${ANON_KEY:-}"
+
+          curl --fail --silent --show-error \
+            -H "apikey: ${ANON_KEY}" \
+            http://127.0.0.1:54321/auth/v1/health \
+            > /tmp/supabase-auth-health.json
+
+          curl --fail --silent --show-error \
+            -H "apikey: ${ANON_KEY}" \
+            http://127.0.0.1:54321/auth/v1/settings \
+            > /tmp/supabase-auth-settings.json
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          health = json.loads(Path('/tmp/supabase-auth-health.json').read_text())
+          settings = json.loads(Path('/tmp/supabase-auth-settings.json').read_text())
+          external = settings.get('external', {})
+
+          assert health.get('name') == 'GoTrue', health
+          assert settings.get('disable_signup') is False, settings
+          assert settings.get('mailer_autoconfirm') is False, settings
+          assert external.get('email') is True, settings
+          assert external.get('anonymous_users') is False, settings
+          print('Local Supabase Auth health/config verification passed.')
+          PY
+
+      - name: Prove unverified email cannot authenticate
+        run: bash backend/scripts/verify_supabase_email_confirmation.sh
+
+      - name: Verify confirmed user token through live Supabase JWKS
+        run: bash backend/scripts/verify_supabase_jwks_token.sh
+
+      - name: Verify two authenticated users remain isolated
+        run: bash backend/scripts/verify_two_user_authorization.sh
+
+      - name: Stop and reset local Supabase Auth
+        if: always()
+        run: npx --yes supabase@2.110.0 stop --no-backup || true

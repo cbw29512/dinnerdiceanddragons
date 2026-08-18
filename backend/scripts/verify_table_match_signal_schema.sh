@@ -5,7 +5,13 @@ psql_scalar() {
   docker compose exec -T db psql -U ddd -d ddd -tAc "$1" | tr -d '[:space:]'
 }
 
-for table in player_demand_signals gm_supply_signals venue_table_windows; do
+for table in \
+  player_demand_signals \
+  gm_supply_signals \
+  venue_table_windows \
+  table_matches \
+  table_match_players \
+  match_explanations; do
   table_count="$(psql_scalar "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name='${table}'")"
   test "$table_count" = "1"
 done
@@ -30,6 +36,29 @@ test "$venue_rule_fk" = "1"
 
 venue_rule_unique="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.venue_table_windows'::regclass AND conname='uq_venue_table_windows_recurring_rule_id'")"
 test "$venue_rule_unique" = "1"
+
+match_gm_fk="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.table_matches'::regclass AND conname='fk_table_matches_gm_supply_signal' AND confdeltype='c'")"
+test "$match_gm_fk" = "1"
+
+match_venue_fk="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.table_matches'::regclass AND conname='fk_table_matches_venue_table_window' AND confdeltype='c'")"
+test "$match_venue_fk" = "1"
+
+match_system_fk="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.table_matches'::regclass AND conname='fk_table_matches_game_system' AND confdeltype='r'")"
+test "$match_system_fk" = "1"
+
+match_occurrence_unique="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.table_matches'::regclass AND conname='uq_table_matches_gm_venue_occurrence'")"
+test "$match_occurrence_unique" = "1"
+
+match_player_pk="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.table_match_players'::regclass AND conname='pk_table_match_players'")"
+test "$match_player_pk" = "1"
+
+match_explanation_unique="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.match_explanations'::regclass AND conname='uq_match_explanations_match_criterion'")"
+test "$match_explanation_unique" = "1"
+
+for table in table_matches table_match_players match_explanations; do
+  rls_enabled="$(psql_scalar "SELECT relrowsecurity::text FROM pg_class WHERE oid='public.${table}'::regclass")"
+  test "$rls_enabled" = "true"
+done
 
 docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd <<'SQL'
 INSERT INTO users (id, auth_provider_user_id, email, status)
@@ -127,10 +156,57 @@ VALUES (
   'One purchase per guest.',
   true
 );
+
+INSERT INTO table_matches (
+  id, gm_supply_signal_id, venue_table_window_id, game_system_id,
+  proposed_start, proposed_end, timezone, minimum_players, maximum_players,
+  compatible_player_count, distance_summary, fit_score
+)
+VALUES (
+  '00000000-0000-0000-0000-000000000990',
+  '00000000-0000-0000-0000-000000000690',
+  '00000000-0000-0000-0000-000000000790',
+  '10000000-0000-0000-0000-000000000003',
+  '2026-08-22T18:00:00-04:00',
+  '2026-08-22T22:00:00-04:00',
+  'America/New_York',
+  3,
+  5,
+  1,
+  '{"gm_miles":4.2,"furthest_player_miles":8.7}'::json,
+  88.50
+);
+
+INSERT INTO table_match_players (
+  table_match_id, player_demand_signal_id, fit_flags, distance_miles,
+  availability_overlap
+)
+VALUES (
+  '00000000-0000-0000-0000-000000000990',
+  '00000000-0000-0000-0000-000000000590',
+  '["system","schedule","distance"]'::json,
+  8.70,
+  '{"start":"2026-08-22T18:00:00-04:00","end":"2026-08-22T22:00:00-04:00"}'::json
+);
+
+INSERT INTO match_explanations (
+  id, table_match_id, criterion, result, summary, weight
+)
+VALUES (
+  '00000000-0000-0000-0000-000000001090',
+  '00000000-0000-0000-0000-000000000990',
+  'venue_capacity',
+  'pass',
+  'Venue seats the GM plus the maximum five Players.',
+  1.0000
+);
 SQL
 
-defaults="$(psql_scalar "SELECT (SELECT status FROM player_demand_signals WHERE id='00000000-0000-0000-0000-000000000590') || ':' || (SELECT status FROM gm_supply_signals WHERE id='00000000-0000-0000-0000-000000000690') || ':' || (SELECT active::text FROM venue_table_windows WHERE id='00000000-0000-0000-0000-000000000790')")"
-test "$defaults" = "active:active:true"
+defaults="$(psql_scalar "SELECT (SELECT status FROM player_demand_signals WHERE id='00000000-0000-0000-0000-000000000590') || ':' || (SELECT status FROM gm_supply_signals WHERE id='00000000-0000-0000-0000-000000000690') || ':' || (SELECT active::text FROM venue_table_windows WHERE id='00000000-0000-0000-0000-000000000790') || ':' || (SELECT status FROM table_matches WHERE id='00000000-0000-0000-0000-000000000990') || ':' || (SELECT status FROM table_match_players WHERE table_match_id='00000000-0000-0000-0000-000000000990')")"
+test "$defaults" = "active:active:true:potential:eligible"
+
+match_facts="$(psql_scalar "SELECT compatible_player_count::text || ':' || fit_score::text || ':' || timezone FROM table_matches WHERE id='00000000-0000-0000-0000-000000000990'")"
+test "$match_facts" = "1:88.50:America/New_York"
 
 if docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd -c "INSERT INTO gm_supply_signals (id,gm_profile_id,game_system_id,preferred_format,minimum_players,maximum_players) VALUES ('00000000-0000-0000-0000-000000000691','00000000-0000-0000-0000-000000000290','10000000-0000-0000-0000-000000000003','one_shot',5,3)"; then
   echo "ERROR: impossible GM player range was accepted" >&2
@@ -142,10 +218,36 @@ if docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd -c "INSERT IN
   exit 1
 fi
 
+if docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd -c "INSERT INTO table_matches (id,gm_supply_signal_id,venue_table_window_id,game_system_id,proposed_start,proposed_end,timezone,minimum_players,maximum_players) VALUES ('00000000-0000-0000-0000-000000000991','00000000-0000-0000-0000-000000000690','00000000-0000-0000-0000-000000000790','10000000-0000-0000-0000-000000000003','2026-08-22T18:00:00-04:00','2026-08-22T22:00:00-04:00','America/New_York',3,5)"; then
+  echo "ERROR: duplicate GM/Venue occurrence was accepted" >&2
+  exit 1
+fi
+
+if docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd -c "INSERT INTO table_match_players (table_match_id,player_demand_signal_id,distance_miles) VALUES ('00000000-0000-0000-0000-000000000990','00000000-0000-0000-0000-000000000590',-0.01)"; then
+  echo "ERROR: negative Table Match Player distance was accepted" >&2
+  exit 1
+fi
+
+if docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd -c "INSERT INTO match_explanations (id,table_match_id,criterion,result,summary) VALUES ('00000000-0000-0000-0000-000000001091','00000000-0000-0000-0000-000000000990','venue_capacity','pass','Duplicate capacity explanation.')"; then
+  echo "ERROR: duplicate MatchExplanation criterion was accepted" >&2
+  exit 1
+fi
+
 if docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd -c "DELETE FROM game_systems WHERE id='10000000-0000-0000-0000-000000000003'"; then
   echo "ERROR: referenced GameSystem deletion was accepted" >&2
   exit 1
 fi
+
+docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd <<'SQL'
+DELETE FROM table_matches
+WHERE id = '00000000-0000-0000-0000-000000000990';
+SQL
+
+match_player_count="$(psql_scalar "SELECT COUNT(*) FROM table_match_players WHERE table_match_id='00000000-0000-0000-0000-000000000990'")"
+test "$match_player_count" = "0"
+
+match_explanation_count="$(psql_scalar "SELECT COUNT(*) FROM match_explanations WHERE table_match_id='00000000-0000-0000-0000-000000000990'")"
+test "$match_explanation_count" = "0"
 
 docker compose exec -T db psql -v ON_ERROR_STOP=1 -U ddd -d ddd <<'SQL'
 DELETE FROM player_profiles
@@ -155,4 +257,4 @@ SQL
 player_signal_count="$(psql_scalar "SELECT COUNT(*) FROM player_demand_signals WHERE id='00000000-0000-0000-0000-000000000590'")"
 test "$player_signal_count" = "0"
 
-echo "Table Match signal schema verification passed."
+echo "Table Match persistence schema verification passed."

@@ -1,21 +1,39 @@
-name: Table Match Signal PostgreSQL Contract
+name: Table Match PostgreSQL Contract
 
 on:
   push:
     branches: [main]
     paths:
       - "backend/app/models/**"
+      - "backend/app/services/geo_distance.py"
+      - "backend/app/services/geocodio_postal_resolver.py"
+      - "backend/app/services/postal_centroid*.py"
+      - "backend/app/services/postal_centroids.py"
+      - "backend/app/services/table_match_*.py"
       - "backend/alembic/**"
       - "backend/scripts/verify_table_match_signal_schema.sh"
-      - "backend/tests/test_table_match_signal_persistence.py"
+      - "backend/scripts/verify_postal_centroid_schema.sh"
+      - "backend/tests/test_geo_distance.py"
+      - "backend/tests/test_geocodio_postal_resolver.py"
+      - "backend/tests/test_postal_centroid_cache.py"
+      - "backend/tests/test_table_match_*.py"
       - ".github/workflows/table-match-signal-postgres.yml"
   pull_request:
     branches: [main]
     paths:
       - "backend/app/models/**"
+      - "backend/app/services/geo_distance.py"
+      - "backend/app/services/geocodio_postal_resolver.py"
+      - "backend/app/services/postal_centroid*.py"
+      - "backend/app/services/postal_centroids.py"
+      - "backend/app/services/table_match_*.py"
       - "backend/alembic/**"
       - "backend/scripts/verify_table_match_signal_schema.sh"
-      - "backend/tests/test_table_match_signal_persistence.py"
+      - "backend/scripts/verify_postal_centroid_schema.sh"
+      - "backend/tests/test_geo_distance.py"
+      - "backend/tests/test_geocodio_postal_resolver.py"
+      - "backend/tests/test_postal_centroid_cache.py"
+      - "backend/tests/test_table_match_*.py"
       - ".github/workflows/table-match-signal-postgres.yml"
 
 permissions:
@@ -66,11 +84,14 @@ jobs:
           echo "API did not become healthy in the expected window."
           exit 1
 
-      - name: Apply migrations through Step 3
+      - name: Apply migrations through Table Match persistence
         run: docker compose exec -T api alembic -c alembic.ini upgrade head
 
-      - name: Verify Table Match signal persistence in PostgreSQL
+      - name: Verify Table Match persistence in PostgreSQL
         run: bash backend/scripts/verify_table_match_signal_schema.sh
+
+      - name: Verify postal centroid cache in PostgreSQL
+        run: bash backend/scripts/verify_postal_centroid_schema.sh
 
       - name: Tear down contract stack
         if: always()
