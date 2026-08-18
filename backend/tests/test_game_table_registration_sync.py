@@ -78,8 +78,11 @@ def test_gm_confirmation_promotes_invitation_to_persistent_membership() -> None:
         assert member is not None and game_table is not None
         assert member.status == GameTablePlayerStatus.CONFIRMED.value
         assert game_table.lifecycle_status == GameTableStatus.CONFIRMED.value
-        assert session.scalar(
-            select(GameTablePlayer.player_profile_id).where(
-                GameTablePlayer.game_table_id == table_id
+        assert (
+            session.scalar(
+                select(GameTablePlayer.player_profile_id).where(
+                    GameTablePlayer.game_table_id == table_id
+                )
             )
-        ) == seed.player_profiles[0].id
+            == seed.player_profiles[0].id
+        )
