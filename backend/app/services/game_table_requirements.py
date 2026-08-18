@@ -43,9 +43,7 @@ def evaluate_game_table_requirements(
         if game_table.venue_table_window_id is not None:
             window = session.get(VenueTableWindow, game_table.venue_table_window_id)
             if window is None:
-                raise GameTableRequirementsError(
-                    "Selected Venue table window no longer exists."
-                )
+                raise GameTableRequirementsError("Selected Venue table window no longer exists.")
             if game_table.venue_id is not None and window.venue_id != game_table.venue_id:
                 raise GameTableRequirementsError(
                     "Selected Venue table window belongs to a different Venue."
