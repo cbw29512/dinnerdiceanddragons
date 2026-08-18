@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies.current_user import require_active_user
+from app.api.rate_limit import enforce_user_rate_limit
 from app.db.session import get_db_session
 from app.models.user import User
 from app.schemas.game_hub import (
@@ -16,6 +17,7 @@ from app.schemas.game_hub import (
     HubMessageResponse,
     MessageCreateRequest,
 )
+from app.services.api_rate_limit_policy import RateLimitScope
 from app.services.event_access import EventNotFoundError
 from app.services.event_reads import EventReadError
 from app.services.game_hub_index import list_game_hubs
@@ -96,7 +98,10 @@ def post_message(
     session: Annotated[Session, Depends(get_db_session)],
 ) -> HubMessageResponse:
     try:
+        enforce_user_rate_limit(session, user, RateLimitScope.HUB_MESSAGE)
         return create_hub_message(session, user, event_id, payload)
+    except HTTPException:
+        raise
     except EventNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Game Hub not found."
