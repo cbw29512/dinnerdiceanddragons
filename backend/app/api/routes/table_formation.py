@@ -7,9 +7,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies.roles import require_dm
+from app.api.rate_limit import enforce_user_rate_limit
 from app.db.session import get_db_session
 from app.models.user import User
 from app.schemas.table_formation import FormTableMatchRequest, FormTableMatchResponse
+from app.services.api_rate_limit_policy import RateLimitScope
 from app.services.table_formation_conversion import form_table_match
 from app.services.table_formation_errors import (
     FormationConflictError,
@@ -30,7 +32,10 @@ def post_form_table_match(
     session: Annotated[Session, Depends(get_db_session)],
 ) -> FormTableMatchResponse:
     try:
+        enforce_user_rate_limit(session, user, RateLimitScope.TABLE_FORMATION)
         return form_table_match(session, user, table_match_id, payload)
+    except HTTPException:
+        raise
     except FormationNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
