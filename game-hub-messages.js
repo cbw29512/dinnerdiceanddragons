@@ -72,6 +72,11 @@
       && (rt.ROLE_CHANNELS[rt.state.role] || []).includes(channel);
   }
 
+  function isTargetedChannel(channel) {
+    return (rt.state.role === "gm" && channel === "player_gm")
+      || (rt.state.role === "venue_manager" && channel === "player_venue_question");
+  }
+
   function buildMessageForm(channel) {
     const form = document.createElement("form");
     form.className = "quick-message";
@@ -110,9 +115,7 @@
     submit.textContent = "Send Message";
     form.append(label, submit);
 
-    const targeted = (rt.state.role === "gm" && channel === "player_gm")
-      || (rt.state.role === "venue_manager" && channel === "player_venue_question");
-    if (targeted) form.hidden = true;
+    if (isTargetedChannel(channel)) form.hidden = true;
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const body = textarea.value.trim();
@@ -130,6 +133,18 @@
     return form;
   }
 
+  function resetTargetedForm(form) {
+    if (!form) return;
+    delete form.dataset.registrationId;
+    const channel = form.dataset.channel || "";
+    const context = form.querySelector(".hub-reply-context");
+    if (context) {
+      context.replaceChildren();
+      context.hidden = true;
+    }
+    if (isTargetedChannel(channel)) form.hidden = true;
+  }
+
   function startReply(channel, message) {
     const form = document.querySelector(`form[data-channel="${channel}"]`);
     if (!form) return;
@@ -140,10 +155,7 @@
       context.replaceChildren();
       const text = document.createElement("span");
       text.textContent = `Replying to ${message.sender_display_name}.`;
-      const clear = rt.actionButton("Cancel Reply", () => {
-        delete form.dataset.registrationId;
-        form.hidden = true;
-      }, "secondary");
+      const clear = rt.actionButton("Cancel Reply", () => resetTargetedForm(form), "secondary");
       context.append(text, clear);
       context.hidden = false;
     }
@@ -155,7 +167,7 @@
       rt.setStatus("Sending message…");
       await window.DDDProductionAPI.postHubMessage(rt.state.eventId, payload);
       form?.reset();
-      if (form?.dataset.registrationId) delete form.dataset.registrationId;
+      resetTargetedForm(form);
       await refreshMessages();
       rt.setStatus("Message sent.", "success");
     } catch (error) {
