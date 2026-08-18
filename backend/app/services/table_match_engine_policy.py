@@ -17,9 +17,7 @@ def validate_match_horizon(window_start: date, window_end: date) -> None:
     if window_start > window_end:
         raise TableMatchHorizonError("Match horizon start cannot be after its end.")
     if (window_end - window_start).days > MAX_MATCH_HORIZON_DAYS:
-        raise TableMatchHorizonError(
-            f"Match horizon cannot exceed {MAX_MATCH_HORIZON_DAYS} days."
-        )
+        raise TableMatchHorizonError(f"Match horizon cannot exceed {MAX_MATCH_HORIZON_DAYS} days.")
 
 
 def prefer_opportunity(candidate: MatchOpportunity, current: MatchOpportunity) -> bool:

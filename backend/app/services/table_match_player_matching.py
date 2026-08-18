@@ -72,19 +72,14 @@ def find_compatible_players(
                 distance_miles=distance_miles,
                 overlap=evaluation.overlap,
                 fit_flags=tuple(
-                    decision.criterion
-                    for decision in evaluation.decisions
-                    if decision.passed
+                    decision.criterion for decision in evaluation.decisions if decision.passed
                 ),
             )
             current = best_by_profile.get(player.player_profile_id)
             if current is None or _is_better_candidate(candidate, current):
                 best_by_profile[player.player_profile_id] = candidate
 
-    return tuple(
-        best_by_profile[profile_id]
-        for profile_id in sorted(best_by_profile, key=str)
-    )
+    return tuple(best_by_profile[profile_id] for profile_id in sorted(best_by_profile, key=str))
 
 
 def _is_better_candidate(

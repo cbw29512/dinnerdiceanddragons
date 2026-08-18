@@ -15,9 +15,7 @@ class TableMatchComputationContext:
     def __init__(self, postal_resolver: PostalCentroidResolver) -> None:
         self._postal_resolver = postal_resolver
         self._points: dict[str, GeoPoint] = {}
-        self._occurrences: dict[
-            tuple[UUID, date, date], tuple[OccurrenceWindow, ...]
-        ] = {}
+        self._occurrences: dict[tuple[UUID, date, date], tuple[OccurrenceWindow, ...]] = {}
         self._distances: dict[tuple[str, UUID], float] = {}
 
     def postal_point(self, postal_code: str) -> GeoPoint:

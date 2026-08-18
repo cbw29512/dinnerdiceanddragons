@@ -77,12 +77,8 @@ def _persist_one(
 
         match.status = TableMatchStatus.POTENTIAL.value
         _refresh_match(match, opportunity)
-        session.execute(
-            delete(TableMatchPlayer).where(TableMatchPlayer.table_match_id == match.id)
-        )
-        session.execute(
-            delete(MatchExplanation).where(MatchExplanation.table_match_id == match.id)
-        )
+        session.execute(delete(TableMatchPlayer).where(TableMatchPlayer.table_match_id == match.id))
+        session.execute(delete(MatchExplanation).where(MatchExplanation.table_match_id == match.id))
         session.add_all(build_player_rows(match.id, opportunity))
         session.add_all(build_explanation_rows(match.id, opportunity))
 

@@ -66,9 +66,7 @@ def viewer_facts(
         if isinstance(raw_distance, (int, float)) and not isinstance(raw_distance, bool):
             gm_distance = float(raw_distance)
 
-    if UserRoleType.VENUE_MANAGER.value in roles and _manages_match_venue(
-        session, user_id, match
-    ):
+    if UserRoleType.VENUE_MANAGER.value in roles and _manages_match_venue(session, user_id, match):
         viewer_roles.append(UserRoleType.VENUE_MANAGER.value)
 
     return ViewerFacts(
