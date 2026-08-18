@@ -56,9 +56,7 @@ def readable_message_filter(
             )
         )
     if "venue_manager" in roles:
-        predicates.append(
-            Message.channel_type == MessageChannel.PLAYER_VENUE_QUESTION.value
-        )
+        predicates.append(Message.channel_type == MessageChannel.PLAYER_VENUE_QUESTION.value)
     elif "player" in roles:
         predicates.append(
             and_(

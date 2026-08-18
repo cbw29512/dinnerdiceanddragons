@@ -90,9 +90,7 @@ def create_hub_message(
     try:
         context = require_hub_access(session, user, event_id)
         if context.event.status in READ_ONLY_EVENT_STATUSES:
-            raise HubMessageConflictError(
-                "Cancelled and completed Events are read-only."
-            )
+            raise HubMessageConflictError("Cancelled and completed Events are read-only.")
         routing = route_message(session, context=context, payload=payload)
         message = Message(
             event_id=event_id,

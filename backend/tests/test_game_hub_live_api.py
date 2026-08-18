@@ -11,9 +11,7 @@ from app.models.event import Event, EventStatus
 
 @pytest.fixture()
 def hub_api():
-    client, factory, engine, seed = build_hub_client(
-        (index_router, game_hub_router, events_router)
-    )
+    client, factory, engine, seed = build_hub_client((index_router, game_hub_router, events_router))
     try:
         yield client, factory, seed
     finally:
@@ -32,16 +30,12 @@ def test_my_game_hubs_index_lists_only_live_participation(hub_api) -> None:
 
 def test_role_capabilities_and_safe_gm_queue(hub_api) -> None:
     client, _, seed = hub_api
-    player = client.get(
-        f"/api/v1/events/{seed.event_id}/hub", headers=auth("alice-token")
-    )
+    player = client.get(f"/api/v1/events/{seed.event_id}/hub", headers=auth("alice-token"))
     assert player.status_code == 200, player.text
     assert player.json()["capabilities"]["viewer_roles"] == ["player"]
     assert player.json()["registration_queue"] == []
 
-    gm = client.get(
-        f"/api/v1/events/{seed.event_id}/hub", headers=auth("bob-token")
-    )
+    gm = client.get(f"/api/v1/events/{seed.event_id}/hub", headers=auth("bob-token"))
     assert gm.status_code == 200, gm.text
     assert gm.json()["capabilities"]["viewer_roles"] == ["gm"]
     assert {item["display_name"] for item in gm.json()["registration_queue"]} == {
@@ -49,9 +43,7 @@ def test_role_capabilities_and_safe_gm_queue(hub_api) -> None:
         "Dave",
     }
 
-    venue = client.get(
-        f"/api/v1/events/{seed.event_id}/hub", headers=auth("carol-token")
-    )
+    venue = client.get(f"/api/v1/events/{seed.event_id}/hub", headers=auth("carol-token"))
     assert venue.status_code == 200, venue.text
     assert venue.json()["capabilities"]["viewer_roles"] == ["venue_manager"]
     assert venue.json()["registration_queue"] == []
@@ -67,9 +59,7 @@ def test_cancelled_player_loses_hub_access_and_index_entry(hub_api) -> None:
         json={"action": "cancel"},
     )
     assert cancelled.status_code == 200, cancelled.text
-    response = client.get(
-        f"/api/v1/events/{seed.event_id}/hub", headers=auth("dave-token")
-    )
+    response = client.get(f"/api/v1/events/{seed.event_id}/hub", headers=auth("dave-token"))
     assert response.status_code == 404
     assert client.get("/api/v1/game-hubs", headers=auth("dave-token")).json() == []
 
@@ -86,9 +76,7 @@ def test_cancelled_event_is_archived_from_index_and_read_only(hub_api) -> None:
     assert index.status_code == 200
     assert index.json() == []
 
-    archived = client.get(
-        f"/api/v1/events/{seed.event_id}/hub", headers=auth("bob-token")
-    )
+    archived = client.get(f"/api/v1/events/{seed.event_id}/hub", headers=auth("bob-token"))
     assert archived.status_code == 200, archived.text
     assert archived.json()["event"]["status"] == EventStatus.CANCELLED.value
 
@@ -149,9 +137,7 @@ def test_private_player_messages_are_isolated_from_other_players_and_venue(hub_a
     assert all(item["reply_registration_id"] is None for item in alice_page["items"])
     assert all(item["reply_registration_id"] is None for item in dave_page["items"])
     question = next(
-        item
-        for item in venue_page["items"]
-        if item["body"] == "Is the entrance step-free?"
+        item for item in venue_page["items"] if item["body"] == "Is the entrance step-free?"
     )
     assert question["reply_registration_id"] == str(seed.alice_registration_id)
 
@@ -215,9 +201,7 @@ def _post_raw(client, seed: LiveHubSeed, token: str, payload: dict):
 
 
 def _messages(client, seed: LiveHubSeed, token: str) -> dict:
-    response = client.get(
-        f"/api/v1/events/{seed.event_id}/messages", headers=auth(token)
-    )
+    response = client.get(f"/api/v1/events/{seed.event_id}/messages", headers=auth(token))
     assert response.status_code == 200, response.text
     _assert_no_private_fields(response.json())
     return response.json()

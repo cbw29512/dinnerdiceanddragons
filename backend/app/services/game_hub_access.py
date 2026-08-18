@@ -56,8 +56,7 @@ def require_hub_access(session: Session, user: User, event_id: UUID) -> HubAcces
         .join(User, User.id == PlayerProfile.user_id)
         .join(
             UserRole,
-            (UserRole.user_id == User.id)
-            & (UserRole.role == UserRoleType.PLAYER.value),
+            (UserRole.user_id == User.id) & (UserRole.role == UserRoleType.PLAYER.value),
         )
         .join(Registration, Registration.player_profile_id == PlayerProfile.id)
         .where(
@@ -99,8 +98,7 @@ def resolve_confirmed_registration_user(
         .join(User, User.id == PlayerProfile.user_id)
         .join(
             UserRole,
-            (UserRole.user_id == User.id)
-            & (UserRole.role == UserRoleType.PLAYER.value),
+            (UserRole.user_id == User.id) & (UserRole.role == UserRoleType.PLAYER.value),
         )
         .join(Registration, Registration.player_profile_id == PlayerProfile.id)
         .where(

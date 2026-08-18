@@ -29,8 +29,7 @@ def list_game_hubs(session: Session, user: User) -> list[HubIndexItem]:
         select(GMProfile.id)
         .join(
             UserRole,
-            (UserRole.user_id == GMProfile.user_id)
-            & (UserRole.role == UserRoleType.GM.value),
+            (UserRole.user_id == GMProfile.user_id) & (UserRole.role == UserRoleType.GM.value),
         )
         .where(GMProfile.id == Event.gm_profile_id, GMProfile.user_id == user.id)
     )

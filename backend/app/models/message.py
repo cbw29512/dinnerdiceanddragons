@@ -69,13 +69,29 @@ class Message(Base):
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
-    event_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("events.id", ondelete="CASCADE"), nullable=False, index=True)
-    sender_user_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
+    event_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("events.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    sender_user_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
     channel_type: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
-    recipient_user_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
-    venue_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("venues.id", ondelete="SET NULL"), nullable=True, index=True)
+    recipient_user_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    venue_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("venues.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     category: Mapped[str | None] = mapped_column(String(32), nullable=True)
     body: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), index=True
+    )
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    moderation_status: Mapped[str] = mapped_column(String(16), nullable=False, default=MessageModerationStatus.VISIBLE.value, server_default=MessageModerationStatus.VISIBLE.value, index=True)
+    moderation_status: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        default=MessageModerationStatus.VISIBLE.value,
+        server_default=MessageModerationStatus.VISIBLE.value,
+        index=True,
+    )

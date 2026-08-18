@@ -52,9 +52,14 @@ def get_hub(
     try:
         return get_game_hub(session, user, event_id)
     except EventNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game Hub not found.") from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Game Hub not found."
+        ) from exc
     except EventReadError as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Game Hub could not be loaded.") from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Game Hub could not be loaded.",
+        ) from exc
 
 
 @router.get("/{event_id}/messages", response_model=HubMessagePageResponse)
@@ -68,11 +73,19 @@ def get_messages(
     try:
         return list_hub_messages(session, user, event_id, limit=limit, cursor=cursor)
     except EventNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game Hub not found.") from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Game Hub not found."
+        ) from exc
     except MessageCursorError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Invalid message cursor.") from exc
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Invalid message cursor.",
+        ) from exc
     except HubMessagePersistenceError as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Messages could not be loaded.") from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Messages could not be loaded.",
+        ) from exc
 
 
 @router.post("/{event_id}/messages", response_model=HubMessageResponse)
@@ -85,13 +98,21 @@ def post_message(
     try:
         return create_hub_message(session, user, event_id, payload)
     except EventNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game Hub not found.") from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Game Hub not found."
+        ) from exc
     except HubMessageForbiddenError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This Hub role cannot post to that channel.") from exc
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This Hub role cannot post to that channel.",
+        ) from exc
     except HubMessageConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except HubMessagePersistenceError as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Message could not be persisted.") from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Message could not be persisted.",
+        ) from exc
 
 
 __all__ = ["index_router", "router"]

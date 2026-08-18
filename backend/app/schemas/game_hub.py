@@ -8,8 +8,21 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.event_lifecycle import EventResponse
 
-HubMessageChannel = Literal["table_announcement", "table_discussion", "gm_venue", "player_gm", "player_venue_question"]
-VenueQuestionCategoryValue = Literal["accessibility", "food_allergies", "parking", "seating", "venue_policy", "other"]
+HubMessageChannel = Literal[
+    "table_announcement",
+    "table_discussion",
+    "gm_venue",
+    "player_gm",
+    "player_venue_question",
+]
+VenueQuestionCategoryValue = Literal[
+    "accessibility",
+    "food_allergies",
+    "parking",
+    "seating",
+    "venue_policy",
+    "other",
+]
 
 
 class HubCapabilities(BaseModel):
@@ -72,4 +85,12 @@ class HubMessagePageResponse(BaseModel):
     next_cursor: str | None = None
 
 
-__all__ = ["GameHubResponse", "HubCapabilities", "HubIndexItem", "HubMessagePageResponse", "HubMessageResponse", "HubRegistrationQueueItem", "MessageCreateRequest"]
+__all__ = [
+    "GameHubResponse",
+    "HubCapabilities",
+    "HubIndexItem",
+    "HubMessagePageResponse",
+    "HubMessageResponse",
+    "HubRegistrationQueueItem",
+    "MessageCreateRequest",
+]
