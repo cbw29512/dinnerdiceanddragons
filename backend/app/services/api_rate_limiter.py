@@ -37,7 +37,7 @@ def consume_user_token(
 ) -> int:
     """Consume one token transactionally and return whole tokens remaining."""
 
-    moment = now or datetime.now(UTC)
+    moment = _as_utc(now or datetime.now(UTC))
     try:
         bucket = _locked_bucket(session, user_id, policy.scope.value)
         if bucket is None:
@@ -49,7 +49,10 @@ def consume_user_token(
             if bucket is None:
                 raise RateLimitPersistenceError("Rate-limit bucket could not be loaded.")
 
-        elapsed = max(0.0, (moment - bucket.last_refill_at).total_seconds())
+        elapsed = max(
+            0.0,
+            (moment - _as_utc(bucket.last_refill_at)).total_seconds(),
+        )
         available = min(
             float(policy.capacity),
             float(bucket.tokens) + elapsed * policy.refill_rate_per_second,
@@ -79,6 +82,14 @@ def consume_user_token(
             user_id,
         )
         raise RateLimitPersistenceError("Rate-limit state could not be persisted.") from exc
+
+
+def _as_utc(value: datetime) -> datetime:
+    """Normalize database/test timestamps so arithmetic is always timezone-aware."""
+
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
 
 
 def _locked_bucket(session: Session, user_id: UUID, scope: str) -> ApiRateLimitBucket | None:
