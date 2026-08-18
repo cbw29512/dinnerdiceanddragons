@@ -11,6 +11,10 @@ from app.models.gm_supply_signal import GMSupplySignal
 from app.models.gm_system_experience import GMSystemExperience
 from app.models.user import User
 from app.schemas.matching_signals import GMSupplyCreate, GMSupplyResponse
+from app.services.matching_signal_availability import (
+    add_gm_supply_availability,
+    gm_supply_availability,
+)
 from app.services.matching_signal_common import (
     MatchingSignalConflictError,
     MatchingSignalPersistenceError,
@@ -23,11 +27,12 @@ from app.services.query_limits import MAX_OWNER_MATCHING_SIGNAL_ITEMS
 LOGGER = logging.getLogger(__name__)
 
 
-def _response(signal: GMSupplySignal, slug: str) -> GMSupplyResponse:
+def _response(session: Session, signal: GMSupplySignal, slug: str) -> GMSupplyResponse:
     return GMSupplyResponse(
         id=signal.id,
         status=signal.status,
         system_slug=slug,
+        availability=gm_supply_availability(session, signal.id),
         preferred_format=signal.preferred_format,
         preferred_cadence=signal.preferred_cadence,
         minimum_players=signal.minimum_players,
@@ -58,7 +63,7 @@ def create_gm_supply(
     user: User,
     payload: GMSupplyCreate,
 ) -> GMSupplyResponse:
-    """Persist one GM-owned supply signal atomically."""
+    """Persist one GM-owned what/when/where supply signal atomically."""
 
     try:
         profile = require_gm_profile(session, user)
@@ -74,9 +79,11 @@ def create_gm_supply(
             table_style=payload.table_style or None,
         )
         session.add(signal)
+        session.flush()
+        add_gm_supply_availability(session, signal.id, payload.availability)
         session.commit()
         LOGGER.info("Created GM supply %s for user %s", signal.id, user.id)
-        return _response(signal, system.slug)
+        return _response(session, signal, system.slug)
     except (MatchingSignalValidationError, MatchingSignalConflictError):
         session.rollback()
         raise
@@ -106,7 +113,7 @@ def list_gm_supplies(session: Session, user: User) -> list[GMSupplyResponse]:
             .order_by(GMSupplySignal.created_at.desc(), GMSupplySignal.id)
             .limit(MAX_OWNER_MATCHING_SIGNAL_ITEMS)
         ).all()
-        return [_response(signal, slug) for signal, slug in rows]
+        return [_response(session, signal, slug) for signal, slug in rows]
     except (MatchingSignalValidationError, MatchingSignalConflictError):
         raise
     except SQLAlchemyError as exc:
