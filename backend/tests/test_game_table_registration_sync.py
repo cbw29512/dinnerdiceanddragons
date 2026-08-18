@@ -25,11 +25,6 @@ def table_aware_factory(
     try:
         factory, seed = build_lifecycle_factory(player_count=player_count)
         with factory() as session:
-            bind = session.get_bind()
-        GameTable.__table__.create(bind)
-        GameTablePlayer.__table__.create(bind)
-
-        with factory() as session:
             event = session.get(Event, seed.event_id)
             match = session.get(TableMatch, seed.match_id)
             assert event is not None and match is not None
