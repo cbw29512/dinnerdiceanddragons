@@ -1,7 +1,7 @@
 const { test, expect } = require("@playwright/test");
 const { mockZipLookup } = require("./helpers");
 
-test("DM can match Players and venue, create a table, and confirm it", async ({ page }) => {
+test("DM can match Players and venue, create a table, and hand off to the production Game Hub", async ({ page }) => {
   await mockZipLookup(page);
   await page.goto("/find-venue.html");
 
@@ -44,6 +44,10 @@ test("DM can match Players and venue, create a table, and confirm it", async ({ 
   await expect(page.locator("#game-hub-link")).toBeEnabled();
   await page.locator("#game-hub-link").click();
   await expect(page).toHaveURL(/game-hub\.html\?role=gm$/);
-  await expect(page.locator('.hub-role[data-role="gm"]')).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator("#gm-view")).toBeVisible();
+
+  // The prototype flow intentionally hands off to the real private Hub now.
+  // Without a production auth session, it must fail closed instead of showing sample data.
+  await expect(page.locator("#hub-error-title")).toHaveText("Sign in to open your Game Hubs.");
+  await expect(page.locator("#hub-content")).toBeHidden();
+  await expect(page.locator("#hub-index")).toBeHidden();
 });
