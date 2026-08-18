@@ -20,7 +20,7 @@ def test_alembic_configuration_discovers_current_head() -> None:
     script = load_script_directory()
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == ["0014_supabase_rls_hardening"]
+    assert script.get_heads() == ["0015_game_tables"]
 
 
 def test_revision_ids_fit_alembic_version_column() -> None:
@@ -97,6 +97,11 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert "ck_gm_supply_signals_player_range" in result.stdout
     assert "CREATE TABLE venue_table_windows" in result.stdout
     assert "uq_venue_table_windows_recurring_rule_id" in result.stdout
+    assert "CREATE TABLE game_tables" in result.stdout
+    assert "ck_game_tables_lifecycle_status" in result.stdout
+    assert "ck_game_tables_player_range" in result.stdout
+    assert "fk_game_tables_created_by_user" in result.stdout
+    assert 'ALTER TABLE public."game_tables" ENABLE ROW LEVEL SECURITY' in result.stdout
     assert "INSERT INTO game_systems" in result.stdout
     assert "dnd-5e-2014" in result.stdout
     assert "dnd-5e-2024" in result.stdout
