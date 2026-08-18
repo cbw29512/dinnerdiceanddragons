@@ -59,13 +59,26 @@ The repository path `/dinnerdiceanddragons/` is not part of the browser origin.
 Any production container host must preserve the same contract:
 
 1. Build from `backend/Dockerfile`.
-2. Inject production environment variables and a runtime `PORT` when required by the host.
-3. Apply `alembic upgrade head` as a controlled pre-deploy/migration step.
-4. Start Uvicorn on `0.0.0.0:$PORT`.
-5. Require `/api/v1/health` to return HTTP 200 before activation.
-6. Reject activation when migration, configuration, CORS, auth, or health checks fail.
+2. Run the application as the image's fixed non-root identity (`10001:10001`), never as root.
+3. Prefer a read-only root filesystem. Provide only a small bounded writable scratch mount such as `/tmp` when the host requires temporary space.
+4. Drop Linux capabilities and enable `no-new-privileges` where the host exposes those controls.
+5. Inject production environment variables and a runtime `PORT` when required by the host.
+6. Apply `alembic upgrade head` as a controlled pre-deploy/migration step, not from the long-running web process.
+7. Start Uvicorn on `0.0.0.0:$PORT`.
+8. Require `/api/v1/health` to return HTTP 200 before activation.
+9. Reject activation when migration, configuration, CORS, auth, runtime-hardening, or health checks fail.
 
-`backend/railway.toml` implements this shape for Railway. The Vercel project must provide the equivalent application and migration contract through its configured backend project settings.
+The repository deployment contract proves the API starts as UID/GID `10001`, with a read-only root filesystem, all Linux capabilities dropped, `no-new-privileges`, and only a bounded `/tmp` tmpfs. A production host that cannot express every Docker runtime flag must provide equivalent isolation controls and document the exception.
+
+`backend/railway.toml` implements the build/start shape for Railway. The Vercel project must provide the equivalent application and migration contract through its configured backend project settings.
+
+### Why this image remains single-stage
+
+The production image installs only prebuilt, hash-verified Python wheels and does not install a compiler or build toolchain. A second Docker build stage would not currently remove meaningful build-only dependencies from the final filesystem. Revisit multi-stage packaging if a future dependency requires compilation or application assets are built inside the container.
+
+### Migration privilege boundary
+
+The web image contains Alembic so a controlled release job can run migrations, but the long-running web process must not automatically migrate on startup. Production should use separate migration credentials with schema-change privileges when the selected host/database plan supports practical credential separation. The steady-state API credential should be reduced to only the DML privileges the application needs. This remains an operational deployment control until separate production roles are configured and verified.
 
 ## Verification after deployment
 
@@ -108,4 +121,4 @@ A provider quota failure is an operational deployment failure even when code CI 
 
 ## Rollback rule
 
-A failed migration, unhealthy container, invalid CORS configuration, failed auth verification, or failed browser smoke blocks activation. Roll back to the last known-good application/configuration pair rather than partially activating a new frontend/API origin.
+A failed migration, unhealthy container, invalid CORS configuration, failed auth verification, failed runtime-hardening verification, or failed browser smoke blocks activation. Roll back to the last known-good application/configuration pair rather than partially activating a new frontend/API origin.
