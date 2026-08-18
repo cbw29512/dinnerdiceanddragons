@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 MUTATION_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
@@ -67,9 +69,12 @@ def _content_length(scope: Scope) -> int | None:
 
 
 async def _send_too_large(send: Send, max_body_bytes: int) -> None:
-    body = (
-        '{"detail":"Request body is too large.","max_body_bytes":'
-        f"{max_body_bytes}" + "}"
+    body = json.dumps(
+        {
+            "detail": "Request body is too large.",
+            "max_body_bytes": max_body_bytes,
+        },
+        separators=(",", ":"),
     ).encode("utf-8")
     await send(
         {
