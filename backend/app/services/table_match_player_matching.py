@@ -1,6 +1,7 @@
 """Player-side hard-fit aggregation for one proposed Table Match."""
 
 from datetime import date
+from uuid import UUID
 
 from app.services.geo_distance import GeoPoint
 from app.services.table_match_candidate_types import GMCandidate, PlayerCandidate, VenueCandidate
@@ -9,6 +10,7 @@ from app.services.table_match_hard_fit import (
     PlayerCandidateFacts,
     TimeWindow,
     evaluate_player_candidate,
+    intersect_occurrences,
 )
 from app.services.table_match_opportunity import CompatiblePlayerOpportunity
 
@@ -26,10 +28,21 @@ def find_compatible_players(
     """Return one deterministic eligible record per Player demand signal."""
 
     venue_point = GeoPoint(latitude=venue.latitude, longitude=venue.longitude)
-    best_by_demand: dict[object, CompatiblePlayerOpportunity] = {}
+    best_by_demand: dict[UUID, CompatiblePlayerOpportunity] = {}
 
     for player in players:
         if player.game_system_id != gm.game_system_id:
+            continue
+        if player.preferred_format not in {"any", gm.preferred_format}:
+            continue
+
+        occurrences = context.occurrences(player.rule, window_start, window_end)
+        overlapping_occurrences = tuple(
+            occurrence
+            for occurrence in occurrences
+            if intersect_occurrences(occurrence, table_overlap) is not None
+        )
+        if not overlapping_occurrences:
             continue
 
         distance_miles = context.distance_to_venue(
@@ -37,7 +50,7 @@ def find_compatible_players(
             venue.venue_id,
             venue_point,
         )
-        for occurrence in context.occurrences(player.rule, window_start, window_end):
+        for occurrence in overlapping_occurrences:
             evaluation = evaluate_player_candidate(
                 PlayerCandidateFacts(
                     player_system_id=player.game_system_id,
