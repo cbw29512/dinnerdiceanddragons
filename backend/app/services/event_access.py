@@ -42,8 +42,7 @@ def require_gm_owner(session: Session, user: User, event: Event) -> GMProfile:
         select(GMProfile)
         .join(
             UserRole,
-            (UserRole.user_id == GMProfile.user_id)
-            & (UserRole.role == UserRoleType.GM.value),
+            (UserRole.user_id == GMProfile.user_id) & (UserRole.role == UserRoleType.GM.value),
         )
         .where(
             GMProfile.id == event.gm_profile_id,

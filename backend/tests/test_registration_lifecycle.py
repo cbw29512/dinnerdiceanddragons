@@ -70,9 +70,7 @@ def test_request_to_join_requires_owning_gm_confirmation() -> None:
         assert event is not None and booking is not None
         assert event.status == "forming"
         assert booking.expected_guests == 1
-        gm_user = session.scalar(
-            select(User).where(User.auth_provider_user_id == "lifecycle-gm")
-        )
+        gm_user = session.scalar(select(User).where(User.auth_provider_user_id == "lifecycle-gm"))
         assert gm_user is not None
 
     with factory() as session:

@@ -40,8 +40,7 @@ def player_profile_is_currently_eligible(
             .join(User, User.id == PlayerProfile.user_id)
             .join(
                 UserRole,
-                (UserRole.user_id == User.id)
-                & (UserRole.role == UserRoleType.PLAYER.value),
+                (UserRole.user_id == User.id) & (UserRole.role == UserRoleType.PLAYER.value),
             )
             .join(
                 PlayerDemandSignal,
@@ -74,8 +73,7 @@ def current_eligible_player_count(session: Session, *, table_match_id: UUID) -> 
             .join(User, User.id == PlayerProfile.user_id)
             .join(
                 UserRole,
-                (UserRole.user_id == User.id)
-                & (UserRole.role == UserRoleType.PLAYER.value),
+                (UserRole.user_id == User.id) & (UserRole.role == UserRoleType.PLAYER.value),
             )
             .join(
                 PlayerDemandSignal,

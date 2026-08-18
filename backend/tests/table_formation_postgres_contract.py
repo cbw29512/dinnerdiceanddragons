@@ -47,9 +47,7 @@ def main() -> None:
 
 def seed_contract(factory) -> ContractSeed:
     with factory() as session:
-        system = session.scalar(
-            select(GameSystem).where(GameSystem.slug == "dnd-5e-2014")
-        )
+        system = session.scalar(select(GameSystem).where(GameSystem.slug == "dnd-5e-2014"))
         if system is None:
             raise RuntimeError("Seeded D&D game system is missing.")
         gm_user = _user("formation-contract-gm")
@@ -186,9 +184,7 @@ def seed_contract(factory) -> ContractSeed:
         ]
         session.add_all(race_events)
         session.flush()
-        race_bookings = [
-            _booking(window, gm, event, status="requested") for event in race_events
-        ]
+        race_bookings = [_booking(window, gm, event, status="requested") for event in race_events]
         session.add_all(race_bookings)
         session.commit()
         return ContractSeed(
@@ -220,9 +216,7 @@ def verify_final_seat_serialization(factory, seed: ContractSeed) -> None:
             with lock:
                 errors.append(exc)
 
-    threads = [
-        Thread(target=worker, args=(user_id,)) for user_id in seed.player_user_ids
-    ]
+    threads = [Thread(target=worker, args=(user_id,)) for user_id in seed.player_user_ids]
     for thread in threads:
         thread.start()
     for thread in threads:
@@ -230,9 +224,7 @@ def verify_final_seat_serialization(factory, seed: ContractSeed) -> None:
     if errors:
         raise RuntimeError(f"Concurrent seat request failed: {errors!r}")
     if sorted(statuses) != ["confirmed", "waitlisted"]:
-        raise RuntimeError(
-            f"Expected one confirmed and one waitlisted seat, got {statuses!r}"
-        )
+        raise RuntimeError(f"Expected one confirmed and one waitlisted seat, got {statuses!r}")
 
     with factory() as session:
         registrations = session.scalars(
@@ -242,9 +234,7 @@ def verify_final_seat_serialization(factory, seed: ContractSeed) -> None:
         booking = session.get(VenueBookingRequest, seed.seat_booking_id)
         event = session.get(Event, seed.seat_event_id)
         if confirmed != 1 or booking is None or booking.expected_guests != 2:
-            raise RuntimeError(
-                "Final-seat transaction overbooked or miscounted headcount."
-            )
+            raise RuntimeError("Final-seat transaction overbooked or miscounted headcount.")
         if event is None or event.status != "full":
             raise RuntimeError("Final-seat transaction did not mark Event full.")
 
@@ -273,9 +263,7 @@ def verify_venue_approval_serialization(factory, seed: ContractSeed) -> None:
             with lock:
                 errors.append(exc)
 
-    threads = [
-        Thread(target=worker, args=(booking_id,)) for booking_id in seed.booking_ids
-    ]
+    threads = [Thread(target=worker, args=(booking_id,)) for booking_id in seed.booking_ids]
     for thread in threads:
         thread.start()
     for thread in threads:
@@ -283,14 +271,11 @@ def verify_venue_approval_serialization(factory, seed: ContractSeed) -> None:
     if errors:
         raise RuntimeError(f"Concurrent Venue approval failed: {errors!r}")
     if sorted(outcomes) != ["approved", "capacity_conflict"]:
-        raise RuntimeError(
-            f"Expected one approval and one capacity conflict, got {outcomes!r}"
-        )
+        raise RuntimeError(f"Expected one approval and one capacity conflict, got {outcomes!r}")
 
     with factory() as session:
         statuses = [
-            session.get(VenueBookingRequest, booking_id).status
-            for booking_id in seed.booking_ids
+            session.get(VenueBookingRequest, booking_id).status for booking_id in seed.booking_ids
         ]
         if statuses.count("approved") != 1:
             raise RuntimeError(

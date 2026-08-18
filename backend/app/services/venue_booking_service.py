@@ -124,9 +124,7 @@ def decide_venue_booking(
 
 def _require_transition(current: str, allowed: set[str], label: str) -> None:
     if current not in allowed:
-        raise VenueBookingConflictError(
-            f"Venue booking cannot be {label} from its current state."
-        )
+        raise VenueBookingConflictError(f"Venue booking cannot be {label} from its current state.")
 
 
 def _response(booking: VenueBookingRequest) -> VenueBookingResponse:

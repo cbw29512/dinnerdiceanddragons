@@ -94,9 +94,7 @@ def validate_new_formation(
         raise FormationConflictError("Table Match occurrence is no longer in the future.")
 
     if current_eligible_player_count(session, table_match_id=match.id) < match.minimum_players:
-        raise FormationConflictError(
-            "Table Match no longer has enough currently eligible Players."
-        )
+        raise FormationConflictError("Table Match no longer has enough currently eligible Players.")
 
 
 __all__ = ["validate_new_formation"]

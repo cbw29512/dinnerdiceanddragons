@@ -35,7 +35,9 @@ class LifecycleSeed:
     player_demands: tuple[PlayerDemandSignal, ...]
 
 
-def build_lifecycle_factory(*, player_count: int = 2) -> tuple[sessionmaker[Session], LifecycleSeed]:
+def build_lifecycle_factory(
+    *, player_count: int = 2
+) -> tuple[sessionmaker[Session], LifecycleSeed]:
     engine = create_engine("sqlite+pysqlite:///:memory:", poolclass=StaticPool)
     for table in (
         User.__table__,

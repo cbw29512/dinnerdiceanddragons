@@ -59,9 +59,7 @@ def decide_registration(
                 RegistrationStatus.DECLINED.value,
                 RegistrationStatus.REMOVED.value,
             }:
-                raise RegistrationConflictError(
-                    "Closed registration cannot be confirmed."
-                )
+                raise RegistrationConflictError("Closed registration cannot be confirmed.")
             if not player_profile_is_currently_eligible(
                 session,
                 table_match_id=event.table_match_id,
@@ -81,18 +79,14 @@ def decide_registration(
                 RegistrationStatus.CANCELLED.value,
                 RegistrationStatus.REMOVED.value,
             }:
-                raise RegistrationConflictError(
-                    "Closed registration cannot be declined."
-                )
+                raise RegistrationConflictError("Closed registration cannot be declined.")
             registration.status = RegistrationStatus.DECLINED.value
             registration.responded_at = now
         elif action == "remove":
             if registration.status == RegistrationStatus.REMOVED.value:
                 return registration_response(registration)
             if registration.status == RegistrationStatus.CANCELLED.value:
-                raise RegistrationConflictError(
-                    "Cancelled registration is already closed."
-                )
+                raise RegistrationConflictError("Cancelled registration is already closed.")
             registration.status = RegistrationStatus.REMOVED.value
             registration.responded_at = now
         else:
@@ -113,9 +107,7 @@ def decide_registration(
     except SQLAlchemyError as exc:
         session.rollback()
         LOGGER.exception("GM registration decision failed")
-        raise RegistrationPersistenceError(
-            "Registration decision could not be persisted."
-        ) from exc
+        raise RegistrationPersistenceError("Registration decision could not be persisted.") from exc
 
 
 __all__ = ["decide_registration"]

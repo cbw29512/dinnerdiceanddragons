@@ -68,9 +68,7 @@ def request_registration(
             RegistrationStatus.DECLINED.value,
             RegistrationStatus.REMOVED.value,
         }:
-            raise RegistrationConflictError(
-                "Registration cannot be reopened after a GM decision."
-            )
+            raise RegistrationConflictError("Registration cannot be reopened after a GM decision.")
 
         confirmed = confirmed_registration_count(session, event.id)
         status = _initial_status(event.join_mode, confirmed, event.max_players)
@@ -82,9 +80,7 @@ def request_registration(
                 status=status,
                 expectations_acknowledged_at=now,
                 requested_at=now,
-                responded_at=(
-                    now if status == RegistrationStatus.CONFIRMED.value else None
-                ),
+                responded_at=(now if status == RegistrationStatus.CONFIRMED.value else None),
             )
             session.add(registration)
         else:
@@ -106,9 +102,7 @@ def request_registration(
     except SQLAlchemyError as exc:
         session.rollback()
         LOGGER.exception("Player registration request failed")
-        raise RegistrationPersistenceError(
-            "Registration could not be persisted."
-        ) from exc
+        raise RegistrationPersistenceError("Registration could not be persisted.") from exc
 
 
 def cancel_registration(
@@ -154,9 +148,7 @@ def cancel_registration(
     except SQLAlchemyError as exc:
         session.rollback()
         LOGGER.exception("Player registration cancellation failed")
-        raise RegistrationPersistenceError(
-            "Registration could not be cancelled."
-        ) from exc
+        raise RegistrationPersistenceError("Registration could not be cancelled.") from exc
 
 
 def _initial_status(join_mode: str, confirmed: int, max_players: int) -> str:
