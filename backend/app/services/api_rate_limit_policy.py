@@ -10,6 +10,9 @@ class RateLimitScope(StrEnum):
     TABLE_FORMATION = "table_formation"
     VENUE_BOOKING = "venue_booking"
     MATCHING_RUN = "matching_run"
+    ONBOARDING_MUTATION = "onboarding_mutation"
+    MATCHING_INPUT = "matching_input"
+    PROVIDER_GEOCODING = "provider_geocoding"
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,6 +64,27 @@ POLICIES: dict[RateLimitScope, RateLimitPolicy] = {
         capacity=2,
         refill_tokens=1,
         refill_seconds=300,
+    ),
+    # Profile/onboarding writes replace substantial user-owned state and should be deliberate.
+    RateLimitScope.ONBOARDING_MUTATION: RateLimitPolicy(
+        scope=RateLimitScope.ONBOARDING_MUTATION,
+        capacity=6,
+        refill_tokens=1,
+        refill_seconds=20,
+    ),
+    # Demand/supply/window creation may legitimately happen in small setup bursts.
+    RateLimitScope.MATCHING_INPUT: RateLimitPolicy(
+        scope=RateLimitScope.MATCHING_INPUT,
+        capacity=10,
+        refill_tokens=1,
+        refill_seconds=10,
+    ),
+    # Provider-backed geocoding is externally metered and only needed for deliberate admin review.
+    RateLimitScope.PROVIDER_GEOCODING: RateLimitPolicy(
+        scope=RateLimitScope.PROVIDER_GEOCODING,
+        capacity=2,
+        refill_tokens=1,
+        refill_seconds=60,
     ),
 }
 

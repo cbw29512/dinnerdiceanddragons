@@ -19,6 +19,7 @@ from app.api.routes.venue_bookings import router as venue_bookings_router
 from app.api.routes.venue_onboarding import router as venue_onboarding_router
 from app.api.routes.venue_verification import router as venue_verification_router
 from app.core.config import get_settings
+from app.middleware.request_size import RequestBodyLimitMiddleware
 
 LOGGER = logging.getLogger(__name__)
 
@@ -36,6 +37,9 @@ def create_app() -> FastAPI:
                 "Venues into tabletop games that can actually happen."
             ),
         )
+
+        # Install the body guard before CORS so CORS remains the outer response layer.
+        application.add_middleware(RequestBodyLimitMiddleware)
 
         allowed_origins = settings.cors_origins()
         if allowed_origins:

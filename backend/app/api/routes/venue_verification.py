@@ -8,8 +8,10 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies.roles import require_admin
+from app.api.rate_limit import enforce_user_rate_limit
 from app.db.session import get_db_session
 from app.models.user import User
+from app.services.api_rate_limit_policy import RateLimitScope
 from app.services.geocoding import (
     GeocodingConfigurationError,
     GeocodingNoMatchError,
@@ -51,6 +53,7 @@ def post_venue_verification(
     """Approve one pending Venue claim using its persisted public address."""
 
     try:
+        enforce_user_rate_limit(session, admin_user, RateLimitScope.PROVIDER_GEOCODING)
         candidate = load_initial_venue_claim_for_verification(
             session,
             venue_id=venue_id,

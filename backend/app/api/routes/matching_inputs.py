@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies.roles import require_dm, require_player, require_venue_manager
+from app.api.rate_limit import enforce_user_rate_limit
 from app.db.session import get_db_session
 from app.models.user import User
 from app.schemas.matching_signals import (
@@ -18,6 +19,7 @@ from app.schemas.matching_signals import (
     VenueTableWindowCreate,
     VenueTableWindowResponse,
 )
+from app.services.api_rate_limit_policy import RateLimitScope
 from app.services.gm_supply import create_gm_supply, list_gm_supplies
 from app.services.matching_signal_common import (
     MatchingSignalConflictError,
@@ -65,6 +67,7 @@ def post_player_demand(
     """Create one demand signal owned by the authenticated Player."""
 
     try:
+        enforce_user_rate_limit(session, user, RateLimitScope.MATCHING_INPUT)
         return create_player_demand(session, user, payload)
     except HTTPException:
         raise
@@ -100,6 +103,7 @@ def post_gm_supply(
     """Create one supply signal owned by the authenticated GM."""
 
     try:
+        enforce_user_rate_limit(session, user, RateLimitScope.MATCHING_INPUT)
         return create_gm_supply(session, user, payload)
     except HTTPException:
         raise
@@ -136,6 +140,7 @@ def post_venue_table_window(
     """Create one table window for a verified Venue Manager relationship."""
 
     try:
+        enforce_user_rate_limit(session, user, RateLimitScope.MATCHING_INPUT)
         return create_venue_table_window(session, user, venue_id, payload)
     except HTTPException:
         raise
