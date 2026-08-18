@@ -10,8 +10,10 @@ from sqlalchemy.orm import Session
 
 from app.models.event import Event
 from app.models.game_series import GameSeries
+from app.models.gm_profile import GMProfile
 from app.models.matching_signal import SignalStatus
 from app.models.table_match import TableMatchStatus
+from app.models.user_role import UserRole, UserRoleType
 from app.models.venue_booking_request import VenueBookingRequest
 from app.services.table_formation_context import load_formation_match_context
 from app.services.table_formation_errors import TableFormationConflictError, TableFormationError
@@ -46,14 +48,15 @@ def form_table_match(
     """Create one durable Event/booking set or return the existing conversion."""
 
     try:
+        existing = _existing_result(session, table_match_id, caller_user_id)
+        if existing is not None:
+            return existing
+
         context = load_formation_match_context(
             session,
             table_match_id=table_match_id,
             caller_user_id=caller_user_id,
         )
-        existing = _existing_result(session, table_match_id)
-        if existing is not None:
-            return existing
         if context.match.status not in FORMABLE_MATCH_STATUSES:
             raise TableFormationConflictError("Table Match is no longer formable.")
 
@@ -62,14 +65,7 @@ def form_table_match(
             title=title,
             description=description,
         )
-        session.add_all(
-            [
-                rows.series,
-                rows.event,
-                rows.expectations,
-                rows.booking,
-            ]
-        )
+        session.add_all([rows.series, rows.event, rows.expectations, rows.booking])
         context.match.status = TableMatchStatus.CONVERTED.value
         context.gm_supply.status = SignalStatus.MATCHED.value
         session.commit()
@@ -81,7 +77,7 @@ def form_table_match(
         )
     except IntegrityError:
         session.rollback()
-        recovered = _existing_result(session, table_match_id)
+        recovered = _existing_result(session, table_match_id, caller_user_id)
         if recovered is not None:
             return recovered
         LOGGER.exception("Table formation uniqueness recovery failed")
@@ -95,12 +91,25 @@ def form_table_match(
         raise
 
 
-def _existing_result(session: Session, table_match_id: UUID) -> FormationResult | None:
+def _existing_result(
+    session: Session,
+    table_match_id: UUID,
+    caller_user_id: UUID,
+) -> FormationResult | None:
     row = session.execute(
         select(Event, GameSeries, VenueBookingRequest)
         .join(GameSeries, GameSeries.id == Event.game_series_id)
         .join(VenueBookingRequest, VenueBookingRequest.event_id == Event.id)
-        .where(Event.table_match_id == table_match_id)
+        .join(GMProfile, GMProfile.id == Event.gm_profile_id)
+        .join(
+            UserRole,
+            (UserRole.user_id == GMProfile.user_id)
+            & (UserRole.role == UserRoleType.GM.value),
+        )
+        .where(
+            Event.table_match_id == table_match_id,
+            GMProfile.user_id == caller_user_id,
+        )
     ).one_or_none()
     if row is None:
         return None
