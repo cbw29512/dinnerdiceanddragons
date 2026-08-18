@@ -20,7 +20,7 @@ def test_alembic_configuration_discovers_current_head() -> None:
     script = load_script_directory()
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == ["0022_signal_specific_availability"]
+    assert script.get_heads() == ["0022_signal_availability"]
 
 
 def test_revision_ids_fit_alembic_version_column() -> None:
