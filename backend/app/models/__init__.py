@@ -5,6 +5,7 @@ from one place.
 """
 
 from app.db.base import Base
+from app.models.api_rate_limit_bucket import ApiRateLimitBucket
 from app.models.availability_window import GMAvailabilityWindow, PlayerAvailabilityWindow
 from app.models.event import Event, EventJoinMode, EventStatus, EventType
 from app.models.game_series import GameSeries
@@ -46,6 +47,7 @@ metadata = Base.metadata
 
 __all__ = [
     "AccountStatus",
+    "ApiRateLimitBucket",
     "AvailabilityDay",
     "AvailabilityPatternType",
     "Event",

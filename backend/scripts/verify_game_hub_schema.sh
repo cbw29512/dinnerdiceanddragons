@@ -6,7 +6,7 @@ psql_scalar() {
 }
 
 alembic_head="$(psql_scalar "SELECT version_num FROM alembic_version")"
-test "$alembic_head" = "0018_game_hub_messages"
+test "$alembic_head" = "0019_distributed_api_rate_limits"
 
 rls_enabled="$(psql_scalar "SELECT relrowsecurity::text FROM pg_class WHERE oid='public.messages'::regclass")"
 test "$rls_enabled" = "true"

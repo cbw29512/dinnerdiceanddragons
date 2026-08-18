@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies.current_user import require_active_user
 from app.api.dependencies.roles import require_admin
+from app.api.rate_limit import enforce_user_rate_limit
 from app.db.session import get_db_session
 from app.models.user import User
 from app.schemas.table_match_opportunities import (
@@ -18,6 +19,7 @@ from app.schemas.table_match_opportunities import (
     TableMatchRunRequest,
     TableMatchRunResponse,
 )
+from app.services.api_rate_limit_policy import RateLimitScope
 from app.services.table_match_engine_policy import TableMatchHorizonError
 from app.services.table_match_opportunity_reads import (
     TableMatchOpportunityNotFoundError,
@@ -55,12 +57,14 @@ def _raise_read_error(exc: Exception) -> NoReturn:
 @router.post("/run", response_model=TableMatchRunResponse)
 def post_matching_run(
     payload: TableMatchRunRequest,
-    _: Annotated[User, Depends(require_admin)],
+    user: Annotated[User, Depends(require_admin)],
+    session: Annotated[Session, Depends(get_db_session)],
     runner: Annotated[MatchRunner, Depends(get_match_runner)],
 ) -> TableMatchRunResponse:
     """Run bounded global matching through an admin/internal production boundary."""
 
     try:
+        enforce_user_rate_limit(session, user, RateLimitScope.MATCHING_RUN)
         result = runner(
             window_start=payload.window_start,
             window_end=payload.window_end,
