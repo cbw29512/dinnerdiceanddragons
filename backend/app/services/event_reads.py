@@ -14,10 +14,9 @@ from app.models.table_expectations import TableExpectations
 from app.models.user import User
 from app.models.venue import Venue
 from app.schemas.event_lifecycle import (
+    EventBookingSummary,
     EventExpectationsResponse,
     EventResponse,
-    RegistrationResponse,
-    VenueBookingResponse,
 )
 from app.services.event_access import EventNotFoundError, load_event, viewer_roles
 from app.services.event_lifecycle_state import booking_for_event, confirmed_registration_count
@@ -68,14 +67,12 @@ def get_event_for_user(session: Session, user: User, event_id: UUID) -> EventRes
             venue_city=venue.city,
             venue_state_region=venue.state_region,
             viewer_roles=list(roles),
-            booking=VenueBookingResponse(
+            booking=EventBookingSummary(
                 id=booking.id,
-                event_id=booking.event_id,
                 status=booking.status,
                 expected_guests=booking.expected_guests,
                 requested_start=booking.requested_start,
                 requested_end=booking.requested_end,
-                venue_message=booking.venue_message,
             ),
             expectations=EventExpectationsResponse(
                 tone=expectations.tone,
