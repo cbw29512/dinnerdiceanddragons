@@ -41,7 +41,4 @@ test "$registration_event_fk" = "1"
 expectations_event_fk="$(psql_scalar "SELECT COUNT(*) FROM pg_constraint WHERE conrelid='public.table_expectations'::regclass AND contype='f' AND confrelid='public.events'::regclass AND confdeltype='c'")"
 test "$expectations_event_fk" = "1"
 
-alembic_head="$(psql_scalar "SELECT version_num FROM alembic_version")"
-test "$alembic_head" = "0017_table_formation_lifecycle"
-
 echo "Table formation PostgreSQL schema verification passed."

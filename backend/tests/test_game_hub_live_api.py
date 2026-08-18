@@ -1,7 +1,7 @@
 """End-to-end API privacy and authorization tests for the live Game Hub."""
 
 import pytest
-from backend.tests.game_hub_live_test_support import LiveHubSeed, auth, build_hub_client
+from game_hub_live_test_support import LiveHubSeed, auth, build_hub_client
 
 from app.api.routes.events import router as events_router
 from app.api.routes.game_hub import index_router
