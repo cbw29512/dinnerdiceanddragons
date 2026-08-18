@@ -6,6 +6,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.events import router as events_router
+from app.api.routes.game_hub import index_router as game_hub_index_router
+from app.api.routes.game_hub import router as game_hub_router
 from app.api.routes.health import router as health_router
 from app.api.routes.matching_inputs import router as matching_inputs_router
 from app.api.routes.me import router as me_router
@@ -55,6 +57,8 @@ def create_app() -> FastAPI:
         application.include_router(table_match_opportunities_router, prefix="/api/v1")
         application.include_router(table_formation_router, prefix="/api/v1")
         application.include_router(events_router, prefix="/api/v1")
+        application.include_router(game_hub_index_router, prefix="/api/v1")
+        application.include_router(game_hub_router, prefix="/api/v1")
         application.include_router(venue_bookings_router, prefix="/api/v1")
         return application
     except Exception:
