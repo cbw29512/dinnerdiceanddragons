@@ -10,6 +10,14 @@ from app.models.availability_window import GMAvailabilityWindow, PlayerAvailabil
 from app.models.event import Event, EventJoinMode, EventStatus, EventType
 from app.models.game_series import GameSeries
 from app.models.game_system import GameSystem
+from app.models.game_table import (
+    GameTable,
+    GameTableFormat,
+    GameTableJoinPolicy,
+    GameTableStatus,
+    GameTableVisibility,
+)
+from app.models.game_table_player import GameTablePlayer, GameTablePlayerStatus
 from app.models.gm_profile import GMProfile
 from app.models.gm_supply_signal import GMSupplySignal
 from app.models.gm_system_experience import (
@@ -39,7 +47,13 @@ from app.models.table_match import TableMatch, TableMatchStatus
 from app.models.table_match_player import TableMatchPlayer, TableMatchPlayerStatus
 from app.models.user import AccountStatus, User
 from app.models.user_role import UserRole, UserRoleType
-from app.models.venue import Venue, VenueManager, VenueManagerRole, VenueType
+from app.models.venue import (
+    Venue,
+    VenueManager,
+    VenueManagerRole,
+    VenueSupportOffering,
+    VenueType,
+)
 from app.models.venue_booking_request import VenueBookingRequest, VenueBookingStatus
 from app.models.venue_table_window import VenueTableWindow
 
@@ -56,6 +70,13 @@ __all__ = [
     "EventType",
     "GameSeries",
     "GameSystem",
+    "GameTable",
+    "GameTableFormat",
+    "GameTableJoinPolicy",
+    "GameTablePlayer",
+    "GameTablePlayerStatus",
+    "GameTableStatus",
+    "GameTableVisibility",
     "GMAvailabilityWindow",
     "GMComfortLevel",
     "GMGameFormat",
@@ -95,6 +116,7 @@ __all__ = [
     "VenueBookingStatus",
     "VenueManager",
     "VenueManagerRole",
+    "VenueSupportOffering",
     "VenueTableWindow",
     "VenueType",
     "metadata",
