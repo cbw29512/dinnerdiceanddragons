@@ -2,7 +2,6 @@
 
 import logging
 from collections.abc import Sequence
-from typing import TypeVar
 
 from app.models.recurring_availability_rule import RecurringAvailabilityRule
 from app.services.table_match_engine_policy import (
@@ -11,10 +10,13 @@ from app.services.table_match_engine_policy import (
 )
 
 LOGGER = logging.getLogger(__name__)
-RowT = TypeVar("RowT")
 
 
-def require_bounded_candidate_rows(rows: Sequence[RowT], *, kind: str) -> Sequence[RowT]:
+def require_bounded_candidate_rows[RowT](
+    rows: Sequence[RowT],
+    *,
+    kind: str,
+) -> Sequence[RowT]:
     """Reject rather than silently truncate a matcher candidate class."""
 
     try:
