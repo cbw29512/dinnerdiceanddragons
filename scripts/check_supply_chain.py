@@ -59,6 +59,12 @@ def check_container_inputs() -> list[str]:
         errors.append("backend/Dockerfile: production dependencies must install from requirements.lock with --require-hashes")
     if re.search(r"pip\s+install[^\n]*\s\.\s*$", text, re.MULTILINE):
         errors.append("backend/Dockerfile: production build must not re-resolve project dependencies with 'pip install .' ")
+
+    user_lines = [line.strip().split(None, 1)[1] for line in text.splitlines() if line.strip().upper().startswith("USER ")]
+    if not user_lines:
+        errors.append("backend/Dockerfile: production image must declare a non-root USER")
+    elif user_lines[-1].lower() in {"root", "0", "0:0", "root:root"}:
+        errors.append("backend/Dockerfile: final production USER must not be root")
     return errors
 
 
