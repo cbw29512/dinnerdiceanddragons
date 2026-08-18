@@ -1,12 +1,13 @@
 """Typed runtime configuration for the production API."""
 
 from functools import lru_cache
-from ipaddress import ip_address
 from typing import Literal, Self
 from urllib.parse import urlsplit
 
 from pydantic import AnyHttpUrl, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from app.core.production_config import production_configuration_errors
 
 EnvironmentName = Literal["local", "test", "staging", "production"]
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -50,15 +51,27 @@ class Settings(BaseSettings):
         if self.app_env != "production":
             return self
 
+        try:
+            origins = self.cors_origins()
+            cors_errors: list[str] = []
+        except ValueError as exc:
+            origins = []
+            cors_errors = [str(exc)]
+
         errors = [
-            *self._production_database_errors(),
-            *self._production_supabase_errors(),
-            *self._production_cors_errors(),
+            *cors_errors,
+            *production_configuration_errors(
+                database_url=self.database_url.get_secret_value(),
+                supabase_url=str(self.supabase_url) if self.supabase_url else None,
+                supabase_jwt_audience=self.supabase_jwt_audience,
+                geocodio_api_key=(
+                    self.geocodio_api_key.get_secret_value()
+                    if self.geocodio_api_key is not None
+                    else None
+                ),
+                cors_origins=origins,
+            ),
         ]
-        if not self.supabase_jwt_audience.strip():
-            errors.append("SUPABASE_JWT_AUDIENCE must not be blank")
-        if self.geocodio_api_key is None or not self.geocodio_api_key.get_secret_value().strip():
-            errors.append("GEOCODIO_API_KEY is required")
         if errors:
             raise ValueError("Unsafe production configuration: " + "; ".join(errors))
         return self
@@ -100,54 +113,6 @@ class Settings(BaseSettings):
             "app_version": self.app_version,
             "build_sha": self.build_sha,
         }
-
-    def _production_database_errors(self) -> list[str]:
-        raw_url = self.database_url.get_secret_value().strip()
-        parsed = urlsplit(raw_url)
-        errors: list[str] = []
-        if parsed.scheme != "postgresql+psycopg":
-            errors.append("DATABASE_URL must use postgresql+psycopg")
-        if not parsed.hostname or _is_local_host(parsed.hostname):
-            errors.append("DATABASE_URL must use a non-loopback database host")
-        if not parsed.username or parsed.password is None:
-            errors.append("DATABASE_URL must include managed database credentials")
-        elif parsed.username == "ddd" and parsed.password == "ddd":
-            errors.append("DATABASE_URL must not use local ddd:ddd credentials")
-        return errors
-
-    def _production_supabase_errors(self) -> list[str]:
-        if self.supabase_url is None:
-            return ["SUPABASE_URL is required"]
-        parsed = urlsplit(str(self.supabase_url))
-        if parsed.scheme != "https" or not parsed.hostname or _is_local_host(parsed.hostname):
-            return ["SUPABASE_URL must be a non-loopback HTTPS origin"]
-        return []
-
-    def _production_cors_errors(self) -> list[str]:
-        try:
-            origins = self.cors_origins()
-        except ValueError as exc:
-            return [str(exc)]
-        if not origins:
-            return ["CORS_ALLOWED_ORIGINS must contain at least one production origin"]
-
-        errors: list[str] = []
-        for origin in origins:
-            parsed = urlsplit(origin)
-            if parsed.scheme != "https" or not parsed.hostname or _is_local_host(parsed.hostname):
-                errors.append("CORS_ALLOWED_ORIGINS must contain only non-loopback HTTPS origins")
-                break
-        return errors
-
-
-def _is_local_host(hostname: str) -> bool:
-    normalized = hostname.strip("[]").lower()
-    if normalized == "localhost" or normalized.endswith(".localhost"):
-        return True
-    try:
-        return ip_address(normalized).is_loopback
-    except ValueError:
-        return False
 
 
 @lru_cache
