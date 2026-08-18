@@ -23,6 +23,7 @@ from app.services.event_lifecycle_state import (
     confirmed_registration_count,
     synchronize_event_state,
 )
+from app.services.game_table_membership_release import release_unestablished_membership
 from app.services.game_table_membership_sync import confirm_game_table_membership
 from app.services.registration_common import (
     RegistrationConflictError,
@@ -140,6 +141,7 @@ def cancel_registration(
         registration.status = RegistrationStatus.CANCELLED.value
         registration.cancelled_at = datetime.now(UTC)
         if released_seat:
+            release_unestablished_membership(session, event, profile.id)
             promote_waitlist(session, event)
         booking = booking_for_event(session, event.id, lock=True)
         synchronize_event_state(session, event, booking)
