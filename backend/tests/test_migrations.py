@@ -20,7 +20,7 @@ def test_alembic_configuration_discovers_current_head() -> None:
     script = load_script_directory()
 
     assert Path(script.dir).resolve() == (BACKEND_DIR / "alembic").resolve()
-    assert script.get_heads() == ["0020_game_table_aggregate"]
+    assert script.get_heads() == ["0021_event_game_table_link"]
 
 
 def test_revision_ids_fit_alembic_version_column() -> None:
@@ -139,6 +139,9 @@ def test_alembic_offline_upgrade_emits_current_foundation_tables_without_databas
     assert "CREATE TABLE game_table_players" in result.stdout
     assert "pk_game_table_players" in result.stdout
     assert "ck_game_table_players_status" in result.stdout
+    assert "game_table_id" in result.stdout
+    assert "fk_events_game_table_id" in result.stdout
+    assert "ix_events_game_table_id" in result.stdout
     assert "INSERT INTO game_systems" in result.stdout
     assert "dnd-5e-2014" in result.stdout
     assert "dnd-5e-2024" in result.stdout
