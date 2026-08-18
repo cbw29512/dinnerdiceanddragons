@@ -2,7 +2,7 @@ name: Matching, Formation and Hub PostgreSQL Contract
 
 on:
   push:
-    branches: [main]
+    branches: [main, agent/table-aggregate-v1]
     paths:
       - "backend/app/models/**"
       - "backend/app/api/rate_limit.py"
