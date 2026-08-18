@@ -43,6 +43,7 @@ class FormTableMatchRequest(BaseModel):
 
 class FormTableMatchResponse(BaseModel):
     table_match_id: UUID
+    game_table_id: UUID | None
     event_id: UUID
     game_series_id: UUID | None
     venue_booking_request_id: UUID
