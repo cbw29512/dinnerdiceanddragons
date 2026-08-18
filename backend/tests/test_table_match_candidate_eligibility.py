@@ -41,9 +41,7 @@ class StaticPostalResolver:
 def test_non_active_gm_account_is_excluded(account_status: str) -> None:
     factory = build_runner_factory()
     with factory() as session:
-        gm_user = session.scalar(
-            select(User).where(User.auth_provider_user_id == "runner-gm")
-        )
+        gm_user = session.scalar(select(User).where(User.auth_provider_user_id == "runner-gm"))
         assert gm_user is not None
         gm_user.status = account_status
         session.commit()
@@ -64,9 +62,7 @@ def test_non_active_player_cannot_satisfy_minimum_player_threshold() -> None:
 def test_removed_gm_role_excludes_old_gm_signal() -> None:
     factory = build_runner_factory()
     with factory() as session:
-        gm_user = session.scalar(
-            select(User).where(User.auth_provider_user_id == "runner-gm")
-        )
+        gm_user = session.scalar(select(User).where(User.auth_provider_user_id == "runner-gm"))
         assert gm_user is not None
         role = session.scalar(
             select(UserRole).where(
