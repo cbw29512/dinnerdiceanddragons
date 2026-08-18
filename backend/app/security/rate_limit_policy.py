@@ -15,11 +15,25 @@ LOGGER = logging.getLogger(__name__)
 
 @dataclass(frozen=True, slots=True)
 class RateLimitPolicy:
-    """One endpoint-class limit shared by IP and authenticated-user subjects."""
+    """One endpoint class with separate shared-IP and authenticated-user limits."""
 
     name: str
-    limit: int
+    ip_limit: int
+    user_limit: int
     window_seconds: int
+
+    def limit_for(self, subject_kind: str) -> int:
+        """Return the configured allowance for one trusted subject type."""
+
+        try:
+            if subject_kind == "ip":
+                return self.ip_limit
+            if subject_kind == "user":
+                return self.user_limit
+            raise ValueError(f"Unsupported rate-limit subject kind: {subject_kind}")
+        except Exception:
+            LOGGER.exception("Failed to resolve rate-limit subject allowance")
+            raise
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,10 +46,10 @@ class RateLimitDecision:
     retry_after_seconds: int
 
 
-READ_POLICY = RateLimitPolicy("read", limit=240, window_seconds=60)
-MUTATION_POLICY = RateLimitPolicy("mutation", limit=60, window_seconds=60)
-MESSAGE_POLICY = RateLimitPolicy("message", limit=30, window_seconds=60)
-EXPENSIVE_POLICY = RateLimitPolicy("expensive", limit=6, window_seconds=300)
+READ_POLICY = RateLimitPolicy("read", ip_limit=600, user_limit=240, window_seconds=60)
+MUTATION_POLICY = RateLimitPolicy("mutation", ip_limit=180, user_limit=60, window_seconds=60)
+MESSAGE_POLICY = RateLimitPolicy("message", ip_limit=120, user_limit=30, window_seconds=60)
+EXPENSIVE_POLICY = RateLimitPolicy("expensive", ip_limit=12, user_limit=6, window_seconds=300)
 
 
 def policy_for_request(method: str, path: str) -> RateLimitPolicy | None:
