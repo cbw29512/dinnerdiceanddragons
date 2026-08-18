@@ -44,10 +44,15 @@ def confirm_game_table_membership(
             GameTablePlayer,
             (game_table.id, player_profile_id),
         )
-        if membership is not None and membership.status == GameTablePlayerStatus.CONFIRMED.value:
+        if (
+            membership is not None
+            and membership.status == GameTablePlayerStatus.CONFIRMED.value
+        ):
             return membership
         if membership is not None and membership.status in CLOSED_MEMBERSHIP_STATUSES:
-            raise RegistrationConflictError("Player must rejoin the Table before taking a seat.")
+            raise RegistrationConflictError(
+                "Player must rejoin the Table before taking a seat."
+            )
 
         confirmed_members = int(
             session.scalar(
@@ -75,7 +80,8 @@ def confirm_game_table_membership(
                 session.add(membership)
                 session.flush()
             LOGGER.info(
-                "Confirmed Event participant remains non-roster substitute table_id=%s player_profile_id=%s",
+                "Confirmed Event participant remains non-roster substitute "
+                "table_id=%s player_profile_id=%s",
                 game_table.id,
                 player_profile_id,
             )
@@ -106,7 +112,8 @@ def confirm_game_table_membership(
         raise
     except Exception:
         LOGGER.exception(
-            "Failed to synchronize GameTable membership event_id=%s player_profile_id=%s",
+            "Failed to synchronize GameTable membership "
+            "event_id=%s player_profile_id=%s",
             event.id,
             player_profile_id,
         )
