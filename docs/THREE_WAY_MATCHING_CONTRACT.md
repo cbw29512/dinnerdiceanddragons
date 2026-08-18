@@ -17,6 +17,27 @@ When all three sides are compatible, DD&D should surface the opportunity immedia
 
 No side is subordinate to another during discovery. Each side independently publishes what it can offer or needs, and the platform finds the overlap.
 
+## Time belongs to the concrete signal
+
+Profile-level availability is reusable/default availability only. Production matching must keep **what** and **when** coupled on the concrete marketplace signal.
+
+A GM may truthfully say:
+
+- D&D 5e — Saturday 6–10 PM;
+- Call of Cthulhu — Tuesday 6–9 PM.
+
+Those windows must not be cross-combined. The D&D supply signal owns its Saturday availability and the Call of Cthulhu supply signal owns its Tuesday availability.
+
+The same rule applies to Players: a Player may be available for one game/system on one night and a different game/system on another night.
+
+Canonical typed ownership:
+
+- `GMSupplySignal` → `GMSupplyAvailabilityWindow` → `RecurringAvailabilityRule`
+- `PlayerDemandSignal` → `PlayerDemandAvailabilityWindow` → `RecurringAvailabilityRule`
+- `VenueTableWindow` → `RecurringAvailabilityRule`
+
+Legacy profile-owned availability may be used only as a backward-compatibility fallback for old signals that do not yet have signal-owned windows. New matching signals must persist at least one concrete availability window.
+
 ## GM signal
 
 A GM must be able to say, in practical terms:
@@ -105,7 +126,9 @@ These are persistent formation opportunities, not failed searches.
 
 ## The BOOM moment
 
-When the matcher determines that the hard-fit rules pass for a GM, enough Players, a Venue, and a concrete time window, the product should create or update the persistent GameTable and visibly tell the affected parties that a viable Table has formed.
+When the matcher determines that the hard-fit rules pass for a GM, enough Players, a Venue, and a concrete time window, the product must create or update the persistent `GameTable` immediately. An Event is **not** required to exist first.
+
+Compatible Players are invited to the materialized Table; matching does not silently commit them. The GM, Players, and Venue still complete the required confirmation/approval workflow before the scheduled Event becomes confirmed.
 
 Conceptually:
 
@@ -124,6 +147,10 @@ VENUE
         BOOM!
           ↓
    VIABLE GAME TABLE
+          ↓
+ HUMAN CONFIRMATIONS
+          ↓
+   SCHEDULED EVENT
 ```
 
 The GM gets Players and a place to run. The Players get a runnable local game. The Venue receives a predictable group for a predictable block of time and may attach its own purchase policies, incentives, or host benefits.
