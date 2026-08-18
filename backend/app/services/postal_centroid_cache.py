@@ -14,6 +14,7 @@ from app.services.postal_centroids import (
     PostalCentroidResolver,
     PostalCentroidResult,
     normalize_us_postal_code,
+    require_valid_postal_centroid,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -41,7 +42,10 @@ class PostalCentroidCache:
             return cached
 
         try:
-            resolved = self._resolver.resolve(normalized)
+            resolved = require_valid_postal_centroid(
+                self._resolver.resolve(normalized),
+                expected_postal_code=normalized,
+            )
         except (GeocodingError, ValueError):
             LOGGER.exception("Postal centroid provider resolution failed")
             raise
@@ -104,9 +108,9 @@ class PostalCentroidCache:
 def _result_from_record(record: PostalCodeCentroid) -> PostalCentroidResult:
     return PostalCentroidResult(
         postal_code=record.postal_code,
-        latitude=record.latitude,
-        longitude=record.longitude,
-        accuracy=record.accuracy,
+        latitude=float(record.latitude),
+        longitude=float(record.longitude),
+        accuracy=float(record.accuracy),
         accuracy_type=record.accuracy_type,
         provider=record.provider,
     )
