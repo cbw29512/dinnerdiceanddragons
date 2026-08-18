@@ -20,9 +20,7 @@ def encode_message_cursor(created_at: datetime, message_id: UUID) -> str:
     """
 
     normalized = (
-        created_at.replace(tzinfo=UTC)
-        if created_at.tzinfo is None
-        else created_at.astimezone(UTC)
+        created_at.replace(tzinfo=UTC) if created_at.tzinfo is None else created_at.astimezone(UTC)
     )
     raw = f"{normalized.isoformat()}|{message_id}".encode()
     return base64.urlsafe_b64encode(raw).decode().rstrip("=")
