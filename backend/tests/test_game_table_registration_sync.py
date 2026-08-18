@@ -75,20 +75,23 @@ def table_aware_factory(
         raise
 
 
-def test_instant_join_and_waitlist_promotion_confirm_membership_without_cancel_demotion() -> None:
+def test_waitlist_replaces_pre_first_play_commitment() -> None:
     factory, seed, table_id = table_aware_factory(player_count=2)
 
     with factory() as session:
-        first = request_registration(session, seed.player_users[0], seed.event_id)
+        request_registration(session, seed.player_users[0], seed.event_id)
     with factory() as session:
-        second = request_registration(session, seed.player_users[1], seed.event_id)
+        request_registration(session, seed.player_users[1], seed.event_id)
 
     with factory() as session:
         first_member = session.get(GameTablePlayer, (table_id, seed.player_profiles[0].id))
         second_member = session.get(GameTablePlayer, (table_id, seed.player_profiles[1].id))
+        game_table = session.get(GameTable, table_id)
         assert first_member is not None and second_member is not None
+        assert game_table is not None
         assert first_member.status == GameTablePlayerStatus.CONFIRMED.value
         assert second_member.status == GameTablePlayerStatus.INVITED.value
+        assert game_table.lifecycle_status == GameTableStatus.CONFIRMED.value
 
     with factory() as session:
         cancel_registration(session, seed.player_users[0], seed.event_id)
@@ -97,10 +100,8 @@ def test_instant_join_and_waitlist_promotion_confirm_membership_without_cancel_d
         first_member = session.get(GameTablePlayer, (table_id, seed.player_profiles[0].id))
         second_member = session.get(GameTablePlayer, (table_id, seed.player_profiles[1].id))
         assert first_member is not None and second_member is not None
-        assert first_member.status == GameTablePlayerStatus.CONFIRMED.value
+        assert first_member.status == GameTablePlayerStatus.INVITED.value
         assert second_member.status == GameTablePlayerStatus.CONFIRMED.value
-        assert first.status == "confirmed"
-        assert second.status == "waitlisted"
 
 
 def test_gm_confirmation_promotes_invitation_to_persistent_membership() -> None:
@@ -118,11 +119,12 @@ def test_gm_confirmation_promotes_invitation_to_persistent_membership() -> None:
         assert member.status == GameTablePlayerStatus.INVITED.value
 
     with factory() as session:
-        gm_user = seed.gm_user
-        decide_registration(session, gm_user, seed.event_id, requested.id, "confirm")
+        decide_registration(session, seed.gm_user, seed.event_id, requested.id, "confirm")
         member = session.get(GameTablePlayer, (table_id, seed.player_profiles[0].id))
-        assert member is not None
+        game_table = session.get(GameTable, table_id)
+        assert member is not None and game_table is not None
         assert member.status == GameTablePlayerStatus.CONFIRMED.value
+        assert game_table.lifecycle_status == GameTableStatus.CONFIRMED.value
         assert session.scalar(
             select(GameTablePlayer.player_profile_id).where(
                 GameTablePlayer.game_table_id == table_id
