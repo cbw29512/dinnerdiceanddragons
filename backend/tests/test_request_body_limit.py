@@ -11,7 +11,7 @@ from app.middleware.request_size import DEFAULT_MAX_BODY_BYTES, RequestBodyLimit
 
 def test_oversized_mutation_is_rejected_before_auth_or_validation() -> None:
     with TestClient(create_app()) as client:
-        response = client.post(
+        response = client.put(
             "/api/v1/onboarding/player",
             content=b"x" * (DEFAULT_MAX_BODY_BYTES + 1),
             headers={"Content-Type": "application/json"},
@@ -26,7 +26,7 @@ def test_oversized_mutation_is_rejected_before_auth_or_validation() -> None:
 
 def test_small_mutation_reaches_normal_application_boundary() -> None:
     with TestClient(create_app()) as client:
-        response = client.post(
+        response = client.put(
             "/api/v1/onboarding/player",
             content=b"{}",
             headers={"Content-Type": "application/json"},
