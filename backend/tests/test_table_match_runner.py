@@ -3,13 +3,13 @@
 from datetime import date
 
 from sqlalchemy import func, select
+from table_match_runner_test_support import build_runner_factory
 
 from app.models.match_explanation import MatchExplanation
 from app.models.table_match import TableMatch
 from app.models.table_match_player import TableMatchPlayer
 from app.services.postal_centroids import PostalCentroidResult
 from app.services.table_match_runner import run_table_match
-from table_match_runner_test_support import build_runner_factory
 
 MATCH_DATE = date(2026, 8, 21)
 
