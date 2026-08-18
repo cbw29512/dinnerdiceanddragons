@@ -2,7 +2,7 @@
 
 import base64
 import binascii
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 
@@ -11,7 +11,20 @@ class MessageCursorError(ValueError):
 
 
 def encode_message_cursor(created_at: datetime, message_id: UUID) -> str:
-    raw = f"{created_at.isoformat()}|{message_id}".encode()
+    """Encode a stable UTC timestamp + UUID cursor.
+
+    Production PostgreSQL returns timezone-aware ``timestamptz`` values. SQLite,
+    used by fast unit/API tests, strips timezone metadata from DateTime values.
+    Because all application timestamps are UTC by contract, a naive value at
+    this boundary is interpreted as UTC before serialization.
+    """
+
+    normalized = (
+        created_at.replace(tzinfo=UTC)
+        if created_at.tzinfo is None
+        else created_at.astimezone(UTC)
+    )
+    raw = f"{normalized.isoformat()}|{message_id}".encode()
     return base64.urlsafe_b64encode(raw).decode().rstrip("=")
 
 
@@ -23,7 +36,7 @@ def decode_message_cursor(cursor: str) -> tuple[datetime, UUID]:
         created_at = datetime.fromisoformat(created_raw)
         if created_at.tzinfo is None:
             raise ValueError("cursor timestamp must be timezone-aware")
-        return created_at, UUID(message_raw)
+        return created_at.astimezone(UTC), UUID(message_raw)
     except (ValueError, UnicodeError, binascii.Error) as exc:
         raise MessageCursorError("Invalid message cursor.") from exc
 
