@@ -38,9 +38,10 @@ class VenueCandidate:
 
 @dataclass(frozen=True, slots=True)
 class PlayerCandidate:
-    """One active Player demand signal paired with one availability rule."""
+    """One Player demand signal paired with its durable Player profile."""
 
     demand_id: UUID
+    player_profile_id: UUID
     game_system_id: UUID
     preferred_format: str
     status: str
