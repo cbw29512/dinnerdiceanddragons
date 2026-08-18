@@ -33,6 +33,7 @@ class FormationSeed:
     player_user: User
     venue_manager_user: User
     gm_profile: GMProfile
+    gm_supply: GMSupplySignal
     player_profile: PlayerProfile
     player_demand: PlayerDemandSignal
     system: GameSystem
@@ -179,6 +180,7 @@ def seed_formation_parents(session: Session) -> FormationSeed:
         player_user=player_user,
         venue_manager_user=venue_manager_user,
         gm_profile=gm_profile,
+        gm_supply=gm_supply,
         player_profile=player_profile,
         player_demand=player_demand,
         system=system,
