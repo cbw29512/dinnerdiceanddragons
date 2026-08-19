@@ -56,6 +56,10 @@ jobs:
           ON CONFLICT (id) DO NOTHING;
           SQL
 
+      - name: Remove legacy provider origins from page CSP
+        run: |
+          perl -pi -e 's/ https:\/\/acpjfycmwbnxzlkvoouv\.supabase\.co//g; s/ https:\/\/dinnerdiceanddragons\.vercel\.app//g' create-game.html game-hub.html join.html venues.html
+
       - name: Reject Supabase-specific SQL in Netlify baseline
         run: |
           if grep -Eqi 'auth\.uid\(|service_role|supabase' netlify/database/migrations/0001_initial_schema.sql; then
@@ -63,11 +67,11 @@ jobs:
             exit 1
           fi
 
-      - name: Commit generated lockfile and migration
+      - name: Commit generated Netlify-native artifacts
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json netlify/database/migrations/0001_initial_schema.sql
+          git add package.json package-lock.json netlify/database/migrations/0001_initial_schema.sql create-game.html game-hub.html join.html venues.html
           if git diff --cached --quiet; then
             echo "Nothing to commit"
             exit 0
