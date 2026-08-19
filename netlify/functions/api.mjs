@@ -1,5 +1,5 @@
 import { currentUser, publicCurrentUser, userRoles } from "./_lib/auth.mjs";
-import { json, methodNotAllowed, notFound, pathParts, readJson, route } from "./_lib/http.mjs";
+import { json, methodNotAllowed, noContent, notFound, pathParts, readJson, route } from "./_lib/http.mjs";
 import {
   createGMSupply,
   createPlayerDemand,
@@ -31,6 +31,7 @@ import {
 } from "./_lib/onboarding.mjs";
 import { enforceRateLimit, RATE_LIMIT_SCOPES } from "./_lib/rate-limit.mjs";
 import { SupabaseRestError } from "./_lib/supabase-rest.mjs";
+import { verifyVenueClaim } from "./_lib/venue-verification.mjs";
 
 function activeUser(request) {
   return currentUser(request, { active: true });
@@ -175,6 +176,19 @@ async function booking(request, parts) {
   return json(await decideVenueBooking(user, parts[1], payload.action, payload.message));
 }
 
+async function admin(request, parts) {
+  if (
+    parts.length !== 6 ||
+    parts[1] !== "venues" ||
+    parts[3] !== "manager-claims" ||
+    parts[5] !== "verify"
+  ) return notFound();
+  if (request.method !== "POST") return methodNotAllowed(["POST"]);
+  const { user } = await activeUser(request);
+  await verifyVenueClaim(user, parts[2], parts[4]);
+  return noContent();
+}
+
 export default async (request) => route(async () => {
   const parts = pathParts(request);
   if (parts[0] === "health" && parts.length === 1) {
@@ -191,6 +205,7 @@ export default async (request) => route(async () => {
   }
   if (parts[0] === "events") return events(request, parts);
   if (parts[0] === "venue-bookings") return booking(request, parts);
+  if (parts[0] === "admin") return admin(request, parts);
   return notFound();
 });
 
