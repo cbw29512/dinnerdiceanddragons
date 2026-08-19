@@ -2,6 +2,7 @@
 
 from datetime import date, time
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 from app.models.recurring_availability_rule import RecurringAvailabilityRule
 from app.services.postal_centroids import PostalCentroidResult
@@ -93,11 +94,15 @@ def test_matching_gm_players_and_venue_produce_boom_opportunity() -> None:
 
     assert len(opportunities) == 1
     boom = opportunities[0]
+    local_zone = ZoneInfo(boom.timezone)
+    proposed_start_local = boom.proposed_start.astimezone(local_zone)
+    proposed_end_local = boom.proposed_end.astimezone(local_zone)
+
     assert boom.minimum_players == 3
     assert boom.maximum_players == 5
     assert boom.compatible_player_count == 3
-    assert boom.proposed_start.hour == 18
-    assert boom.proposed_end.hour == 22
+    assert proposed_start_local.hour == 18
+    assert proposed_end_local.hour == 22
     assert boom.timezone == "America/New_York"
 
 
