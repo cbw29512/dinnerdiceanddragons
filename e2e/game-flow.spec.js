@@ -1,7 +1,7 @@
 const { test, expect } = require("@playwright/test");
 const { installAuthenticatedSession } = require("./helpers");
 
-const API_BASE = "https://dinnerdiceanddragons.vercel.app";
+const API_BASE = "http://127.0.0.1:4173";
 const MATCH_ID = "11111111-1111-4111-8111-111111111111";
 const TABLE_ID = "22222222-2222-4222-8222-222222222222";
 const VENUE_ID = "33333333-3333-4333-8333-333333333333";
@@ -109,8 +109,8 @@ async function installGmApi(page) {
 }
 
 test("GM signup enters production matching and forms the real Event", async ({ page }) => {
-  await installAuthenticatedSession(page, { email: "gm-browser@example.test" });
   await installGmApi(page);
+  await installAuthenticatedSession(page, { email: "gm-browser@example.test" });
   await page.goto("/join.html#gm");
 
   const form = page.locator("#gm-form");
@@ -155,7 +155,6 @@ test("matched Player can request a real Event seat from signup results", async (
     your_gm_distance_miles: null
   });
 
-  await installAuthenticatedSession(page, { email: "player-browser@example.test" });
   await page.route(`${API_BASE}/api/v1/**`, async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
@@ -179,6 +178,7 @@ test("matched Player can request a real Event seat from signup results", async (
     }
     return fulfillJson(route, { detail: `Unhandled browser fixture: ${request.method()} ${path}` }, 404);
   });
+  await installAuthenticatedSession(page, { email: "player-browser@example.test" });
 
   await page.goto("/join.html#player");
   const form = page.locator("#player-form");
@@ -210,7 +210,6 @@ test("production match values render as inert text on Event creation", async ({ 
     }
   });
 
-  await installAuthenticatedSession(page, { email: "gm-browser@example.test" });
   await page.route(`${API_BASE}/api/v1/**`, async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
@@ -220,6 +219,7 @@ test("production match values render as inert text on Event creation", async ({ 
     }
     return fulfillJson(route, { detail: "Not found" }, 404);
   });
+  await installAuthenticatedSession(page, { email: "gm-browser@example.test" });
 
   await page.goto(`/create-game.html?table_match_id=${MATCH_ID}`);
   const summary = page.locator("#selected-slot");
