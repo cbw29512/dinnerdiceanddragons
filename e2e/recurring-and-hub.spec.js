@@ -1,5 +1,7 @@
 const { test, expect } = require("@playwright/test");
-const { mockZipLookup } = require("./helpers");
+const { mockZipLookup, installAuthenticatedSession } = require("./helpers");
+
+const API_BASE = "http://127.0.0.1:4173";
 
 test("DM can check recurring dates, create the recurring table, and review commitments", async ({ page }) => {
   await mockZipLookup(page);
@@ -44,8 +46,7 @@ test("live Game Hub renders production API state and treats stored message HTML 
   const xssBody = '<img src=x onerror="window.__dddXss=1">Live table message';
   const messages = [hubMessage("11111111-1111-4111-8111-111111111111", xssBody)];
 
-  await installAuthenticatedSession(page);
-  await page.route("https://dinnerdiceanddragons.vercel.app/api/v1/**", async (route) => {
+  await page.route(`${API_BASE}/api/v1/**`, async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     if (url.pathname === `/api/v1/events/${eventId}/hub` && request.method() === "GET") {
@@ -69,6 +70,7 @@ test("live Game Hub renders production API state and treats stored message HTML 
     }
     await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not found" }) });
   });
+  await installAuthenticatedSession(page);
 
   await page.goto(`/game-hub.html?event=${eventId}`);
 
@@ -165,25 +167,4 @@ function hubMessage(id, body, mine = false) {
     mine,
     reply_registration_id: null
   };
-}
-
-async function installAuthenticatedSession(page) {
-  const accessToken = fakeJwt({
-    sub: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
-    email: "browser@example.test",
-    exp: 4102444800
-  });
-  await page.addInitScript(({ accessToken: token }) => {
-    localStorage.setItem("ddd-production-auth-session", JSON.stringify({
-      access_token: token,
-      refresh_token: "browser-refresh-token",
-      expires_at: 4102444800,
-      user: { id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", email: "browser@example.test" }
-    }));
-  }, { accessToken });
-}
-
-function fakeJwt(payload) {
-  const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
-  return `${encode({ alg: "RS256", typ: "JWT" })}.${encode(payload)}.browser-signature`;
 }
