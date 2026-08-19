@@ -14,10 +14,11 @@
 
   function alignProductionControls() {
     const learning = document.querySelector('#player-form [name="willing_to_learn"]');
-    if (!learning) return;
-    Array.from(learning.options).forEach((option) => {
-      if (option.textContent.trim() === "Maybe") option.remove();
-    });
+    if (learning) {
+      Array.from(learning.options).forEach((option) => {
+        if (option.textContent.trim() === "Maybe") option.remove();
+      });
+    }
   }
 
   function browserTimezone() {
@@ -98,6 +99,24 @@
     }
   }
 
+  async function activateMatching(type, mapped, rawValues) {
+    if (!window.DDDProductionMatching?.syncAndFind) {
+      return {
+        matching: null,
+        matchingError: new Error("Production matching bridge is unavailable on this page.")
+      };
+    }
+    try {
+      return {
+        matching: await window.DDDProductionMatching.syncAndFind(type, mapped, rawValues),
+        matchingError: null
+      };
+    } catch (error) {
+      console.error(`[Dinner Dice & Dragons] Unable to activate ${type} matching`, error);
+      return { matching: null, matchingError: error };
+    }
+  }
+
   async function save(type, rawValues) {
     if (!isEnabled(type)) {
       throw new Error(`Production onboarding is not available for ${type}.`);
@@ -110,13 +129,17 @@
     let mapped;
     let result;
     let pendingVerification = false;
+    let matching = null;
+    let matchingError = null;
 
     if (type === "Player") {
       mapped = window.DDDProductionOnboardingAdapters.player(rawValues, options);
       result = await window.DDDProductionAPI.putPlayerOnboarding(mapped.payload);
+      ({ matching, matchingError } = await activateMatching(type, mapped, rawValues));
     } else if (type === "Game Master") {
       mapped = window.DDDProductionOnboardingAdapters.gm(rawValues, options);
       result = await window.DDDProductionAPI.putGMOnboarding(mapped.payload);
+      ({ matching, matchingError } = await activateMatching(type, mapped, rawValues));
     } else {
       mapped = window.DDDProductionOnboardingAdapters.venue(rawValues, options);
       result = await window.DDDProductionAPI.postVenueOnboarding(mapped.payload);
@@ -132,13 +155,13 @@
       result,
       deferred: mapped.deferred,
       payload: mapped.payload,
-      pendingVerification
+      pendingVerification,
+      matching,
+      matchingError
     };
   }
 
   function init() {
-    // Authentication UI is owned exclusively by global-auth-ui.js.
-    // This module adapts and persists authenticated production onboarding forms.
     alignProductionControls();
     window.setTimeout(() => { void resumePendingVenueWindow(); }, 0);
   }
