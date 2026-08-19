@@ -12,6 +12,7 @@ const POLICIES = Object.freeze({
   table_formation: { capacity: 3, refillTokens: 1, refillSeconds: 60 },
   venue_booking: { capacity: 6, refillTokens: 1, refillSeconds: 10 },
   matching_refresh: { capacity: 3, refillTokens: 1, refillSeconds: 60 },
+  provider_geocoding: { capacity: 2, refillTokens: 1, refillSeconds: 60 },
   onboarding_mutation: { capacity: 6, refillTokens: 1, refillSeconds: 20 },
   matching_input: { capacity: 10, refillTokens: 1, refillSeconds: 10 }
 });
@@ -101,6 +102,7 @@ export const RATE_LIMIT_SCOPES = Object.freeze({
   TABLE_FORMATION: "table_formation",
   VENUE_BOOKING: "venue_booking",
   MATCHING_REFRESH: "matching_refresh",
+  PROVIDER_GEOCODING: "provider_geocoding",
   ONBOARDING_MUTATION: "onboarding_mutation",
   MATCHING_INPUT: "matching_input"
 });
