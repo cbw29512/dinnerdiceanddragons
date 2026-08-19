@@ -71,6 +71,8 @@ class TableMatchOpportunityResponse(BaseModel):
 
     id: UUID
     game_table_id: UUID | None = None
+    event_id: UUID | None = None
+    event_status: str | None = None
     status: str
     proposed_start: datetime
     proposed_end: datetime
