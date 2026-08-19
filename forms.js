@@ -145,7 +145,10 @@
     try {
       if (status) status.textContent = "Saving to your DDD account…";
       const saved = await window.DDDProductionOnboarding.save(type, rawValues);
-      announce(status, "Saved to your DDD account. Your information is ready for the production matching flow.", true);
+      const successMessage = saved.pendingVerification
+        ? "Venue saved to your DDD account. Verification is required before this table opening can enter live matching."
+        : "Saved to your DDD account. Your information is ready for the production matching flow.";
+      announce(status, successMessage, true);
       form.dispatchEvent(new CustomEvent("ddd:save-success", {
         detail: {
           type,
@@ -154,7 +157,8 @@
           result: saved.result,
           values: rawValues,
           payload: saved.payload,
-          deferred: saved.deferred
+          deferred: saved.deferred,
+          pendingVerification: Boolean(saved.pendingVerification)
         }
       }));
       return true;
