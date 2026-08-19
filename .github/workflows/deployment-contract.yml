@@ -10,6 +10,53 @@ permissions:
   contents: read
 
 jobs:
+  netlify-static-contract:
+    name: Netlify production artifact contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+
+      - name: Build Netlify production artifact
+        env:
+          URL: https://ddd-contract.netlify.app
+        run: node scripts/build-netlify.mjs
+
+      - name: Verify Netlify package boundary and routing
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f netlify.toml
+          test -f netlify/functions/api-proxy.mjs
+          test -f dist/index.html
+          test -f dist/join.html
+          test -f dist/venues.html
+          test -f dist/sitemap.xml
+          test -f dist/robots.txt
+          test ! -e dist/backend
+          test ! -e dist/.github
+          test ! -e dist/e2e
+          test ! -e dist/tests
+          test ! -e dist/supabase
+          test ! -e dist/apps-script
+          test ! -e dist/dashboard-prototype.html
+          grep -q 'apiBaseUrl: window.location.origin' dist/production-config.js
+          grep -q 'https://ddd-contract.netlify.app' dist/sitemap.xml
+          grep -q 'Sitemap: https://ddd-contract.netlify.app/sitemap.xml' dist/robots.txt
+          if grep -R -n 'dinnerdiceanddragons.vercel.app' dist; then
+            echo "Legacy Vercel origin leaked into Netlify artifact."
+            exit 1
+          fi
+          node --check scripts/build-netlify.mjs
+          node --check scripts/netlify-ignore.mjs
+          node --check netlify/functions/api-proxy.mjs
+
   api-runtime-contract:
     name: API injected-port runtime contract
     runs-on: ubuntu-latest

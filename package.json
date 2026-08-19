@@ -2,8 +2,9 @@
   "name": "dinner-dice-and-dragons-site-tests",
   "version": "1.0.0",
   "private": true,
-  "description": "Browser-level regression and accessibility tests for the Dinner, Dice & Dragons static site.",
+  "description": "Browser-level regression, accessibility, and production build checks for Dinner, Dice & Dragons.",
   "scripts": {
+    "build:netlify": "node scripts/build-netlify.mjs",
     "test:e2e": "playwright test"
   },
   "devDependencies": {
