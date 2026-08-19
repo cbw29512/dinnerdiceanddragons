@@ -43,7 +43,12 @@ jobs:
           mkdir -p netlify/database/migrations
           cd backend
           alembic upgrade head --sql > ../netlify/database/migrations/0001_initial_schema.sql
-          cat >> ../netlify/database/migrations/0001_initial_schema.sql <<'SQL'
+          cd ..
+          # The reference Alembic history contains RLS hardening for Supabase
+          # PostgREST. Netlify Functions connect directly to Postgres, so those
+          # provider-specific ENABLE RLS statements are intentionally omitted.
+          sed -i '/ENABLE ROW LEVEL SECURITY;/d' netlify/database/migrations/0001_initial_schema.sql
+          cat >> netlify/database/migrations/0001_initial_schema.sql <<'SQL'
 
           INSERT INTO game_systems (id, name, edition, slug, publisher_name, active) VALUES
             ('10000000-0000-0000-0000-000000000001', 'Dungeons & Dragons', '5e (2014)', 'dnd-5e-2014', NULL, true),
@@ -60,10 +65,10 @@ jobs:
         run: |
           perl -pi -e 's/ https:\/\/acpjfycmwbnxzlkvoouv\.supabase\.co//g; s/ https:\/\/dinnerdiceanddragons\.vercel\.app//g' create-game.html game-hub.html join.html venues.html
 
-      - name: Reject Supabase-specific SQL in Netlify baseline
+      - name: Reject provider-specific SQL in Netlify baseline
         run: |
-          if grep -Eqi 'auth\.uid\(|service_role|supabase' netlify/database/migrations/0001_initial_schema.sql; then
-            echo "Generated baseline contains Supabase-specific SQL" >&2
+          if grep -Eqi 'auth\.uid\(|service_role|ENABLE ROW LEVEL SECURITY|CREATE POLICY' netlify/database/migrations/0001_initial_schema.sql; then
+            echo "Generated baseline contains provider-specific access-control SQL" >&2
             exit 1
           fi
 
