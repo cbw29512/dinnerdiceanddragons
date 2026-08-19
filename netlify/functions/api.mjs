@@ -29,6 +29,7 @@ import {
   saveGMOnboarding,
   savePlayerOnboarding
 } from "./_lib/onboarding.mjs";
+import { enforceRateLimit, RATE_LIMIT_SCOPES } from "./_lib/rate-limit.mjs";
 import { SupabaseRestError } from "./_lib/supabase-rest.mjs";
 
 function activeUser(request) {
@@ -46,16 +47,23 @@ async function onboarding(request, parts) {
   const kind = parts[1];
   if (kind === "player") {
     if (request.method === "GET") return json(await loadPlayerOnboarding(user));
-    if (request.method === "PUT") return json(await savePlayerOnboarding(user, await readJson(request)), 200);
+    if (request.method === "PUT") {
+      await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.ONBOARDING_MUTATION);
+      return json(await savePlayerOnboarding(user, await readJson(request)), 200);
+    }
     return methodNotAllowed(["GET", "PUT"]);
   }
   if (kind === "gm") {
     if (request.method === "GET") return json(await loadGMOnboarding(user));
-    if (request.method === "PUT") return json(await saveGMOnboarding(user, await readJson(request)), 200);
+    if (request.method === "PUT") {
+      await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.ONBOARDING_MUTATION);
+      return json(await saveGMOnboarding(user, await readJson(request)), 200);
+    }
     return methodNotAllowed(["GET", "PUT"]);
   }
   if (kind === "venue") {
     if (request.method !== "POST") return methodNotAllowed(["POST"]);
+    await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.ONBOARDING_MUTATION);
     return json(await createVenueOnboarding(user, await readJson(request)), 201);
   }
   return notFound();
@@ -65,21 +73,31 @@ async function matching(request, parts) {
   const { user } = await activeUser(request);
   if (parts[1] === "player-demands" && parts.length === 2) {
     if (request.method === "GET") return json(await listPlayerDemands(user));
-    if (request.method === "POST") return json(await createPlayerDemand(user, await readJson(request)), 201);
+    if (request.method === "POST") {
+      await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.MATCHING_INPUT);
+      return json(await createPlayerDemand(user, await readJson(request)), 201);
+    }
     return methodNotAllowed(["GET", "POST"]);
   }
   if (parts[1] === "gm-supplies" && parts.length === 2) {
     if (request.method === "GET") return json(await listGMSupplies(user));
-    if (request.method === "POST") return json(await createGMSupply(user, await readJson(request)), 201);
+    if (request.method === "POST") {
+      await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.MATCHING_INPUT);
+      return json(await createGMSupply(user, await readJson(request)), 201);
+    }
     return methodNotAllowed(["GET", "POST"]);
   }
   if (parts[1] === "venues" && parts[2] && parts[3] === "table-windows" && parts.length === 4) {
     if (request.method === "GET") return json(await listVenueTableWindows(user, parts[2]));
-    if (request.method === "POST") return json(await createVenueTableWindow(user, parts[2], await readJson(request)), 201);
+    if (request.method === "POST") {
+      await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.MATCHING_INPUT);
+      return json(await createVenueTableWindow(user, parts[2], await readJson(request)), 201);
+    }
     return methodNotAllowed(["GET", "POST"]);
   }
   if (parts[1] === "find-my-table" && parts.length === 2) {
     if (request.method !== "POST") return methodNotAllowed(["POST"]);
+    await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.MATCHING_REFRESH);
     const payload = await readJson(request);
     const run = await runMatching({ horizonDays: payload.horizon_days ?? 60 });
     return json(await findMyTable(user, run));
@@ -94,6 +112,7 @@ async function matching(request, parts) {
   }
   if (parts[1] === "opportunities" && parts[2] && parts[3] === "form" && parts.length === 4) {
     if (request.method !== "POST") return methodNotAllowed(["POST"]);
+    await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.TABLE_FORMATION);
     return json(await formTableMatch(user, parts[2], await readJson(request)));
   }
   return notFound();
@@ -119,22 +138,28 @@ async function events(request, parts) {
         cursor: url.searchParams.get("cursor") || ""
       }));
     }
-    if (request.method === "POST") return json(await postHubMessage(user, eventId, await readJson(request)), 201);
+    if (request.method === "POST") {
+      await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.HUB_MESSAGE);
+      return json(await postHubMessage(user, eventId, await readJson(request)), 201);
+    }
     return methodNotAllowed(["GET", "POST"]);
   }
   if (parts[2] === "registrations" && parts.length === 3) {
     if (request.method !== "POST") return methodNotAllowed(["POST"]);
+    await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.EVENT_REGISTRATION);
     const payload = await readJson(request);
     return json(await requestRegistration(user, eventId, payload.expectations_acknowledged), 201);
   }
   if (parts[2] === "registrations" && parts[3] === "me" && parts.length === 4) {
     if (request.method !== "PATCH") return methodNotAllowed(["PATCH"]);
+    await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.EVENT_REGISTRATION);
     const payload = await readJson(request);
     if (payload.action !== "cancel") throw new SupabaseRestError("Unsupported Player registration action.", 422);
     return json(await cancelMyRegistration(user, eventId));
   }
   if (parts[2] === "registrations" && parts[3] && parts.length === 4) {
     if (request.method !== "PATCH") return methodNotAllowed(["PATCH"]);
+    await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.EVENT_REGISTRATION);
     const payload = await readJson(request);
     return json(await decideRegistration(user, eventId, parts[3], payload.action));
   }
@@ -145,6 +170,7 @@ async function booking(request, parts) {
   if (!parts[1]) return notFound();
   if (request.method !== "PATCH") return methodNotAllowed(["PATCH"]);
   const { user } = await activeUser(request);
+  await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.VENUE_BOOKING);
   const payload = await readJson(request);
   return json(await decideVenueBooking(user, parts[1], payload.action, payload.message));
 }
