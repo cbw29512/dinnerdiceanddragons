@@ -94,7 +94,9 @@ jobs:
           test "$(psql -At -h 127.0.0.1 -U ddd -d ddd_contract -c 'SELECT version_num FROM alembic_version')" = "0022_signal_availability"
           test "$(psql -At -h 127.0.0.1 -U ddd -d ddd_contract -c "SELECT count(*) FROM game_systems WHERE active IS TRUE")" = "7"
           test "$(psql -At -h 127.0.0.1 -U ddd -d ddd_contract -c "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='r' AND c.relrowsecurity")" = "0"
-          psql -At -h 127.0.0.1 -U ddd -d ddd_contract -c "SELECT to_regclass('public.game_tables'), to_regclass('public.events'), to_regclass('public.game_hub_messages')" | grep -q 'game_tables|events|game_hub_messages'
+          test "$(psql -At -h 127.0.0.1 -U ddd -d ddd_contract -c "SELECT to_regclass('public.game_tables')")" = "game_tables"
+          test "$(psql -At -h 127.0.0.1 -U ddd -d ddd_contract -c "SELECT to_regclass('public.events')")" = "events"
+          test "$(psql -At -h 127.0.0.1 -U ddd -d ddd_contract -c "SELECT to_regclass('public.game_hub_messages')")" = "game_hub_messages"
 
       - name: Run native Netlify API contract tests
         run: node tests/netlify-api-contract-tests.mjs
