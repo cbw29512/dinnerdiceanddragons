@@ -5,6 +5,7 @@ const ROOT = process.cwd();
 const OUT = path.join(ROOT, "dist");
 const OLD_API_ORIGIN = "https://dinnerdiceanddragons.vercel.app";
 const OLD_SITE_ORIGIN = "https://cbw29512.github.io/dinnerdiceanddragons";
+const SUPABASE_MARKERS = ["supabase.co", "sb_publishable_", "SUPABASE_SECRET_KEY"];
 const REQUIRED_FILES = [
   "index.html",
   "join.html",
@@ -51,17 +52,8 @@ function normalizedDeployUrl() {
   return url.origin;
 }
 
-function transformText(relativePath, text, deployUrl) {
+function transformText(_relativePath, text, deployUrl) {
   let output = text.replaceAll(` ${OLD_API_ORIGIN}`, "");
-
-  if (relativePath === "production-config.js") {
-    const before = `apiBaseUrl: "${OLD_API_ORIGIN}"`;
-    if (!output.includes(before)) {
-      throw new Error("production-config.js no longer contains the expected source API origin.");
-    }
-    output = output.replace(before, "apiBaseUrl: window.location.origin");
-  }
-
   if (deployUrl) output = output.replaceAll(OLD_SITE_ORIGIN, deployUrl);
   return output;
 }
@@ -100,9 +92,7 @@ async function copyPublicFiles(currentDir = ROOT, relativeDir = "", deployUrl = 
 }
 
 async function assertProductionArtifact(deployUrl) {
-  for (const required of REQUIRED_FILES) {
-    await readFile(path.join(OUT, required));
-  }
+  for (const required of REQUIRED_FILES) await readFile(path.join(OUT, required));
 
   const config = await readFile(path.join(OUT, "production-config.js"), "utf8");
   if (!config.includes("apiBaseUrl: window.location.origin")) {
@@ -124,8 +114,9 @@ async function assertProductionArtifact(deployUrl) {
       }
       if (!TEXT_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) continue;
       const text = await readFile(filePath, "utf8");
-      if (text.includes(OLD_API_ORIGIN)) {
-        throw new Error(`Legacy Vercel origin remains in ${path.relative(OUT, filePath)}`);
+      if (text.includes(OLD_API_ORIGIN)) throw new Error(`Legacy Vercel origin remains in ${path.relative(OUT, filePath)}`);
+      for (const marker of SUPABASE_MARKERS) {
+        if (text.includes(marker)) throw new Error(`Supabase production dependency remains in ${path.relative(OUT, filePath)}`);
       }
       if (deployUrl && text.includes(OLD_SITE_ORIGIN)) {
         throw new Error(`Legacy GitHub Pages origin remains in ${path.relative(OUT, filePath)}`);

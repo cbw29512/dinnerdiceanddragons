@@ -1,4 +1,6 @@
+import { confirmEmail, getUser, login, logout, signup, verifyRequestOrigin } from "@netlify/identity";
 import { currentUser, publicCurrentUser, userRoles } from "./_lib/auth.mjs";
+import { databaseHealth } from "./_lib/database.mjs";
 import { json, methodNotAllowed, noContent, notFound, pathParts, readJson, route } from "./_lib/http.mjs";
 import {
   createGMSupply,
@@ -35,6 +37,74 @@ import { verifyVenueClaim } from "./_lib/venue-verification.mjs";
 
 function activeUser(request) {
   return currentUser(request, { active: true });
+}
+
+function authFailure(error, fallback) {
+  const status = Number(error?.status || error?.statusCode || 0);
+  if (status === 403) return new SupabaseRestError("Authentication request was rejected.", 403);
+  if (status >= 400 && status < 500) return new SupabaseRestError(fallback, status);
+  console.warn("[Dinner Dice & Dragons] Netlify Identity request failed", error);
+  return new SupabaseRestError("Authentication is temporarily unavailable.", 503);
+}
+
+function credentials(payload) {
+  const email = String(payload?.email || "").trim().toLowerCase();
+  const password = String(payload?.password || "");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 320) {
+    throw new SupabaseRestError("Enter a valid email address.", 422);
+  }
+  if (password.length < 8 || password.length > 128) {
+    throw new SupabaseRestError("Password must be between 8 and 128 characters.", 422);
+  }
+  return { email, password };
+}
+
+async function auth(request, parts) {
+  const action = parts[1];
+
+  if (action === "session" && parts.length === 2) {
+    if (request.method !== "GET") return methodNotAllowed(["GET"]);
+    const user = await getUser();
+    return json(user ? { authenticated: true, id: user.id, email: user.email } : { authenticated: false });
+  }
+
+  if (request.method !== "POST") return methodNotAllowed(["POST"]);
+  try {
+    verifyRequestOrigin(request);
+
+    if (action === "signup" && parts.length === 2) {
+      const { email, password } = credentials(await readJson(request));
+      const user = await signup(email, password, {});
+      return json({
+        status: "confirmation_required",
+        email: user?.email || email
+      }, 201);
+    }
+
+    if (action === "login" && parts.length === 2) {
+      const { email, password } = credentials(await readJson(request));
+      const user = await login(email, password);
+      return json({ authenticated: true, id: user.id, email: user.email });
+    }
+
+    if (action === "logout" && parts.length === 2) {
+      await logout();
+      return noContent();
+    }
+
+    if (action === "confirm" && parts.length === 2) {
+      const payload = await readJson(request);
+      const token = String(payload?.token || "").trim();
+      if (!token || token.length > 4096) throw new SupabaseRestError("Confirmation token is invalid.", 422);
+      const user = await confirmEmail(token);
+      return json({ confirmed: true, id: user.id, email: user.email });
+    }
+  } catch (error) {
+    if (error instanceof SupabaseRestError) throw error;
+    throw authFailure(error, action === "login" ? "Email or password is incorrect." : "Authentication request could not be completed.");
+  }
+
+  return notFound();
 }
 
 async function identity(request) {
@@ -193,8 +263,16 @@ export default async (request) => route(async () => {
   const parts = pathParts(request);
   if (parts[0] === "health" && parts.length === 1) {
     if (request.method !== "GET") return methodNotAllowed(["GET"]);
-    return json({ status: "ok", runtime: "netlify-functions", version: "v1" });
+    const database = await databaseHealth();
+    return json({
+      status: database ? "ok" : "degraded",
+      runtime: "netlify-functions",
+      database: "netlify-database",
+      identity: "netlify-identity",
+      version: "v1"
+    }, database ? 200 : 503);
   }
+  if (parts[0] === "auth") return auth(request, parts);
   if (parts[0] === "me" && parts.length === 1) return identity(request);
   if (parts[0] === "onboarding") return onboarding(request, parts);
   if (parts[0] === "matching") return matching(request, parts);

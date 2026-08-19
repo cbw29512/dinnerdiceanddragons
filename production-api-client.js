@@ -25,11 +25,11 @@
     try {
       const nextBaseUrl = normalizeBaseUrl(options.baseUrl);
       if (!nextBaseUrl) throw new ProductionApiError("Production API base URL is required.");
-      if (typeof options.accessTokenProvider !== "function") {
-        throw new ProductionApiError("Production API accessTokenProvider must be a function.");
+      if (options.accessTokenProvider != null && typeof options.accessTokenProvider !== "function") {
+        throw new ProductionApiError("Production API accessTokenProvider must be a function when supplied.");
       }
       baseUrl = nextBaseUrl;
-      accessTokenProvider = options.accessTokenProvider;
+      accessTokenProvider = options.accessTokenProvider || null;
     } catch (error) {
       logError("Unable to configure production API client", error);
       throw error;
@@ -37,7 +37,7 @@
   }
 
   function isConfigured() {
-    return Boolean(baseUrl && accessTokenProvider);
+    return Boolean(baseUrl);
   }
 
   async function parseResponse(response) {
@@ -54,14 +54,13 @@
   async function request(method, path, payload = undefined) {
     try {
       if (!isConfigured()) throw new ProductionApiError("Production API client is not configured.");
-      const token = String(await accessTokenProvider() || "").trim();
-      if (!token) throw new ProductionApiError("An authenticated session is required.", 401);
-
+      const token = accessTokenProvider ? String(await accessTokenProvider() || "").trim() : "";
       const response = await fetch(`${baseUrl}${path}`, {
         method,
+        credentials: "same-origin",
         headers: {
           Accept: "application/json",
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
           ...(payload === undefined ? {} : { "Content-Type": "application/json" })
         },
         ...(payload === undefined ? {} : { body: JSON.stringify(payload) })

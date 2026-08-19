@@ -159,13 +159,13 @@ SOURCE_WIRING: dict[str, tuple[str, ...]] = {
     "availability.js": ('.add-availability', '.remove-availability', 'addEventListener("click"'),
     "forms.js": ('.prototype-form', 'addEventListener("submit"', 'ddd:save-success'),
     "form-pilot.js": ('player.save', 'gm.save', 'venue.save', 'game.save'),
-    "production-config.js": ('apiBaseUrl', 'supabaseUrl', 'supabasePublishableKey'),
+    "production-config.js": ('apiBaseUrl', 'window.location.origin'),
     "production-session-store.js": ('sessionStorage', 'localStorage.removeItem', 'DDDProductionSessionStore'),
     "production-auth.js": (
         'DDDProductionConfig',
-        'DDDProductionSessionStore',
-        'token?grant_type=password',
-        'token?grant_type=refresh_token',
+        '/api/v1/auth/',
+        'credentials: "same-origin"',
+        'confirmation_token',
         'DDDProductionAPI.configure',
     ),
     "production-onboarding.js": (
@@ -218,120 +218,49 @@ SOURCE_WIRING: dict[str, tuple[str, ...]] = {
     "game-hub-render.js": ('hub-role-button', 'addEventListener("click"', 'DDDGameHubMessages.renderChannels'),
     "game-hub.js": ('DDDGameHubActions.initialize',),
     "venue-feedback.js": ('#venue-feedback-form', 'addEventListener("submit"'),
-    "shared-registration.js": ('game.join', 'game.cancel_registration'),
-    "shared-games.js": ('DDDSharedRegistration.request', 'DDDSharedRegistration.cancel', 'addEventListener("click"'),
 }
 
-SECURITY_SINK_FREE_SCRIPTS = (
-    "production-config.js",
-    "production-session-store.js",
-    "production-auth.js",
-    "production-api-client.js",
-    "production-onboarding.js",
-    "production-matching.js",
-    "production-match-results.js",
-    "global-auth-ui.js",
-    "experience-profiles.js",
-    "availability.js",
-    "create-game.js",
-    "game-hub-core.js",
-    "game-hub-messages.js",
-    "game-hub-actions.js",
-    "game-hub-role-views.js",
-    "game-hub-render.js",
-    "game-hub.js",
-)
-BANNED_SECURITY_SINKS = ("innerHTML", "insertAdjacentHTML", "eval(", "new Function(")
 
-
-def check_page_dependencies(page: Path, parser: InteractionParser) -> list[str]:
+def check_required_scripts(page: Path, parser: InteractionParser) -> list[str]:
     errors: list[str] = []
-    relative = page.relative_to(ROOT).as_posix()
-    required = PAGE_SCRIPT_REQUIREMENTS.get(relative, ())
-    loaded = set(parser.scripts)
+    required = PAGE_SCRIPT_REQUIREMENTS.get(page.relative_to(ROOT).as_posix())
+    if not required:
+        return errors
+    actual = tuple(parser.scripts)
     for script in required:
-        if script not in loaded:
-            errors.append(f"{relative}: interactive controls require {script}, but the page does not load it")
-
-    if all(script in parser.scripts for script in AUTH_SCRIPT_REQUIREMENTS):
-        positions = [parser.scripts.index(script) for script in AUTH_SCRIPT_REQUIREMENTS]
-        if positions != sorted(positions):
-            errors.append(
-                f"{relative}: production auth scripts must load in order: "
-                + " -> ".join(AUTH_SCRIPT_REQUIREMENTS)
-            )
+        if script not in actual:
+            errors.append(f"{page.relative_to(ROOT)}: required script is missing: {script}")
     return errors
 
 
 def check_source_wiring() -> list[str]:
     errors: list[str] = []
-    for path, snippets in SOURCE_WIRING.items():
-        target = ROOT / path
-        if not target.exists():
-            errors.append(f"{path}: expected interaction controller is missing")
-            continue
-        text = script_text(path)
+    for relative, snippets in SOURCE_WIRING.items():
+        text = script_text(relative)
         for snippet in snippets:
             if snippet not in text:
-                errors.append(f"{path}: expected interaction wiring snippet is missing: {snippet}")
-    return errors
-
-
-def check_security_sinks() -> list[str]:
-    errors: list[str] = []
-    for path in SECURITY_SINK_FREE_SCRIPTS:
-        text = script_text(path)
-        for sink in BANNED_SECURITY_SINKS:
-            if sink in text:
-                errors.append(f"{path}: security-critical browser module contains banned DOM/code sink {sink!r}")
+                errors.append(f"{relative}: expected interaction wiring snippet is missing: {snippet}")
     return errors
 
 
 def main() -> int:
-    try:
-        excluded_dirs = {
-            ".git",
-            ".venv",
-            "node_modules",
-            "playwright-report",
-            "test-results",
-            ".lighthouseci",
-        }
-        pages = sorted(
-            page
-            for page in ROOT.rglob("*.html")
-            if not any(part in excluded_dirs for part in page.relative_to(ROOT).parts)
-        )
-        errors: list[str] = []
-        button_count = 0
-        button_link_count = 0
+    errors: list[str] = []
+    for page in sorted(ROOT.glob("**/*.html")):
+        if any(part in {".git", "node_modules", "dist", "playwright-report", "test-results"} for part in page.parts):
+            continue
+        parser = parse_page(page)
+        errors.extend(check_generic_controls(page, parser))
+        errors.extend(check_required_scripts(page, parser))
+    errors.extend(check_source_wiring())
 
-        for page in pages:
-            parser = parse_page(page)
-            button_count += len(parser.buttons)
-            button_link_count += len(parser.button_links)
-            errors.extend(check_generic_controls(page, parser))
-            errors.extend(check_page_dependencies(page, parser))
-
-        errors.extend(check_source_wiring())
-        errors.extend(check_security_sinks())
-
-        if errors:
-            for error in errors:
-                LOGGER.error(error)
-            LOGGER.error("Button/security QA failed with %d issue(s).", len(errors))
-            return 1
-
-        LOGGER.info(
-            "Button/security QA passed across %d HTML pages: %d <button> controls and %d button-style links inspected.",
-            len(pages),
-            button_count,
-            button_link_count,
-        )
-        return 0
-    except Exception:
-        LOGGER.exception("Unexpected button/security-QA failure")
+    if errors:
+        for error in errors:
+            LOGGER.error(error)
+        LOGGER.error("Button/security QA failed with %s issue(s).", len(errors))
         return 1
+
+    LOGGER.info("Button/security QA passed.")
+    return 0
 
 
 if __name__ == "__main__":

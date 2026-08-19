@@ -1,7 +1,8 @@
 const { test, expect } = require("@playwright/test");
 const AxeBuilder = require("@axe-core/playwright").default;
-const { mockZipLookup } = require("./helpers");
+const { mockZipLookup, installAuthenticatedSession } = require("./helpers");
 
+const API_BASE = "http://127.0.0.1:4173";
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const LIVE_HUB_EVENT_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 
@@ -162,24 +163,7 @@ test("all authenticated Game Hub role views remain WCAG clean when revealed", as
 });
 
 async function mockAuthenticatedMultiRoleHub(page) {
-  const accessToken = fakeJwt({
-    sub: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
-    email: "accessibility@example.test",
-    exp: 4102444800,
-  });
-  await page.addInitScript(({ token }) => {
-    localStorage.setItem("ddd-production-auth-session", JSON.stringify({
-      access_token: token,
-      refresh_token: "accessibility-refresh-token",
-      expires_at: 4102444800,
-      user: {
-        id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
-        email: "accessibility@example.test",
-      },
-    }));
-  }, { token: accessToken });
-
-  await page.route("https://dinnerdiceanddragons.vercel.app/api/v1/**", async (route) => {
+  await page.route(`${API_BASE}/api/v1/**`, async (route) => {
     const url = new URL(route.request().url());
     if (url.pathname === `/api/v1/events/${LIVE_HUB_EVENT_ID}/hub`) {
       await route.fulfill({
@@ -213,6 +197,9 @@ async function mockAuthenticatedMultiRoleHub(page) {
       contentType: "application/json",
       body: JSON.stringify({ detail: "Not found" }),
     });
+  });
+  await installAuthenticatedSession(page, {
+    email: "accessibility@example.test"
   });
 }
 
@@ -287,9 +274,4 @@ function accessibleHubPayload() {
     },
     registration_queue: [],
   };
-}
-
-function fakeJwt(payload) {
-  const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
-  return `${encode({ alg: "RS256", typ: "JWT" })}.${encode(payload)}.accessibility-signature`;
 }

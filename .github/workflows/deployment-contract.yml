@@ -11,9 +11,23 @@ permissions:
 
 jobs:
   netlify-production-contract:
-    name: Netlify full-stack production contract
+    name: Netlify native production contract
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ddd
+          POSTGRES_PASSWORD: ddd
+          POSTGRES_DB: ddd_contract
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U ddd -d ddd_contract"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -22,18 +36,24 @@ jobs:
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 22
+          cache: npm
+
+      - name: Install locked Netlify runtime dependencies
+        run: npm ci
 
       - name: Build Netlify production artifact
         env:
           URL: https://ddd-contract.netlify.app
         run: node scripts/build-netlify.mjs
 
-      - name: Verify Netlify package boundary and native API
+      - name: Verify Netlify package boundary and native runtime
         shell: bash
         run: |
           set -euo pipefail
           test -f netlify.toml
           test -f netlify/functions/api.mjs
+          test -f netlify/functions/_lib/database.mjs
+          test -f netlify/database/migrations/0001_initial_schema.sql
           test ! -e netlify/functions/api-proxy.mjs
           test -f dist/index.html
           test -f dist/join.html
@@ -50,12 +70,12 @@ jobs:
           grep -q 'apiBaseUrl: window.location.origin' dist/production-config.js
           grep -q 'https://ddd-contract.netlify.app' dist/sitemap.xml
           grep -q 'Sitemap: https://ddd-contract.netlify.app/sitemap.xml' dist/robots.txt
-          if grep -R -n 'dinnerdiceanddragons.vercel.app' dist; then
-            echo "Legacy Vercel origin leaked into Netlify artifact."
-            exit 1
-          fi
-          if grep -R -n 'DDD_API_ORIGIN' netlify/functions netlify.toml; then
-            echo "External API proxy configuration leaked into native Netlify runtime."
+          grep -q '"@netlify/database"' package.json
+          grep -q '"@netlify/identity"' package.json
+          grep -q '@netlify/database' netlify/functions/_lib/database.mjs
+          grep -q '@netlify/identity' netlify/functions/_lib/auth.mjs
+          if grep -R -n -E 'dinnerdiceanddragons\.vercel\.app|supabase\.co|sb_publishable_|SUPABASE_SECRET_KEY|DDD_API_ORIGIN' dist netlify/functions production-auth.js production-config.js netlify.toml; then
+            echo "Legacy external production provider leaked into Netlify-native runtime."
             exit 1
           fi
           node --check scripts/build-netlify.mjs
@@ -66,5 +86,97 @@ jobs:
           done < <(find netlify/functions -type f -name '*.mjs' -print0)
           node -e "import('./netlify/functions/api.mjs').then((m) => { if (typeof m.default !== 'function' || m.config?.path !== '/api/*') process.exit(1); })"
 
+      - name: Apply and verify Netlify Database migration
+        env:
+          PGPASSWORD: ddd
+        run: |
+          psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U ddd -d ddd_contract -f netlify/database/migrations/0001_initial_schema.sql
+          psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U ddd -d ddd_contract <<'SQL'
+          DO $$
+          BEGIN
+            IF (SELECT version_num FROM alembic_version) <> '0022_signal_availability' THEN
+              RAISE EXCEPTION 'Unexpected migration head: %', (SELECT version_num FROM alembic_version);
+            END IF;
+            IF (SELECT count(*) FROM game_systems WHERE active IS TRUE) <> 7 THEN
+              RAISE EXCEPTION 'Expected 7 active game systems';
+            END IF;
+            IF (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relrowsecurity) <> 0 THEN
+              RAISE EXCEPTION 'Netlify database baseline unexpectedly enables row-level security';
+            END IF;
+            IF to_regclass('public.game_tables') IS NULL THEN
+              RAISE EXCEPTION 'game_tables is missing';
+            END IF;
+            IF to_regclass('public.events') IS NULL THEN
+              RAISE EXCEPTION 'events is missing';
+            END IF;
+            IF to_regclass('public.messages') IS NULL THEN
+              RAISE EXCEPTION 'messages is missing';
+            END IF;
+          END
+          $$;
+          SQL
+
       - name: Run native Netlify API contract tests
         run: node tests/netlify-api-contract-tests.mjs
+
+  netlify-deploy-preview-smoke:
+    name: Live Netlify deploy-preview smoke
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Verify deployed static site, database health, identity session, and auth boundary
+        env:
+          PREVIEW_URL: https://deploy-preview-${{ github.event.pull_request.number }}--dinnerdiceanddragons.netlify.app
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Waiting for $PREVIEW_URL"
+          curl --fail --silent --show-error --location \
+            --retry 24 --retry-delay 10 --retry-all-errors \
+            "$PREVIEW_URL/" -o /tmp/home.html
+
+          curl --fail --silent --show-error --location "$PREVIEW_URL/join.html" -o /tmp/join.html
+          curl --fail --silent --show-error --location "$PREVIEW_URL/venues.html" -o /tmp/venues.html
+          curl --fail --silent --show-error --location "$PREVIEW_URL/production-config.js" -o /tmp/production-config.js
+          grep -q 'apiBaseUrl: window.location.origin' /tmp/production-config.js
+          grep -q 'Dinner, Dice & Dragons' /tmp/home.html
+
+          curl --fail --silent --show-error --location "$PREVIEW_URL/api/v1/health" -o /tmp/health.json
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const health = JSON.parse(fs.readFileSync('/tmp/health.json', 'utf8'));
+          const expected = {
+            status: 'ok',
+            runtime: 'netlify-functions',
+            database: 'netlify-database',
+            identity: 'netlify-identity',
+            version: 'v1'
+          };
+          for (const [key, value] of Object.entries(expected)) {
+            if (health[key] !== value) throw new Error(`Unexpected health.${key}: ${health[key]}`);
+          }
+          NODE
+
+          curl --fail --silent --show-error --location "$PREVIEW_URL/api/v1/auth/session" -o /tmp/session.json
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const session = JSON.parse(fs.readFileSync('/tmp/session.json', 'utf8'));
+          if (session.authenticated !== false) throw new Error(`Anonymous session contract failed: ${JSON.stringify(session)}`);
+          NODE
+
+          status="$(curl --silent --show-error --output /tmp/me.json --write-out '%{http_code}' "$PREVIEW_URL/api/v1/me")"
+          if [[ "$status" != "401" && "$status" != "403" ]]; then
+            echo "Expected unauthenticated /api/v1/me to return 401 or 403, got $status"
+            cat /tmp/me.json
+            exit 1
+          fi
+
+          curl --silent --show-error --head "$PREVIEW_URL/" | tr -d '\r' > /tmp/headers.txt
+          grep -qi '^x-frame-options: DENY$' /tmp/headers.txt
+          grep -qi '^x-content-type-options: nosniff$' /tmp/headers.txt
+          grep -qi '^referrer-policy: strict-origin-when-cross-origin$' /tmp/headers.txt
+          grep -qi '^content-security-policy:' /tmp/headers.txt
+
+          echo "Live Netlify preview smoke passed: $PREVIEW_URL"

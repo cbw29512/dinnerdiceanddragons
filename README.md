@@ -16,27 +16,30 @@ The differentiator is **physical-table formation**, not generic social networkin
 
 ## Deployment
 
-Production application host: **Netlify via GitHub continuous deployment from `main`**.
+Production platform: **Netlify via GitHub continuous deployment from `main`**.
 
 - Public production URL: `https://dinnerdiceanddragons.netlify.app`
-- Netlify build configuration lives in `netlify.toml`.
-- Netlify publishes the generated `dist/` browser artifact.
-- Browser API requests stay same-origin at `/api/...` and are handled by the native Netlify Function `netlify/functions/api.mjs`.
-- Supabase remains the managed PostgreSQL database and authentication provider.
-- The production Netlify function uses the server-only `SUPABASE_SECRET_KEY`; it is never exposed to browser code.
-- Netlify skips deploys for backend/docs/test-only commits to avoid unnecessary build usage.
+- Browser application: generated `dist/` static deployment
+- Application API: native Netlify Function at `netlify/functions/api.mjs`
+- Relational persistence: Netlify Database (managed PostgreSQL)
+- Authentication: Netlify Identity
+- Database migrations: `netlify/database/migrations/`
+- Browser API requests remain same-origin under `/api/...`
+- Netlify skips deploys for docs/test-only changes where production output is unaffected.
 
-The original FastAPI implementation remains in `/backend` as the reference implementation, Alembic migration source, and regression-test oracle. It is no longer part of the production request path.
+There is no external application host, database provider, or authentication provider in the production request path.
+
+The original FastAPI/Alembic implementation remains in `/backend` as the reference implementation, schema provenance, and regression-test oracle. It is not the production web/API runtime.
 
 GitHub Pages remains available as a static validation/fallback surface:
 
 https://cbw29512.github.io/dinnerdiceanddragons/
 
-See `USAGE.md` for the production configuration and smoke-test checklist.
+See `USAGE.md` for Netlify Identity setup and the production smoke-test checklist.
 
 ## Current stage
 
-The production Table-first path is implemented across authenticated Player, GM, and Venue signals, hard-fit matching, persistent Tables, Event formation, registrations, venue booking decisions, and the Game Hub. Production acceptance testing with real test accounts remains the release gate.
+The Table-first path is implemented across authenticated Player, GM, and Venue signals, hard-fit matching, persistent Tables, Event formation, registrations, venue booking decisions, and the Game Hub. The release gate is a controlled acceptance test on the Netlify production stack.
 
 Dinner, Dice & Dragons is United States-wide. Florence, South Carolina is the first concentrated density pilot, not a geographic restriction on participation.
 
@@ -75,8 +78,8 @@ python -m http.server 8000
 
 Then open `http://localhost:8000`.
 
-The browser-only local run is useful for static work. Native production API behavior is validated through the Netlify function contract tests and deployed Netlify environment.
+The browser-only local run is useful for static work. Native production API/database/identity behavior is validated through the Netlify contract tests and deployed Netlify environment.
 
 ## Automated checks
 
-The repository validates the reference backend and production browser/runtime experience with backend tests, migration checks, PostgreSQL contracts, authentication/RLS smoke tests, static page/link checks, JavaScript tests, native Netlify API contract tests, Playwright browser/accessibility/reflow checks, Lighthouse gates, supply-chain checks, CodeQL, and the generated Netlify full-stack deployment artifact contract.
+The repository validates the reference backend and production browser/runtime experience with backend tests, migration checks, PostgreSQL contracts, static page/link checks, JavaScript tests, native Netlify API contract tests, a clean-PostgreSQL application of the Netlify Database migration, Playwright browser/accessibility/reflow checks, Lighthouse gates, supply-chain checks, CodeQL, and the generated Netlify deployment artifact contract.

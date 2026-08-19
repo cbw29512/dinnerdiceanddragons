@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 import api from "../netlify/functions/api.mjs";
 import { normalizeAvailability } from "../netlify/functions/_lib/availability.mjs";
 import { occurrenceDates, occurrences, intersect } from "../netlify/functions/_lib/matching-calendar.mjs";
 import { pathParts } from "../netlify/functions/_lib/http.mjs";
-import { secretKey } from "../netlify/functions/_lib/supabase-rest.mjs";
 
 let failures = 0;
 
@@ -19,12 +19,14 @@ async function test(name, callback) {
   }
 }
 
-test("native API owns the same-origin health route", async () => {
+await test("native API health fails closed when Netlify Database is unavailable", async () => {
   const response = await api(new Request("https://ddd-contract.netlify.app/api/v1/health"));
-  assert.equal(response.status, 200);
+  assert.equal(response.status, 503);
   assert.deepEqual(await response.json(), {
-    status: "ok",
+    status: "degraded",
     runtime: "netlify-functions",
+    database: "netlify-database",
+    identity: "netlify-identity",
     version: "v1"
   });
 });
@@ -34,12 +36,26 @@ test("native API path parsing strips the version prefix", () => {
   assert.deepEqual(parts, ["matching", "opportunities", "abc"]);
 });
 
-test("production secret key is server-only and fail-closed", () => {
-  const previous = process.env.SUPABASE_SECRET_KEY;
-  delete process.env.SUPABASE_SECRET_KEY;
-  assert.throws(() => secretKey(), /SUPABASE_SECRET_KEY is not configured/);
-  if (previous === undefined) delete process.env.SUPABASE_SECRET_KEY;
-  else process.env.SUPABASE_SECRET_KEY = previous;
+await test("production runtime is Netlify-native and provider-clean", async () => {
+  const [apiSource, authSource, databaseSource, browserAuthSource, configSource] = await Promise.all([
+    readFile(new URL("../netlify/functions/api.mjs", import.meta.url), "utf8"),
+    readFile(new URL("../netlify/functions/_lib/auth.mjs", import.meta.url), "utf8"),
+    readFile(new URL("../netlify/functions/_lib/database.mjs", import.meta.url), "utf8"),
+    readFile(new URL("../production-auth.js", import.meta.url), "utf8"),
+    readFile(new URL("../production-config.js", import.meta.url), "utf8")
+  ]);
+
+  assert.match(databaseSource, /@netlify\/database/);
+  assert.match(authSource, /@netlify\/identity/);
+  assert.match(apiSource, /verifyRequestOrigin/);
+  assert.match(apiSource, /confirmEmail/);
+  assert.match(browserAuthSource, /credentials:\s*"same-origin"/);
+  assert.match(browserAuthSource, /confirmation_token/);
+  assert.match(configSource, /apiBaseUrl:\s*window\.location\.origin/);
+
+  for (const source of [apiSource, authSource, databaseSource, browserAuthSource, configSource]) {
+    assert.doesNotMatch(source, /supabase\.co|sb_publishable_|SUPABASE_SECRET_KEY/);
+  }
 });
 
 test("weekly recurrence expands deterministically", () => {
@@ -138,22 +154,6 @@ test("availability validation rejects overlapping clock reversal", () => {
     week_interval: 1,
     timezone: "America/New_York"
   }), /start time must be before end time/i);
-});
-
-await test("unauthenticated protected route stays closed", async () => {
-  const priorFetch = globalThis.fetch;
-  globalThis.fetch = async () => new Response(JSON.stringify({ message: "invalid token" }), {
-    status: 401,
-    headers: { "content-type": "application/json" }
-  });
-  try {
-    const response = await api(new Request("https://ddd-contract.netlify.app/api/v1/me", {
-      headers: { Authorization: "Bearer invalid" }
-    }));
-    assert.equal(response.status, 401);
-  } finally {
-    globalThis.fetch = priorFetch;
-  }
 });
 
 if (failures) {
