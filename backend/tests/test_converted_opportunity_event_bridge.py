@@ -47,9 +47,7 @@ def test_converted_match_stays_visible_and_exposes_actionable_event_id() -> None
             headers=_auth("alice-token"),
         )
         assert opportunities.status_code == 200, opportunities.text
-        converted = next(
-            item for item in opportunities.json() if item["id"] == str(match.id)
-        )
+        converted = next(item for item in opportunities.json() if item["id"] == str(match.id))
         assert converted["status"] == "converted"
         assert converted["event_id"] == event_id
         assert converted["event_status"] == "venue_requested"
