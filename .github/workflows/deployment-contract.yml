@@ -86,17 +86,35 @@ jobs:
           done < <(find netlify/functions -type f -name '*.mjs' -print0)
           node -e "import('./netlify/functions/api.mjs').then((m) => { if (typeof m.default !== 'function' || m.config?.path !== '/api/*') process.exit(1); })"
 
-      - name: Apply Netlify Database migration to clean PostgreSQL
+      - name: Apply and verify Netlify Database migration
         env:
           PGPASSWORD: ddd
         run: |
           psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U ddd -d ddd_contract -f netlify/database/migrations/0001_initial_schema.sql
-          test "$(psql -At -h 127.0.0.1 -U ddd -d ddd_contract -c 'SELECT version_num FROM alembic_version')" = "0022_signal_availability"
-          test "$(psql -At -h 127.0.0.1 -U ddd -d ddd_contract -c "SELECT count(*) FROM game_systems WHERE active IS TRUE")" = "7"
-          test "$(psql -At -h 127.0.0.1 -U ddd -d ddd_contract -c "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='r' AND c.relrowsecurity")" = "0"
-          test "$(psql -At -h 127.0.0.1 -U ddd -d ddd_contract -c "SELECT to_regclass('public.game_tables')")" = "game_tables"
-          test "$(psql -At -h 127.0.0.1 -U ddd -d ddd_contract -c "SELECT to_regclass('public.events')")" = "events"
-          test "$(psql -At -h 127.0.0.1 -U ddd -d ddd_contract -c "SELECT to_regclass('public.game_hub_messages')")" = "game_hub_messages"
+          psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U ddd -d ddd_contract <<'SQL'
+          DO $$
+          BEGIN
+            IF (SELECT version_num FROM alembic_version) <> '0022_signal_availability' THEN
+              RAISE EXCEPTION 'Unexpected migration head: %', (SELECT version_num FROM alembic_version);
+            END IF;
+            IF (SELECT count(*) FROM game_systems WHERE active IS TRUE) <> 7 THEN
+              RAISE EXCEPTION 'Expected 7 active game systems';
+            END IF;
+            IF (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relrowsecurity) <> 0 THEN
+              RAISE EXCEPTION 'Netlify database baseline unexpectedly enables row-level security';
+            END IF;
+            IF to_regclass('public.game_tables') IS NULL THEN
+              RAISE EXCEPTION 'game_tables is missing';
+            END IF;
+            IF to_regclass('public.events') IS NULL THEN
+              RAISE EXCEPTION 'events is missing';
+            END IF;
+            IF to_regclass('public.game_hub_messages') IS NULL THEN
+              RAISE EXCEPTION 'game_hub_messages is missing';
+            END IF;
+          END
+          $$;
+          SQL
 
       - name: Run native Netlify API contract tests
         run: node tests/netlify-api-contract-tests.mjs
