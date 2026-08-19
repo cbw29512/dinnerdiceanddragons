@@ -8,6 +8,8 @@ from sqlalchemy.pool import StaticPool
 
 from app.models.availability_window import GMAvailabilityWindow, PlayerAvailabilityWindow
 from app.models.game_system import GameSystem
+from app.models.game_table import GameTable
+from app.models.game_table_player import GameTablePlayer
 from app.models.gm_profile import GMProfile
 from app.models.gm_supply_signal import GMSupplySignal
 from app.models.match_explanation import MatchExplanation
@@ -51,6 +53,8 @@ def build_runner_factory(
         GMSupplyAvailabilityWindow.__table__,
         VenueTableWindow.__table__,
         TableMatch.__table__,
+        GameTable.__table__,
+        GameTablePlayer.__table__,
         TableMatchPlayer.__table__,
         MatchExplanation.__table__,
     ):
