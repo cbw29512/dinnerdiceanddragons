@@ -141,14 +141,28 @@
     }
   }
 
+  function productionSuccessMessage(saved) {
+    if (saved.pendingVerification) {
+      return "Venue saved to your DDD account. Verification is required before this table opening can enter live matching.";
+    }
+    if (saved.matchingError) {
+      return `Your profile was saved, but live matching could not be activated. ${saved.matchingError.message || "Try again."}`;
+    }
+    if (saved.matching?.match) {
+      const opportunities = saved.matching.match.opportunities || [];
+      if (opportunities.length) {
+        return `Saved and matched. We found ${opportunities.length} compatible ${opportunities.length === 1 ? "table opportunity" : "table opportunities"}.`;
+      }
+      return "Saved and active in live matching. No complete three-way table is available yet.";
+    }
+    return "Saved to your DDD account.";
+  }
+
   async function saveProductionForm(type, rawValues, status, form) {
     try {
       if (status) status.textContent = "Saving to your DDD account…";
       const saved = await window.DDDProductionOnboarding.save(type, rawValues);
-      const successMessage = saved.pendingVerification
-        ? "Venue saved to your DDD account. Verification is required before this table opening can enter live matching."
-        : "Saved to your DDD account. Your information is ready for the production matching flow.";
-      announce(status, successMessage, true);
+      announce(status, productionSuccessMessage(saved), !saved.matchingError);
       form.dispatchEvent(new CustomEvent("ddd:save-success", {
         detail: {
           type,
@@ -158,7 +172,9 @@
           values: rawValues,
           payload: saved.payload,
           deferred: saved.deferred,
-          pendingVerification: Boolean(saved.pendingVerification)
+          pendingVerification: Boolean(saved.pendingVerification),
+          matching: saved.matching,
+          matchingError: saved.matchingError || null
         }
       }));
       return true;
