@@ -1,6 +1,6 @@
+import { getUser, refreshSession } from "@netlify/identity";
 import {
   SupabaseRestError,
-  authenticateAccessToken,
   eq,
   insertRows,
   selectMany,
@@ -8,11 +8,7 @@ import {
   updateRows
 } from "./supabase-rest.mjs";
 
-function bearerToken(request) {
-  const value = String(request.headers.get("authorization") || "").trim();
-  const match = /^Bearer\s+(.+)$/i.exec(value);
-  return match ? match[1].trim() : "";
-}
+const PRIVILEGED_IDENTITY_ROLES = new Set(["moderator", "admin"]);
 
 function canonicalEmail(value) {
   const email = String(value || "").trim().toLowerCase();
@@ -20,8 +16,35 @@ function canonicalEmail(value) {
   return email;
 }
 
-export async function currentUser(request, { active = false } = {}) {
-  const authUser = await authenticateAccessToken(bearerToken(request));
+async function identityUser() {
+  try {
+    await refreshSession();
+  } catch (error) {
+    // An absent/expired anonymous session is handled as a normal 401 below. Only
+    // surface provider failures when Identity itself is unavailable.
+    if (String(error?.name || "") === "MissingIdentityError") {
+      throw new SupabaseRestError("Netlify Identity is not enabled for this project.", 503);
+    }
+  }
+  const user = await getUser();
+  if (!user?.id || !user?.email) throw new SupabaseRestError("An authenticated session is required.", 401);
+  return user;
+}
+
+async function syncPrivilegedIdentityRoles(userId, authUser) {
+  const now = new Date().toISOString();
+  for (const role of Array.isArray(authUser.roles) ? authUser.roles : []) {
+    if (!PRIVILEGED_IDENTITY_ROLES.has(role)) continue;
+    await insertRows("user_roles", [{ user_id: userId, role, verified_at: now }], {
+      upsert: true,
+      onConflict: "user_id,role",
+      returning: false
+    });
+  }
+}
+
+export async function currentUser(_request, { active = false } = {}) {
+  const authUser = await identityUser();
   const subject = String(authUser.id || "").trim();
   const email = canonicalEmail(authUser.email);
   const now = new Date().toISOString();
@@ -35,7 +58,9 @@ export async function currentUser(request, { active = false } = {}) {
         id: crypto.randomUUID(),
         auth_provider_user_id: subject,
         email,
-        email_verified_at: authUser.email_confirmed_at || authUser.confirmed_at || now,
+        email_verified_at: now,
+        display_name: authUser.name || null,
+        display_name_normalized: authUser.name ? String(authUser.name).trim().toLowerCase() : null,
         status: "active",
         last_login_at: now,
         updated_at: now
@@ -55,13 +80,15 @@ export async function currentUser(request, { active = false } = {}) {
     const nextStatus = user.status === "pending_verification" ? "active" : user.status;
     const updated = await updateRows("users", { id: eq(user.id) }, {
       email,
-      email_verified_at: user.email_verified_at || authUser.email_confirmed_at || authUser.confirmed_at || now,
+      email_verified_at: user.email_verified_at || now,
       last_login_at: now,
       updated_at: now,
       status: nextStatus
     });
     user = Array.isArray(updated) && updated[0] ? updated[0] : { ...user, email, last_login_at: now, status: nextStatus };
   }
+
+  await syncPrivilegedIdentityRoles(user.id, authUser);
 
   if (active && user.status !== "active") {
     throw new SupabaseRestError("Account is not permitted to participate.", 403);
@@ -86,7 +113,7 @@ export async function ensureRole(userId, role, { verified = false } = {}) {
     user_id: userId,
     role,
     verified_at: verified ? now : null
-  }], { upsert: true, onConflict: "user_id,role" });
+  }], { upsert: true, onConflict: "user_id,role", returning: false });
 }
 
 export async function managedVenue(userId, venueId, { verified = true } = {}) {
@@ -103,7 +130,7 @@ export async function managedVenue(userId, venueId, { verified = true } = {}) {
 export function publicCurrentUser(user) {
   return {
     ddd_user_id: user.id,
-    auth_provider: "supabase",
+    auth_provider: "netlify_identity",
     auth_provider_user_id: user.auth_provider_user_id,
     email: user.email,
     display_name: user.display_name || null,
