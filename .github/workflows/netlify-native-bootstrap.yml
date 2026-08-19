@@ -39,7 +39,7 @@ jobs:
 
       - name: Generate Netlify PostgreSQL baseline from Alembic
         env:
-          APP_ENV: development
+          APP_ENV: local
           DATABASE_URL: postgresql+psycopg://ddd:ddd@localhost:5432/ddd
         run: |
           mkdir -p netlify/database/migrations
