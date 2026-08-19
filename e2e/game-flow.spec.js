@@ -115,7 +115,8 @@ test("GM signup enters production matching and forms the real Event", async ({ p
 
   const form = page.locator("#gm-form");
   await form.locator('[name="display_name"]').fill("Browser GM");
-  await form.locator('[name="email"]').fill("gm-browser@example.test");
+  await expect(form.locator('[name="email"]')).toHaveValue("gm-browser@example.test");
+  await expect(form.locator('[name="email"]')).toHaveAttribute("readonly", "");
   await form.locator('[name="postal_code"]').fill("29501");
   await form.locator('[name="style"]').fill("Friendly roleplay with tactical combat.");
   await form.locator('[name="expectations"]').fill("Respectful table, no PvP, use safety tools.");
@@ -182,7 +183,8 @@ test("matched Player can request a real Event seat from signup results", async (
   await page.goto("/join.html#player");
   const form = page.locator("#player-form");
   await form.locator('[name="display_name"]').fill("Browser Player");
-  await form.locator('[name="email"]').fill("player-browser@example.test");
+  await expect(form.locator('[name="email"]')).toHaveValue("player-browser@example.test");
+  await expect(form.locator('[name="email"]')).toHaveAttribute("readonly", "");
   await form.locator('[name="postal_code"]').fill("29501");
   await form.locator('.check-label input[type="checkbox"]').check();
   await form.getByRole("button", { name: "Find My Table" }).click();
