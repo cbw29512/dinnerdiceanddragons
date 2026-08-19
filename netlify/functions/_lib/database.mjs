@@ -143,8 +143,13 @@ async function execute(sql, params = []) {
 }
 
 export async function databaseHealth() {
-  const rows = await execute("SELECT 1 AS ok");
-  return rows?.[0]?.ok === 1 || rows?.[0]?.ok === "1";
+  try {
+    const rows = await execute("SELECT 1 AS ok");
+    return rows?.[0]?.ok === 1 || rows?.[0]?.ok === "1";
+  } catch (error) {
+    console.warn("[Dinner Dice & Dragons] Netlify Database health check unavailable", error?.message || error);
+    return false;
+  }
 }
 
 export async function selectOne(table, query = {}, { required = false } = {}) {
