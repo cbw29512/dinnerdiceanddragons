@@ -129,7 +129,8 @@
       ? await ensurePlayerDemands(mapped)
       : await ensureGMSupplies(mapped, rawValues);
     const match = await window.DDDProductionAPI.findMyTable(60);
-    return { signals, match };
+    const opportunities = await window.DDDProductionAPI.getMatchingOpportunities();
+    return { signals, match, opportunities };
   }
 
   window.DDDProductionMatching = Object.freeze({
