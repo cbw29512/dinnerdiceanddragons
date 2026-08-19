@@ -1,8 +1,8 @@
 name: Bootstrap Netlify Native Stack
 
 on:
-  push:
-    branches: [agent/netlify-native-stack-bootstrap5]
+  pull_request:
+    branches: [main]
     paths:
       - ".github/workflows/netlify-native-bootstrap.yml"
 
@@ -11,10 +11,11 @@ permissions:
 
 jobs:
   bootstrap:
+    if: github.head_ref == 'agent/netlify-native-stack-bootstrap5'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Checkout
+      - name: Checkout working branch
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: agent/netlify-native-stack-bootstrap5
