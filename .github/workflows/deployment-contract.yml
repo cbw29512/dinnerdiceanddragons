@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  netlify-static-contract:
-    name: Netlify production artifact contract
+  netlify-production-contract:
+    name: Netlify full-stack production contract
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -28,12 +28,13 @@ jobs:
           URL: https://ddd-contract.netlify.app
         run: node scripts/build-netlify.mjs
 
-      - name: Verify Netlify package boundary and routing
+      - name: Verify Netlify package boundary and native API
         shell: bash
         run: |
           set -euo pipefail
           test -f netlify.toml
-          test -f netlify/functions/api-proxy.mjs
+          test -f netlify/functions/api.mjs
+          test ! -e netlify/functions/api-proxy.mjs
           test -f dist/index.html
           test -f dist/join.html
           test -f dist/venues.html
@@ -53,65 +54,17 @@ jobs:
             echo "Legacy Vercel origin leaked into Netlify artifact."
             exit 1
           fi
+          if grep -R -n 'DDD_API_ORIGIN' netlify/functions netlify.toml; then
+            echo "External API proxy configuration leaked into native Netlify runtime."
+            exit 1
+          fi
           node --check scripts/build-netlify.mjs
           node --check scripts/netlify-ignore.mjs
-          node --check netlify/functions/api-proxy.mjs
+          while IFS= read -r -d '' file; do
+            echo "Checking native function module: $file"
+            node --check "$file"
+          done < <(find netlify/functions -type f -name '*.mjs' -print0)
+          node -e "import('./netlify/functions/api.mjs').then((m) => { if (typeof m.default !== 'function' || m.config?.path !== '/api/*') process.exit(1); })"
 
-  api-runtime-contract:
-    name: API injected-port runtime contract
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
-      - name: Build production API image
-        run: docker build --tag ddd-api-port-contract ./backend
-
-      - name: Start least-privilege API on injected port 8123
-        run: |
-          docker run --detach \
-            --name ddd-api-port-contract \
-            --read-only \
-            --tmpfs /tmp:rw,noexec,nosuid,size=16m \
-            --cap-drop ALL \
-            --security-opt no-new-privileges:true \
-            --env PORT=8123 \
-            --publish 8123:8123 \
-            ddd-api-port-contract
-
-      - name: Verify non-root and read-only runtime identity
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(docker exec ddd-api-port-contract id -u)" = "10001"
-          test "$(docker exec ddd-api-port-contract id -g)" = "10001"
-          test "$(docker inspect --format '{{.HostConfig.ReadonlyRootfs}}' ddd-api-port-contract)" = "true"
-          test "$(docker inspect --format '{{json .HostConfig.CapDrop}}' ddd-api-port-contract)" = '["ALL"]'
-          test "$(docker inspect --format '{{json .HostConfig.SecurityOpt}}' ddd-api-port-contract)" = '["no-new-privileges:true"]'
-
-      - name: Wait for dynamic-port container health
-        shell: bash
-        run: |
-          set -euo pipefail
-          for attempt in {1..30}; do
-            status="$(docker inspect --format '{{.State.Health.Status}}' ddd-api-port-contract)"
-            echo "Dynamic-port health attempt ${attempt}: ${status}"
-            if [[ "$status" == "healthy" ]]; then
-              curl --fail --silent --show-error http://127.0.0.1:8123/api/v1/health \
-                | grep '"status":"ok"'
-              exit 0
-            fi
-            if [[ "$status" == "unhealthy" ]]; then
-              docker logs ddd-api-port-contract
-              exit 1
-            fi
-            sleep 2
-          done
-          docker logs ddd-api-port-contract
-          echo "API did not become healthy on the injected port."
-          exit 1
-
-      - name: Tear down runtime contract container
-        if: always()
-        run: docker rm --force ddd-api-port-contract || true
+      - name: Run native Netlify API contract tests
+        run: node tests/netlify-api-contract-tests.mjs
