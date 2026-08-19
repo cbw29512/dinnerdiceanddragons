@@ -125,10 +125,10 @@
         )
       ),
       labeledControl(
-        "Formats you are comfortable running",
+        "Format you want to run",
         selectControl(
           "gm_format[]",
-          ["Learn-to-play", "One-shot", "Short campaign", "Long campaign", "Organized play", "Any format"],
+          ["Learn-to-play", "One-shot", "Short campaign", "Long campaign", "Organized play"],
           "One-shot"
         )
       ),
