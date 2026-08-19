@@ -86,6 +86,73 @@ async function run() {
     assert.deepEqual(JSON.parse(captured.options.body), payload);
   });
 
+  await test("production API exposes matching inputs, BOOM refresh, and formation routes", async () => {
+    const calls = [];
+    global.fetch = async (url, options) => {
+      calls.push({ url, options });
+      return jsonResponse(200, { ok: true });
+    };
+    DDDProductionAPI.configure({ baseUrl: "https://api.example.test", accessTokenProvider: async () => "verified-jwt" });
+
+    const availability = [{
+      day_of_week: "tuesday",
+      start_time: "18:00",
+      end_time: "22:00",
+      pattern_type: "weekly_interval",
+      week_interval: 1,
+      anchor_date: null,
+      monthly_ordinal: null,
+      month_interval: null,
+      timezone: "America/New_York",
+      starts_on: null,
+      ends_on: null
+    }];
+    const playerDemand = { system_slug: "dnd-5e-2024", availability, preferred_format: "any" };
+    const gmSupply = {
+      system_slug: "dnd-5e-2024",
+      availability,
+      preferred_format: "one_shot",
+      minimum_players: 3,
+      maximum_players: 5
+    };
+    const venueWindow = {
+      availability: availability[0],
+      table_count: 1,
+      max_people_per_table: 6,
+      approval_required: true
+    };
+    const formation = {
+      title: "Tuesday D&D",
+      description: "A production table test.",
+      event_type: "one_shot",
+      join_mode: "request",
+      beginner_friendly: true,
+      expected_sessions: 1,
+      expectations: {}
+    };
+
+    await DDDProductionAPI.postPlayerDemand(playerDemand);
+    await DDDProductionAPI.postGMSupply(gmSupply);
+    await DDDProductionAPI.postVenueTableWindow("venue-1", venueWindow);
+    await DDDProductionAPI.findMyTable(45);
+    await DDDProductionAPI.getMatchingOpportunities();
+    await DDDProductionAPI.formTableMatch("match-1", formation);
+
+    assert.equal(calls[0].url, "https://api.example.test/api/v1/matching/player-demands");
+    assert.deepEqual(JSON.parse(calls[0].options.body), playerDemand);
+    assert.equal(calls[1].url, "https://api.example.test/api/v1/matching/gm-supplies");
+    assert.deepEqual(JSON.parse(calls[1].options.body), gmSupply);
+    assert.equal(calls[2].url, "https://api.example.test/api/v1/matching/venues/venue-1/table-windows");
+    assert.deepEqual(JSON.parse(calls[2].options.body), venueWindow);
+    assert.equal(calls[3].url, "https://api.example.test/api/v1/matching/find-my-table");
+    assert.deepEqual(JSON.parse(calls[3].options.body), { horizon_days: 45 });
+    assert.equal(calls[4].url, "https://api.example.test/api/v1/matching/opportunities");
+    assert.equal(calls[4].options.method, "GET");
+    assert.equal(calls[5].url, "https://api.example.test/api/v1/matching/opportunities/match-1/form");
+    assert.deepEqual(JSON.parse(calls[5].options.body), formation);
+    calls.forEach(({ options }) => assert.equal(options.headers.Authorization, "Bearer verified-jwt"));
+  });
+
   await test("production API refuses requests without an authenticated session", async () => {
     let fetchCalled = false;
     global.fetch = async () => {
