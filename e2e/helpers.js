@@ -46,4 +46,33 @@ async function expectNoHorizontalOverflow(page) {
   }
 }
 
-module.exports = { mockZipLookup, expectNoHorizontalOverflow };
+function fakeJwt(payload) {
+  const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  return `${encode({ alg: "RS256", typ: "JWT" })}.${encode(payload)}.browser-signature`;
+}
+
+async function installAuthenticatedSession(
+  page,
+  {
+    userId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+    email = "browser@example.test"
+  } = {}
+) {
+  const accessToken = fakeJwt({ sub: userId, email, aud: "authenticated", exp: 4102444800 });
+  await page.addInitScript(({ token, userId: id, email: address }) => {
+    localStorage.setItem("ddd-production-auth-session", JSON.stringify({
+      access_token: token,
+      refresh_token: "browser-refresh-token",
+      expires_at: 4102444800,
+      user: { id, email: address }
+    }));
+  }, { token: accessToken, userId, email });
+  return accessToken;
+}
+
+module.exports = {
+  mockZipLookup,
+  expectNoHorizontalOverflow,
+  fakeJwt,
+  installAuthenticatedSession
+};
