@@ -1,14 +1,145 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://acpjfycmwbnxzlkvoouv.supabase.co https://dinnerdiceanddragons.vercel.app https://api.zippopotam.us; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"><meta name="referrer" content="strict-origin-when-cross-origin"><title>Find a D&D Game or Run One | Dinner, Dice & Dragons</title><meta name="description" content="Players can find D&D tables that fit their schedule and location. Dungeon Masters can find interested Players and a public place to run the game."><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="global-auth-ui.css"></head><body>
-<a class="skip-link" href="#main">Skip to main content</a><header class="site-header"><div class="shell nav-wrap"><a class="brand" href="index.html"><span aria-hidden="true">🎲</span><span>Dinner, Dice &amp; Dragons</span></a><nav aria-label="Primary navigation"><a href="index.html">Home</a><a href="index.html#how-it-works">How It Works</a><a href="conduct.html">Safety</a><div class="ddd-header-role-links" aria-label="Start by role"><a href="join.html#player" data-ddd-role-link="player">Find a Game</a><a href="join.html#gm" data-ddd-role-link="gm">Run a Game</a><a href="venues.html#signup" data-ddd-role-link="venue">For Venues</a></div><button id="ddd-global-account-button" class="ddd-account-trigger" type="button" aria-haspopup="dialog" aria-controls="ddd-global-account-dialog">Sign In</button></nav></div></header>
-<main id="main" tabindex="-1"><section class="hero"><div class="shell hero-grid"><div><p class="eyebrow">PLAY OR RUN MORE D&amp;D</p><h1>Start with the nights that actually work for you.</h1><p class="lede">Looking for a game? Tell us what you want to play and when you can be there. Want to DM? Tell us what you can run and when.</p><div class="role-switch"><a class="button primary" href="#player">🎲 I Want to Play</a><a class="button secondary" href="#gm">🧙 I Want to DM</a></div><p class="microcopy">One account can use both roles.</p></div><aside class="hero-card"><p class="eyebrow">WHAT YOU GET</p><div class="match-flow"><div><strong>Less searching</strong><span>tell us what works once</span></div><b>+</b><div><strong>Better fit</strong><span>game · schedule · distance · table needs</span></div><b>+</b><div><strong>A public place to play</strong><span>when the table needs one</span></div><b>=</b><div class="match-result"><strong>More actual game nights</strong><span>not another abandoned group chat</span></div></div></aside></div></section>
-<section class="section" id="player"><div class="shell"><div class="template-intro"><div><p class="eyebrow">🎲 FOR PLAYERS</p><h2>Find a D&amp;D table that fits your schedule, location, and style.</h2><p>Tell us what you want to play, when you are available, how far you will travel, and what kind of table you enjoy. That gives DMs a clear picture of local Player demand.</p></div><div class="template-summary"><strong>This helps us find:</strong><span>the game you want · a DM who can run it · a schedule you can make · a public place to play</span></div></div><form class="panel form-grid prototype-form" id="player-form" data-profile-type="Player" novalidate>
-<h3 class="form-section-title">1. About you</h3><label>Display name<input name="display_name" autocomplete="nickname" placeholder="What the group will see" required></label><label>Email<input type="email" name="email" autocomplete="email" required></label>
-<h3 class="form-section-title">2. What do you want to play?</h3><div class="experience-builder" data-role="player"><p class="microcopy">Add the systems or editions you play—or want to learn. Experience is self-described per game.</p><div class="experience-list" aria-live="polite"></div><button class="button secondary add-experience" type="button">+ Add Another System</button></div><label>Preferred format<select name="preferred_format"><option>Any format</option><option>Learn-to-play</option><option>One-shot</option><option>Short campaign</option><option>Long campaign</option><option>Organized play</option></select></label><label>Open to learning a new system?<select name="willing_to_learn"><option selected>Yes</option><option>Maybe</option><option>No</option></select></label><label>What kind of game sounds fun?<textarea name="style" rows="3" placeholder="Roleplay-heavy, tactical, casual, serious story, beginner-friendly..."></textarea></label>
-<h3 class="form-section-title">3. When and how far can you play?</h3><label>Home ZIP code<input name="postal_code" inputmode="numeric" autocomplete="postal-code" pattern="[0-9]{5}" maxlength="5" placeholder="29501" required></label><label>Maximum travel distance<select name="radius" required><option value="5">5 miles</option><option value="10">10 miles</option><option value="25" selected>25 miles</option><option value="50">50 miles</option><option value="75">75 miles</option><option value="100">100 miles</option></select></label><div class="availability-builder"><p class="microcopy">Add every time window you could realistically play. You can combine schedules such as every other Wednesday and the last Saturday of each month.</p><div class="availability-list" aria-live="polite"></div><button class="button secondary add-availability" type="button">+ Add Another Time Window</button></div>
-<h3 class="form-section-title">4. Make the game comfortable</h3><label>Anything we should consider when matching?<textarea name="notes" rows="3" placeholder="Accessibility needs, age/environment preference, content boundaries, quieter venue preferred..."></textarea></label><label class="check-label"><input type="checkbox" required><span>I agree to the <a href="conduct.html">Code of Conduct</a>.</span></label><button class="button primary" type="submit">Find My Table</button><p class="form-status" role="status" aria-live="polite"></p><p class="microcopy">Your home address is never shown. We use your ZIP code and travel range only to decide which game locations could realistically work for you.</p></form><div class="next-step"><strong>Want to look around first?</strong><a class="button primary" href="index.html#shared-games">See Forming Games</a></div></div></section>
-<section class="section alt" id="gm"><div class="shell"><div class="template-intro"><div><p class="eyebrow">🧙 FOR DUNGEON MASTERS</p><h2>Run more D&amp;D without doing all the searching yourself.</h2><p>Tell us what you are willing to run, when you can run it, and how far you will travel. We can use that to show compatible Player interest and public venue openings for the same night.</p></div><div class="template-summary"><strong>You stay in control:</strong><span>choose the game · review Players · choose the venue · set table expectations · run the adventure</span></div></div><form class="panel form-grid prototype-form" id="gm-form" data-profile-type="Game Master" novalidate>
-<h3 class="form-section-title">1. When can you DM?</h3><div class="availability-builder"><p class="microcopy">Add the times when you could realistically run a game, including recurring patterns.</p><div class="availability-list" aria-live="polite"></div><button class="button secondary add-availability" type="button">+ Add Another Time Window</button></div><label>Home ZIP code<input name="postal_code" inputmode="numeric" autocomplete="postal-code" pattern="[0-9]{5}" maxlength="5" placeholder="29501" required></label><label>Maximum travel distance<select name="radius" required><option value="5">5 miles</option><option value="10">10 miles</option><option value="25" selected>25 miles</option><option value="50">50 miles</option><option value="75">75 miles</option><option value="100">100 miles</option></select></label><label>Preferred cadence<select name="cadence"><option>One-shots when convenient</option><option selected>Weekly</option><option>Every other week</option><option>Monthly</option><option>Flexible / varies</option></select></label>
-<h3 class="form-section-title">2. About you</h3><label>Display name<input name="display_name" autocomplete="nickname" placeholder="Name Players will see" required></label><label>Email<input type="email" name="email" autocomplete="email" required></label>
-<h3 class="form-section-title">3. What do you want to run?</h3><div class="experience-builder" data-role="gm"><p class="microcopy">Add each system you are comfortable running so Players know what you offer.</p><div class="experience-list" aria-live="polite"></div><button class="button secondary add-experience" type="button">+ Add Another System</button></div>
-<h3 class="form-section-title">4. What should Players know about your table?</h3><label>Your DM style<textarea name="style" rows="3" placeholder="Roleplay-forward, tactical, rules-light, beginner friendly" required></textarea></label><label>Players you especially welcome<textarea name="welcome" rows="3" placeholder="Beginners, experienced players, adults 18+, families"></textarea></label><label>Game rules and expectations<textarea name="expectations" rows="4" placeholder="Punctual starts, no PvP, character restrictions, age limits, session zero for campaigns..." required></textarea></label><label class="check-label"><input type="checkbox" required><span>I will accurately describe my games and follow the <a href="conduct.html">Code of Conduct</a>.</span></label><button class="button primary" type="submit">Find Players for My Game</button><p class="form-status" role="status" aria-live="polite"></p><p class="microcopy">Your home address is never published. You choose the public venue before the game becomes Confirmed.</p></form><div class="next-step"><strong>Next:</strong><a class="button primary" href="find-venue.html">Find Players + a Place to Play</a><a class="button secondary" href="recurring-match.html">Plan a Recurring Game</a></div></div></section>
-</main><footer class="site-footer"><div class="shell footer-grid"><div><strong>Dinner, Dice & Dragons</strong><p>More D&amp;D. Less searching, scheduling, and organizing.</p></div><div><a href="index.html">Home</a> · <a href="#player">Players</a> · <a href="#gm">DMs</a> · <a href="venues.html">Venues</a> · <a href="conduct.html">Safety</a></div></div></footer><script src="production-config.js"></script><script src="production-api-client.js"></script><script src="production-onboarding-adapters.js"></script><script src="production-session-store.js"></script><script src="production-auth.js"></script><script src="production-onboarding.js"></script><script src="global-auth-ui.js"></script><script src="experience-profiles.js"></script><script src="availability.js"></script><script src="forms.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://acpjfycmwbnxzlkvoouv.supabase.co https://dinnerdiceanddragons.vercel.app https://api.zippopotam.us; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Find a D&amp;D Game or Run One | Dinner, Dice &amp; Dragons</title>
+  <meta name="description" content="Players can find D&D tables that fit their schedule and location. Dungeon Masters can find interested Players and a public place to run the game.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="global-auth-ui.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site-header">
+  <div class="shell nav-wrap">
+    <a class="brand" href="index.html"><span aria-hidden="true">🎲</span><span>Dinner, Dice &amp; Dragons</span></a>
+    <nav aria-label="Primary navigation">
+      <a href="index.html">Home</a>
+      <a href="index.html#how-it-works">How It Works</a>
+      <a href="conduct.html">Safety</a>
+      <div class="ddd-header-role-links" aria-label="Start by role">
+        <a href="join.html#player" data-ddd-role-link="player">Find a Game</a>
+        <a href="join.html#gm" data-ddd-role-link="gm">Run a Game</a>
+        <a href="venues.html#signup" data-ddd-role-link="venue">For Venues</a>
+      </div>
+      <button id="ddd-global-account-button" class="ddd-account-trigger" type="button" aria-haspopup="dialog" aria-controls="ddd-global-account-dialog">Sign In</button>
+    </nav>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <section class="hero">
+    <div class="shell hero-grid">
+      <div>
+        <p class="eyebrow">PLAY OR RUN MORE D&amp;D</p>
+        <h1>Start with the nights that actually work for you.</h1>
+        <p class="lede">Looking for a game? Tell us what you want to play and when you can be there. Want to DM? Tell us what you can run and when.</p>
+        <div class="role-switch"><a class="button primary" href="#player">🎲 I Want to Play</a><a class="button secondary" href="#gm">🧙 I Want to DM</a></div>
+        <p class="microcopy">One account can use both roles.</p>
+      </div>
+      <aside class="hero-card">
+        <p class="eyebrow">WHAT YOU GET</p>
+        <div class="match-flow">
+          <div><strong>Less searching</strong><span>tell us what works once</span></div><b>+</b>
+          <div><strong>Better fit</strong><span>game · schedule · distance · table needs</span></div><b>+</b>
+          <div><strong>A public place to play</strong><span>when the table needs one</span></div><b>=</b>
+          <div class="match-result"><strong>More actual game nights</strong><span>not another abandoned group chat</span></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="section" id="player">
+    <div class="shell">
+      <div class="template-intro">
+        <div><p class="eyebrow">🎲 FOR PLAYERS</p><h2>Find a D&amp;D table that fits your schedule, location, and style.</h2><p>Tell us what you want to play, when you are available, how far you will travel, and what kind of table you enjoy.</p></div>
+        <div class="template-summary"><strong>This checks:</strong><span>game · schedule · travel range · DM · public venue</span></div>
+      </div>
+      <form class="panel form-grid prototype-form" id="player-form" data-profile-type="Player" novalidate>
+        <h3 class="form-section-title">1. About you</h3>
+        <label>Display name<input name="display_name" autocomplete="nickname" placeholder="What the group will see" required></label>
+        <label>Email<input type="email" name="email" autocomplete="email" required></label>
+
+        <h3 class="form-section-title">2. What do you want to play?</h3>
+        <div class="experience-builder" data-role="player"><p class="microcopy">Add the systems or editions you play—or want to learn. Experience is self-described per game.</p><div class="experience-list" aria-live="polite"></div><button class="button secondary add-experience" type="button">+ Add Another System</button></div>
+        <label>Preferred format<select name="preferred_format"><option>Any format</option><option>Learn-to-play</option><option>One-shot</option><option>Short campaign</option><option>Long campaign</option><option>Organized play</option></select></label>
+        <label>Open to learning a new system?<select name="willing_to_learn"><option selected>Yes</option><option>Maybe</option><option>No</option></select></label>
+        <label>What kind of game sounds fun?<textarea name="style" rows="3" placeholder="Roleplay-heavy, tactical, casual, serious story, beginner-friendly..."></textarea></label>
+
+        <h3 class="form-section-title">3. When and how far can you play?</h3>
+        <label>Home ZIP code<input name="postal_code" inputmode="numeric" autocomplete="postal-code" pattern="[0-9]{5}" maxlength="5" placeholder="29501" required></label>
+        <label>Maximum travel distance<select name="radius" required><option value="5">5 miles</option><option value="10">10 miles</option><option value="25" selected>25 miles</option><option value="50">50 miles</option><option value="75">75 miles</option><option value="100">100 miles</option></select></label>
+        <div class="availability-builder"><p class="microcopy">Add every time window you could realistically play.</p><div class="availability-list" aria-live="polite"></div><button class="button secondary add-availability" type="button">+ Add Another Time Window</button></div>
+
+        <h3 class="form-section-title">4. Make the game comfortable</h3>
+        <label>Anything we should consider when matching?<textarea name="notes" rows="3" placeholder="Accessibility needs, age/environment preference, content boundaries, quieter venue preferred..."></textarea></label>
+        <label class="check-label"><input type="checkbox" required><span>I agree to the <a href="conduct.html">Code of Conduct</a>.</span></label>
+        <button class="button primary" type="submit">Find My Table</button>
+        <p class="form-status" role="status" aria-live="polite"></p>
+        <p class="microcopy">Your home address is never shown. We use your ZIP code and travel range only to decide which game locations could realistically work for you.</p>
+      </form>
+      <section id="player-production-results" class="panel" hidden aria-labelledby="player-production-results-title">
+        <p class="eyebrow">YOUR MATCHES</p>
+        <h3 id="player-production-results-title">Compatible table opportunities</h3>
+        <div id="player-production-results-list" class="role-grid" aria-live="polite"></div>
+      </section>
+    </div>
+  </section>
+
+  <section class="section alt" id="gm">
+    <div class="shell">
+      <div class="template-intro">
+        <div><p class="eyebrow">🧙 FOR DUNGEON MASTERS</p><h2>Run more D&amp;D without doing all the searching yourself.</h2><p>Tell us exactly what you can run, when, and for how many Players. We check Player demand and verified venue capacity for the same time.</p></div>
+        <div class="template-summary"><strong>You stay in control:</strong><span>choose the game · review the match · form the Event · coordinate the table</span></div>
+      </div>
+      <form class="panel form-grid prototype-form" id="gm-form" data-profile-type="Game Master" novalidate>
+        <h3 class="form-section-title">1. When can you DM?</h3>
+        <div class="availability-builder"><p class="microcopy">Add the times when you could realistically run a game, including recurring patterns.</p><div class="availability-list" aria-live="polite"></div><button class="button secondary add-availability" type="button">+ Add Another Time Window</button></div>
+        <label>Home ZIP code<input name="postal_code" inputmode="numeric" autocomplete="postal-code" pattern="[0-9]{5}" maxlength="5" placeholder="29501" required></label>
+        <label>Maximum travel distance<select name="radius" required><option value="5">5 miles</option><option value="10">10 miles</option><option value="25" selected>25 miles</option><option value="50">50 miles</option><option value="75">75 miles</option><option value="100">100 miles</option></select></label>
+        <label>Preferred cadence<select name="cadence"><option>One-shots when convenient</option><option selected>Weekly</option><option>Every other week</option><option>Monthly</option><option>Flexible / varies</option></select></label>
+
+        <h3 class="form-section-title">2. About you</h3>
+        <label>Display name<input name="display_name" autocomplete="nickname" placeholder="Name Players will see" required></label>
+        <label>Email<input type="email" name="email" autocomplete="email" required></label>
+
+        <h3 class="form-section-title">3. What do you want to run?</h3>
+        <div class="experience-builder" data-role="gm"><p class="microcopy">Add each specific system and format you are ready to run.</p><div class="experience-list" aria-live="polite"></div><button class="button secondary add-experience" type="button">+ Add Another System</button></div>
+        <label>Minimum Players needed<select name="minimum_players" required><option value="2">2 Players</option><option value="3" selected>3 Players</option><option value="4">4 Players</option><option value="5">5 Players</option><option value="6">6 Players</option></select></label>
+        <label>Maximum Player seats<select name="maximum_players" required><option value="3">3 Players</option><option value="4">4 Players</option><option value="5" selected>5 Players</option><option value="6">6 Players</option><option value="7">7 Players</option><option value="8">8 Players</option></select></label>
+
+        <h3 class="form-section-title">4. What should Players know about your table?</h3>
+        <label>Your DM style<textarea name="style" rows="3" placeholder="Roleplay-forward, tactical, rules-light, beginner friendly" required></textarea></label>
+        <label>Players you especially welcome<textarea name="welcome" rows="3" placeholder="Beginners, experienced players, adults 18+, families"></textarea></label>
+        <label>Game rules and expectations<textarea name="expectations" rows="4" placeholder="Punctual starts, no PvP, character restrictions, age limits, session zero for campaigns..." required></textarea></label>
+        <label class="check-label"><input type="checkbox" required><span>I will accurately describe my games and follow the <a href="conduct.html">Code of Conduct</a>.</span></label>
+        <button class="button primary" type="submit">Find Players + Venue</button>
+        <p class="form-status" role="status" aria-live="polite"></p>
+        <p class="microcopy">Your home address is never published. A compatible opportunity must line up the game, Player demand, verified venue, schedule, capacity, and travel ranges.</p>
+      </form>
+      <section id="gm-production-results" class="panel" hidden aria-labelledby="gm-production-results-title">
+        <p class="eyebrow">YOUR MATCHES</p>
+        <h3 id="gm-production-results-title">Compatible table opportunities</h3>
+        <div id="gm-production-results-list" class="role-grid" aria-live="polite"></div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="shell footer-grid"><div><strong>Dinner, Dice & Dragons</strong><p>More D&amp;D. Less searching, scheduling, and organizing.</p></div><div><a href="index.html">Home</a> · <a href="#player">Players</a> · <a href="#gm">DMs</a> · <a href="venues.html">Venues</a> · <a href="conduct.html">Safety</a></div></div></footer>
+<script src="production-config.js"></script>
+<script src="production-api-client.js"></script>
+<script src="production-onboarding-adapters.js"></script>
+<script src="production-session-store.js"></script>
+<script src="production-auth.js"></script>
+<script src="production-matching.js"></script>
+<script src="production-onboarding.js"></script>
+<script src="global-auth-ui.js"></script>
+<script src="experience-profiles.js"></script>
+<script src="availability.js"></script>
+<script src="production-match-results.js"></script>
+<script src="forms.js"></script>
+</body>
+</html>
