@@ -1,9 +1,6 @@
 import { currentUser, publicCurrentUser, userRoles } from "./_lib/auth.mjs";
 import { json, methodNotAllowed, notFound, pathParts, readJson, route } from "./_lib/http.mjs";
 import {
-  createGMSSupply as _unused,
-} from "./_lib/matching-inputs.mjs";
-import {
   createGMSupply,
   createPlayerDemand,
   createVenueTableWindow,
