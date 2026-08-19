@@ -20,8 +20,6 @@ async function identityUser() {
   try {
     await refreshSession();
   } catch (error) {
-    // An absent/expired anonymous session is handled as a normal 401 below. Only
-    // surface provider failures when Identity itself is unavailable.
     if (String(error?.name || "") === "MissingIdentityError") {
       throw new SupabaseRestError("Netlify Identity is not enabled for this project.", 503);
     }
@@ -59,8 +57,8 @@ export async function currentUser(_request, { active = false } = {}) {
         auth_provider_user_id: subject,
         email,
         email_verified_at: now,
-        display_name: authUser.name || null,
-        display_name_normalized: authUser.name ? String(authUser.name).trim().toLowerCase() : null,
+        display_name: null,
+        display_name_normalized: null,
         status: "active",
         last_login_at: now,
         updated_at: now
