@@ -139,14 +139,27 @@
     return window.DDDProductionAuth.getSession();
   }
 
+  function showSelectionRequired() {
+    announce(byId("create-game-page-status"), "Choose a matched Table from your GM signup results first.");
+    byId("game-form").hidden = true;
+    const root = byId("selected-slot");
+    if (root) {
+      const help = document.createElement("p");
+      help.className = "microcopy";
+      help.textContent = "Return to the GM signup flow to refresh your current production matches.";
+      root.append(help);
+    }
+  }
+
   async function init() {
     const pageStatus = byId("create-game-page-status");
-    try {
-      tableMatchId = new URLSearchParams(window.location.search).get("table_match_id") || "";
-      if (!tableMatchId) {
-        throw new Error("Choose a matched Table from your GM signup results first.");
-      }
+    tableMatchId = new URLSearchParams(window.location.search).get("table_match_id") || "";
+    if (!tableMatchId) {
+      showSelectionRequired();
+      return;
+    }
 
+    try {
       const session = await ensureProductionSession();
       if (!session) {
         throw new Error("Sign in with the GM account that owns this match, then reload this page.");
