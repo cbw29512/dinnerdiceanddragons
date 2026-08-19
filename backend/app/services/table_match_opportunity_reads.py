@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.models.event import Event
 from app.models.game_system import GameSystem
 from app.models.game_table import GameTable
 from app.models.match_explanation import MatchExplanation
@@ -105,9 +106,16 @@ def _summary_response(
     game_table_id = session.scalar(
         select(GameTable.id).where(GameTable.source_table_match_id == match.id)
     )
+    event_row = session.execute(
+        select(Event.id, Event.status).where(Event.table_match_id == match.id)
+    ).one_or_none()
+    event_id = event_row.id if event_row is not None else None
+    event_status = event_row.status if event_row is not None else None
     return TableMatchOpportunityResponse(
         id=match.id,
         game_table_id=game_table_id,
+        event_id=event_id,
+        event_status=event_status,
         status=match.status,
         proposed_start=match.proposed_start,
         proposed_end=match.proposed_end,
