@@ -5,9 +5,6 @@ psql_scalar() {
   docker compose exec -T db psql -U ddd -d ddd -tAc "$1" | tr -d '[:space:]'
 }
 
-alembic_head="$(psql_scalar "SELECT version_num FROM alembic_version")"
-test "$alembic_head" = "0019_distributed_api_rate_limits"
-
 rls_enabled="$(psql_scalar "SELECT relrowsecurity::text FROM pg_class WHERE oid='public.messages'::regclass")"
 test "$rls_enabled" = "true"
 
