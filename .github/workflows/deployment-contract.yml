@@ -118,3 +118,65 @@ jobs:
 
       - name: Run native Netlify API contract tests
         run: node tests/netlify-api-contract-tests.mjs
+
+  netlify-deploy-preview-smoke:
+    name: Live Netlify deploy-preview smoke
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Verify deployed static site, database health, identity session, and auth boundary
+        env:
+          PREVIEW_URL: https://deploy-preview-${{ github.event.pull_request.number }}--dinnerdiceanddragons.netlify.app
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Waiting for $PREVIEW_URL"
+          curl --fail --silent --show-error --location \
+            --retry 24 --retry-delay 10 --retry-all-errors \
+            "$PREVIEW_URL/" -o /tmp/home.html
+
+          curl --fail --silent --show-error --location "$PREVIEW_URL/join.html" -o /tmp/join.html
+          curl --fail --silent --show-error --location "$PREVIEW_URL/venues.html" -o /tmp/venues.html
+          curl --fail --silent --show-error --location "$PREVIEW_URL/production-config.js" -o /tmp/production-config.js
+          grep -q 'apiBaseUrl: window.location.origin' /tmp/production-config.js
+          grep -q 'Dinner, Dice & Dragons' /tmp/home.html
+
+          curl --fail --silent --show-error --location "$PREVIEW_URL/api/v1/health" -o /tmp/health.json
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const health = JSON.parse(fs.readFileSync('/tmp/health.json', 'utf8'));
+          const expected = {
+            status: 'ok',
+            runtime: 'netlify-functions',
+            database: 'netlify-database',
+            identity: 'netlify-identity',
+            version: 'v1'
+          };
+          for (const [key, value] of Object.entries(expected)) {
+            if (health[key] !== value) throw new Error(`Unexpected health.${key}: ${health[key]}`);
+          }
+          NODE
+
+          curl --fail --silent --show-error --location "$PREVIEW_URL/api/v1/auth/session" -o /tmp/session.json
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const session = JSON.parse(fs.readFileSync('/tmp/session.json', 'utf8'));
+          if (session.authenticated !== false) throw new Error(`Anonymous session contract failed: ${JSON.stringify(session)}`);
+          NODE
+
+          status="$(curl --silent --show-error --output /tmp/me.json --write-out '%{http_code}' "$PREVIEW_URL/api/v1/me")"
+          if [[ "$status" != "401" && "$status" != "403" ]]; then
+            echo "Expected unauthenticated /api/v1/me to return 401 or 403, got $status"
+            cat /tmp/me.json
+            exit 1
+          fi
+
+          curl --silent --show-error --head "$PREVIEW_URL/" | tr -d '\r' > /tmp/headers.txt
+          grep -qi '^x-frame-options: DENY$' /tmp/headers.txt
+          grep -qi '^x-content-type-options: nosniff$' /tmp/headers.txt
+          grep -qi '^referrer-policy: strict-origin-when-cross-origin$' /tmp/headers.txt
+          grep -qi '^content-security-policy:' /tmp/headers.txt
+
+          echo "Live Netlify preview smoke passed: $PREVIEW_URL"
