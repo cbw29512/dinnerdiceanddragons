@@ -1,105 +1,88 @@
-# Production API Deployment
+# Reference FastAPI Runtime
 
 ## Production topology
 
-Dinner, Dice & Dragons uses a split deployment with a single public web origin:
+Dinner, Dice & Dragons now uses Netlify as the application runtime:
 
 - **Frontend:** Netlify, continuously deployed from GitHub `main`.
-- **Browser API path:** same-origin `/api/...` on Netlify.
-- **API bridge:** `netlify/functions/api-proxy.mjs`, configured with server-only `DDD_API_ORIGIN`.
-- **API runtime:** Dockerized FastAPI application under `/backend` on a container host.
+- **Application API:** native Netlify Function at same-origin `/api/...`.
 - **Database/Auth:** managed PostgreSQL + Supabase Auth.
+- **Production URL:** `https://dinnerdiceanddragons.netlify.app`.
 
-The browser must not contain a container-host API origin. Netlify forwards authenticated API calls server-to-server, which keeps deployment routing out of browser configuration and removes the frontend's direct CORS dependency on the API host.
+The Dockerized FastAPI application under `/backend` is retained as a **reference implementation, Alembic migration source, and regression-test oracle**. It is not part of the production request path and does not require a separate Railway/container deployment.
 
-`backend/railway.toml` remains a ready container-host configuration. Another compatible container host is acceptable if it preserves the runtime contract below.
+## Why the backend remains in the repository
 
-## Fail-closed production configuration
+The Python implementation still provides high-value executable contracts for:
 
-`APP_ENV=production` is a trust boundary. FastAPI construction fails before serving requests when required production settings are unsafe or incomplete.
+- schema and Alembic migration history
+- deterministic Table Match behavior
+- authorization and identity-linking invariants
+- Event, registration, Venue booking, and GameTable lifecycle tests
+- PostgreSQL integration and RLS contract tests
+- compatibility checks while native Netlify behavior reaches full parity
 
-Production rejects local/loopback PostgreSQL, local development credentials, non-psycopg PostgreSQL URLs, missing/non-HTTPS Supabase URLs, blank JWT audience, missing Geocodio credentials, and empty/wildcard/HTTP/loopback CORS origins.
+Do not deploy this directory merely because it contains `Dockerfile` or `railway.toml`. Those files are retained for reproducibility and fallback testing, not as the current production architecture.
 
-## Required backend environment variables
+## Production server configuration
 
-Configure these only on the API/container host:
-
-```text
-APP_ENV=production
-LOG_LEVEL=INFO
-APP_VERSION=<release version>
-BUILD_SHA=<deployed source commit>
-DATABASE_URL=<managed PostgreSQL SQLAlchemy URL>
-SUPABASE_URL=https://<project-ref>.supabase.co
-SUPABASE_JWT_AUDIENCE=authenticated
-GEOCODIO_API_KEY=<server-side provider credential>
-CORS_ALLOWED_ORIGINS=https://<production-netlify-or-custom-domain>
-```
-
-The bounded database and outbound HTTP settings in `.env.example` have safe defaults and may be tuned only through reviewed deployment configuration.
-
-Do not use `*` for production CORS. Even though browsers call the same-origin Netlify proxy, the API's production configuration intentionally requires an explicit trusted HTTPS origin.
-
-## Netlify boundary
-
-Netlify receives only one server-side API routing variable:
+The production Netlify Function uses a server-only Supabase key configured in the Netlify environment:
 
 ```text
-DDD_API_ORIGIN=https://<fastapi-container-host>
+SUPABASE_SECRET_KEY=sb_secret_...
 ```
 
-Do not copy `DATABASE_URL`, `GEOCODIO_API_KEY`, database credentials, Supabase service-role keys, or other backend secrets into the frontend or repository. The Supabase publishable browser key remains public by design; privileged keys do not.
+Never commit or expose that value in browser JavaScript, source control, screenshots, logs, or chat. The function validates user bearer tokens through Supabase Auth before using privileged database access for application operations.
 
-The Netlify build produces `dist/` from reviewed public assets and excludes backend source, tests, internal docs, GitHub workflows, Supabase project files, Apps Script, and the prototype dashboard.
+The Supabase project URL and publishable key are public values. They may be set explicitly as `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`, although the production function pins the current Dinner Dice & Dragons public project configuration as a safe default.
 
 ## Database and migration contract
 
-The application expects a SQLAlchemy/Psycopg URL such as:
+Production PostgreSQL schema remains managed through Alembic migration files in `backend/alembic/versions/`.
+
+Before a migration is promoted:
+
+1. validate it in PostgreSQL CI
+2. apply it deliberately to the production Supabase database
+3. verify the resulting Alembic revision
+4. run Supabase security advisors
+5. deploy native application code only after schema compatibility is proven
+
+As of the Netlify full-stack migration, production is expected at:
 
 ```text
-postgresql+psycopg://<user>:<password>@<host>:5432/<database>
+0022_signal_availability
 ```
 
-Use managed provider credentials. The long-running API process must not migrate automatically on startup. Apply `alembic upgrade head` as a controlled pre-deploy step. When practical, use separate migration credentials with schema-change privilege and a reduced-privilege steady-state API role.
+The web/API runtime must never attempt opportunistic schema changes during an end-user request.
 
-Supabase/Supavisor transaction-mode endpoints on port `6543` use `NullPool`; the application applies statement, lock, and idle-in-transaction limits within each transaction. Direct/session-pooler endpoints use bounded SQLAlchemy pooling.
+## Reference container contract
 
-## Container host contract
+The reference Docker image remains hardened so it can be used for local parity checks or an emergency fallback if explicitly chosen later:
 
-Any production container host must:
+1. build from `backend/Dockerfile`
+2. run as UID/GID `10001:10001`
+3. prefer a read-only root filesystem
+4. drop Linux capabilities and use `no-new-privileges`
+5. accept an injected `PORT`
+6. expose `/api/v1/health`
 
-1. Build from `backend/Dockerfile`.
-2. Run as the fixed non-root identity `10001:10001`.
-3. Prefer a read-only root filesystem and bounded writable scratch space only where required.
-4. Drop Linux capabilities and enable `no-new-privileges` where the host exposes those controls.
-5. Inject valid production variables and the host-provided `PORT`.
-6. Run `alembic upgrade head` as a controlled migration step.
-7. Start Uvicorn on `0.0.0.0:$PORT`.
-8. Require `/api/v1/health` to return HTTP 200 before activation.
-9. Reject activation when migration, configuration, auth, runtime-hardening, or health checks fail.
+This is no longer a Netlify deployment prerequisite.
 
-The GitHub Production Deployment Contract continuously proves the image accepts an injected port, starts as UID/GID `10001`, runs with a read-only root filesystem, drops all Linux capabilities, enables `no-new-privileges`, and becomes healthy.
+## Production release verification
 
-## Release verification
+The current release gate is entirely through Netlify:
 
-Verify the API origin directly first:
+1. `GET https://dinnerdiceanddragons.netlify.app/api/v1/health`
+2. Supabase Auth signup and email confirmation to `/join.html`
+3. authenticated `/api/v1/me`
+4. Player onboarding and demand
+5. GM onboarding and supply
+6. verified Venue table window
+7. three-way hard fit and BOOM GameTable
+8. Event formation
+9. Player seat request and GM decision
+10. Venue booking decision when required
+11. confirmed Game Hub and role-scoped messaging
 
-```text
-GET /api/v1/health
-GET /api/v1/version
-```
-
-Then configure `DDD_API_ORIGIN` in Netlify and verify through the public Netlify origin:
-
-```text
-GET /api/v1/health
-```
-
-After the public proxy health check succeeds:
-
-1. Add the Netlify production URL and final custom domain, when applicable, to the Supabase Auth site/redirect allow-list.
-2. Verify sign-up/email-confirmation returns to `/join.html` on the same public origin.
-3. Verify a real Supabase JWT with authenticated `/api/v1/me`.
-4. Run the controlled Player + GM + Venue Table Match acceptance test through Event formation, seat request/approval, Venue approval, and Game Hub.
-
-A failed migration, unsafe configuration, unhealthy API, broken proxy, invalid auth callback, or failed browser smoke blocks activation. Roll back to the last known-good deployment/configuration pair rather than partially activating the release.
+A failed native Function deploy, schema mismatch, invalid server secret, broken auth callback, or failed production smoke test blocks activation.

@@ -6,7 +6,9 @@ on:
     paths:
       - "backend/app/**"
       - "backend/alembic/**"
+      - "netlify/functions/**"
       - "*.js"
+      - "*.mjs"
       - "js/**"
       - "apps-script/**"
       - ".github/workflows/codeql.yml"
@@ -15,7 +17,9 @@ on:
     paths:
       - "backend/app/**"
       - "backend/alembic/**"
+      - "netlify/functions/**"
       - "*.js"
+      - "*.mjs"
       - "js/**"
       - "apps-script/**"
       - ".github/workflows/codeql.yml"

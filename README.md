@@ -16,25 +16,27 @@ The differentiator is **physical-table formation**, not generic social networkin
 
 ## Deployment
 
-Production frontend target: **Netlify via GitHub continuous deployment from `main`**.
+Production application host: **Netlify via GitHub continuous deployment from `main`**.
 
+- Public production URL: `https://dinnerdiceanddragons.netlify.app`
 - Netlify build configuration lives in `netlify.toml`.
-- Netlify publishes only the generated `dist/` frontend artifact.
-- Browser API requests stay same-origin at `/api/...` and are proxied by `netlify/functions/api-proxy.mjs`.
-- The FastAPI service remains containerized and is supplied to Netlify through the server-only `DDD_API_ORIGIN` environment variable.
+- Netlify publishes the generated `dist/` browser artifact.
+- Browser API requests stay same-origin at `/api/...` and are handled by the native Netlify Function `netlify/functions/api.mjs`.
+- Supabase remains the managed PostgreSQL database and authentication provider.
+- The production Netlify function uses the server-only `SUPABASE_SECRET_KEY`; it is never exposed to browser code.
 - Netlify skips deploys for backend/docs/test-only commits to avoid unnecessary build usage.
 
-The final Netlify URL will become the canonical public URL after the GitHub repository is connected and the production smoke test passes.
+The original FastAPI implementation remains in `/backend` as the reference implementation, Alembic migration source, and regression-test oracle. It is no longer part of the production request path.
 
 GitHub Pages remains available as a static validation/fallback surface:
 
 https://cbw29512.github.io/dinnerdiceanddragons/
 
-See `USAGE.md` for the short production connection checklist.
+See `USAGE.md` for the production configuration and smoke-test checklist.
 
 ## Current stage
 
-The production Table-first path is implemented across authenticated Player, GM, and Venue signals, hard-fit matching, persistent Tables, Event formation, registrations, venue booking decisions, and the Game Hub. Production acceptance testing with real accounts remains the release gate.
+The production Table-first path is implemented across authenticated Player, GM, and Venue signals, hard-fit matching, persistent Tables, Event formation, registrations, venue booking decisions, and the Game Hub. Production acceptance testing with real test accounts remains the release gate.
 
 Dinner, Dice & Dragons is United States-wide. Florence, South Carolina is the first concentrated density pilot, not a geographic restriction on participation.
 
@@ -73,6 +75,8 @@ python -m http.server 8000
 
 Then open `http://localhost:8000`.
 
+The browser-only local run is useful for static work. Native production API behavior is validated through the Netlify function contract tests and deployed Netlify environment.
+
 ## Automated checks
 
-The repository validates the production backend and browser experience with backend tests, migration checks, PostgreSQL contracts, authentication/RLS smoke tests, static page/link checks, JavaScript tests, Playwright browser/accessibility/reflow checks, Lighthouse gates, supply-chain checks, CodeQL, the Docker runtime contract, and the generated Netlify deployment artifact contract.
+The repository validates the reference backend and production browser/runtime experience with backend tests, migration checks, PostgreSQL contracts, authentication/RLS smoke tests, static page/link checks, JavaScript tests, native Netlify API contract tests, Playwright browser/accessibility/reflow checks, Lighthouse gates, supply-chain checks, CodeQL, and the generated Netlify full-stack deployment artifact contract.
