@@ -97,8 +97,7 @@ export async function verifyVenueClaim(user, venueId, managerId) {
   const venueRows = await updateRows("venues", { id: eq(safeVenueId), verified: "is.false" }, {
     latitude: coordinates.latitude,
     longitude: coordinates.longitude,
-    verified: true,
-    updated_at: now
+    verified: true
   });
   if (!Array.isArray(venueRows) || venueRows.length !== 1) {
     throw new SupabaseRestError("Venue claim changed while verification was in progress.", 409);
