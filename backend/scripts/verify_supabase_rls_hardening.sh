@@ -35,6 +35,10 @@ rls_tables=(
   venue_booking_requests
   messages
   api_rate_limit_buckets
+  game_tables
+  game_table_players
+  player_demand_availability_windows
+  gm_supply_availability_windows
 )
 
 for table in "${rls_tables[@]}"; do
@@ -46,6 +50,6 @@ function_search_path="$(psql_scalar "SELECT COALESCE(array_to_string(p.proconfig
 test "$function_search_path" = "search_path=pg_catalog"
 
 alembic_head="$(psql_scalar "SELECT version_num FROM alembic_version")"
-test "$alembic_head" = "0019_distributed_api_rate_limits"
+test "$alembic_head" = "0022_signal_availability"
 
-echo "Supabase RLS hardening verification passed through distributed API rate limiting."
+echo "Supabase RLS hardening verification passed through signal-specific matching availability."
