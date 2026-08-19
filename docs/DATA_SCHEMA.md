@@ -2,11 +2,15 @@
 
 ## Purpose
 
-This schema supports Table Match, identity, recurring availability, and an earned reputation system that does not penalize newcomers.
+This schema supports identity, recurring availability, three-sided marketplace signals, persistent GameTable formation, scheduled Events, and an earned reputation system that does not penalize newcomers.
 
 ## Core product rule
 
-A successful table forms from Player demand + GM availability/capability + Venue capacity.
+A successful table emerges from **Player demand + GM availability/capability + Venue capacity**.
+
+Player demand, GM supply, and Venue capacity are independent signals. Any side may expose the first useful opportunity. A persistent GameTable may exist while still missing a GM, Players, Venue, schedule, or Venue approval.
+
+A fully viable `TableMatch` remains deterministic evidence that a specific GM + Venue occurrence + sufficient compatible Player demand passes hard-fit matching. It is not the persistent group identity.
 
 Experience is system-specific and self-described. Reputation is derived from verified platform activity. **No reputation history is neutral, never negative.**
 
@@ -90,25 +94,54 @@ Status: `active`, `paused`, `matched`, `expired`
 
 Status: `active`, `paused`, `matched`, `expired`
 
-## Venue supply
+## Venue supply and Venue value
 
 ### Venue
-`id`, `name`, `slug`, `venue_type`, public address fields, `postal_code`, coordinates, website/phone, `verified`, amenities, accessibility/parking/noise/lighting notes, `active`
+`id`, `name`, `slug`, `venue_type`, public address fields, `postal_code`, coordinates, website/phone, `verified`, amenities, `host_support_offerings`, `host_support_notes`, accessibility/parking/noise/lighting notes, `active`
+
+`host_support_offerings` is structured public-safe metadata for what the Venue generally brings to tabletop play. Common values include:
+
+- `consistent_space`
+- `dedicated_rpg_area`
+- `private_room`
+- `food`
+- `snacks`
+- `beverages`
+- `discounts`
+- `loyalty_rewards`
+- `prize_support`
+- `store_credit`
+- `tabletop_supplies`
+- `terrain_minis`
+- `storage`
+- `event_promotion`
+- `staff_support`
+- `other`
+
+`host_support_notes` allows a Venue to describe a contribution the structured list does not capture, including details such as a GM punch-card or reward program.
+
+**Food is optional.** A Venue can be highly valuable because it provides reliable space, prizes, loyalty rewards, tabletop resources, promotion, staff support, or another service even when it does not operate a kitchen.
 
 ### VenueManager
 `id`, `venue_id`, `user_id`, `role`, `verified_at`
 
 ### VenueTableWindow
-`id`, `venue_id`, `recurring_rule_id`, `table_count`, `max_people_per_table`, `purchase_policy`, `approval_required`, `environment_notes`, `active`
+`id`, `venue_id`, `recurring_rule_id`, `table_count`, `max_people_per_table`, `purchase_policy`, `approval_required`, `special_support_offerings`, `special_support_notes`, `environment_notes`, `active`
 
 Venue ownership is enforced by the `venue_id` foreign key; the linked recurrence row contains schedule data only.
 
-## Table Match
+`special_support_offerings` and `special_support_notes` describe benefits that apply to a specific recurring slot rather than the Venue generally. Example: an RPG night may provide an extra loyalty punch or prize drawing for the GM.
+
+`purchase_policy` remains optional operational information. It is not a Venue quality score and is not required for Venue participation.
+
+## Full-fit Table Match
 
 ### TableMatch
 `id`, `gm_supply_signal_id`, `venue_table_window_id`, `game_system_id`, `proposed_start`, `proposed_end`, `timezone`, `minimum_players`, `maximum_players`, `compatible_player_count`, `distance_summary`, `fit_score`, `status`, `created_at`, `updated_at`
 
 Status: `potential`, `invited`, `forming`, `rejected`, `expired`, `converted`
+
+A TableMatch represents a **complete hard-fit opportunity** with a specific GM, Venue window, occurrence, and sufficient currently compatible Player demand. It may seed a persistent GameTable, but incomplete Player-led, GM-led, and Venue-led opportunities do not have to wait for a complete TableMatch before they can eventually become GameTables.
 
 `fit_score` measures table compatibility. It must not be reduced merely because the GM or Players lack platform reputation history.
 
@@ -124,6 +157,56 @@ Example criteria: system, schedule, distance, experience, format, play_style, en
 
 **Reputation is not a hard Table Match criterion.** Verified reliability may be used as a limited tie-breaker or caution signal after viable matches are established. Missing reputation history contributes zero positive and zero negative adjustment.
 
+## Persistent Table formation
+
+### GameTable
+`id`, `game_system_id`, `created_by_user_id`, `source_table_match_id` nullable, `title`, `lifecycle_status`, `game_format`, `minimum_players`, `maximum_players`, `join_policy`, `visibility`, `table_style` nullable, `minimum_age` nullable, `gm_profile_id` nullable, `venue_id` nullable, `venue_table_window_id` nullable, `proposed_start` nullable, `proposed_end` nullable, `timezone` nullable, timestamps
+
+Lifecycle status:
+- `draft`
+- `forming`
+- `ready`
+- `confirmed`
+- `in_progress`
+- `completed`
+- `cancelled`
+- `archived`
+
+A GameTable is the persistent group-forming and retention object. It may exist before a GM, Venue, or final schedule is attached.
+
+Missing resources are **not** lifecycle statuses. The authoritative Table requirements service computes these independently:
+
+- `needs_gm`
+- `open_player_seats`
+- `minimum_players_missing`
+- `needs_venue`
+- `needs_venue_approval`
+- `needs_schedule`
+- `ready_to_confirm`
+
+A forming Table may need several resources simultaneously.
+
+A complete TableMatch conversion creates one GameTable and one scheduled Event in the same transaction. Compatible matched Players begin as invitations; matching eligibility is not treated as a Player commitment.
+
+### GameTablePlayer
+`game_table_id`, `player_profile_id`, `source_player_demand_signal_id` nullable, `status`, `requested_at`, `responded_at` nullable, `ended_at` nullable
+
+Primary key: `(game_table_id, player_profile_id)`
+
+Status:
+- `requested`
+- `invited`
+- `confirmed`
+- `declined`
+- `removed`
+- `left`
+
+`GameTablePlayer` is durable group membership. It is intentionally separate from one Event's Registration.
+
+When a forming Table has never completed play, a Player who releases a confirmed first-session seat may revert from durable `confirmed` commitment to `invited` so a replacement can fill the forming roster. After the Table has completed play, missing one later Event does not automatically eject an established member.
+
+A substitute may hold a confirmed Event Registration without being promoted into an already-full persistent roster.
+
 ## Venue booking
 
 ### VenueBookingRequest
@@ -138,10 +221,16 @@ Status: `requested`, `question`, `approved`, `declined`, `cancelled`
 
 A recurring GameSeries may reference the same recurrence-rule model used by availability windows, but generated Events remain independent records so an individual occurrence can be cancelled/rescheduled without destroying the series.
 
+GameSeries is recurrence/scheduling metadata; it does not replace GameTable as the persistent group identity.
+
 ### Event
-`id`, `game_series_id` nullable, `table_match_id` nullable, `slug`, `title`, `description`, `gm_profile_id`, `game_system_id`, `venue_id`, `event_type`, `join_mode`, `status`, `starts_at`, `ends_at`, `min_players`, `max_players`, `minimum_age`, `beginner_friendly`, timestamps
+`id`, `game_series_id` nullable, `game_table_id` nullable, `table_match_id` nullable, `slug`, `title`, `description`, `gm_profile_id`, `game_system_id`, `venue_id`, `event_type`, `join_mode`, `status`, `starts_at`, `ends_at`, `min_players`, `max_players`, `minimum_age`, `beginner_friendly`, timestamps
 
 Status: `draft`, `venue_requested`, `forming`, `confirmed`, `full`, `cancelled`, `completed`
+
+An Event is one scheduled occurrence. An Event may point to a persistent GameTable. Event confirmation remains derived from Venue approval and confirmed Event Registrations.
+
+When an Event linked to a GameTable becomes `confirmed` or `full`, the GameTable may advance through `ready` to `confirmed` only if its authoritative formation requirements are also satisfied.
 
 ### TableExpectations
 `id`, `event_id`, tone/age/style fields, PvP/homebrew/death policies, mature content, alcohol, new-player flag, breaks, safety framework, environment notes, accessibility notes, other notes
@@ -150,6 +239,8 @@ Status: `draft`, `venue_requested`, `forming`, `confirmed`, `full`, `cancelled`,
 `id`, `event_id`, `player_profile_id`, `status`, expectations_acknowledged_at`, `requested_at`, `responded_at`, `cancelled_at`
 
 Status: `requested`, `confirmed`, `waitlisted`, `declined`, `cancelled`, `removed`
+
+Registration describes a Player's seat state for **one Event**. It is not durable GameTable membership and it is not Attendance.
 
 `expected_guests = GM count + confirmed registrations + explicitly registered assistants`
 
@@ -173,6 +264,8 @@ Raw email addresses and home addresses are never exposed as messaging identifier
 `id`, `event_id`, `player_profile_id`, `registration_id`, `status`, `recorded_by_user_id`, `recorded_at`, `notes`
 
 Status: `attended`, `late_cancel`, `no_show`, `excused_absence`
+
+Attendance records what actually happened. A confirmed Registration or confirmed GameTable membership must never fabricate Attendance.
 
 ### Feedback
 `id`, `event_id`, `author_user_id`, `subject_type`, `subject_id`, structured signals, `private_comment`, `created_at`
@@ -226,6 +319,8 @@ This is product fairness telemetry, not a public score.
 ### VenueEventMetrics
 `id`, `event_id`, `venue_id`, `expected_guests`, `actual_guests`, `reserved_minutes`, `tables_used`, optional `venue_reported_sales`, `created_at`
 
+Venue value metrics must not assume food sales. Optional venue-reported sales may be useful for restaurants/cafes, while repeat hosting, attendance, reserved-table utilization, loyalty participation, prize/support usage, and Venue willingness to host again may matter for other Venue types.
+
 ## Safety
 
 ### Report
@@ -239,19 +334,26 @@ Reports are never automatic public penalties.
 ## Integrity rules
 
 1. Display names are unique after normalization; internal User IDs remain the durable identity.
-2. A Table Match must reference a GM supply signal, venue window, system, proposed time, and explainable compatibility information.
-3. Player compatibility must respect availability and travel radius without exposing private home locations.
-4. Recurring schedule matching must resolve the actual occurrence dates from each rule, including anchor dates and ordinal weekdays.
-5. Recurring rule ownership is expressed through typed Player/GM/Venue/GameSeries foreign keys; recurrence rows do not contain an unchecked polymorphic owner UUID.
-6. Missing reputation history never reduces Table Match eligibility or fit score.
-7. Reputation may not be used as a hard requirement for ordinary table discovery unless a narrowly defined safety/moderation restriction applies.
-8. Event feedback requires eligible participation in that Event.
-9. Public reputation is derived from verified ReputationEvents and minimum sample thresholds.
-10. Reports remain private and separate from reputation.
-11. An Event cannot become Confirmed until venue approval requirements and minimum Player commitment are satisfied.
-12. Venue capacity cannot be double-booked.
-13. Expected headcount updates when registrations change.
-14. Private email/home-address data is never exposed as a messaging identifier.
-15. Self-described experience is never presented as platform-verified expertise.
-16. Store timestamps timezone-aware and preserve venue timezone for display/scheduling.
-17. Stable IDs survive migration between pilot and production storage.
+2. A full TableMatch must reference a GM supply signal, Venue window, system, proposed time, and explainable compatibility information.
+3. A GameTable may exist before a complete TableMatch and may simultaneously need multiple formation resources.
+4. `needs_gm`, missing Players, `needs_venue`, Venue approval, and schedule readiness are requirements, not mutually exclusive lifecycle states.
+5. Player compatibility must respect availability and travel radius without exposing private home locations.
+6. Recurring schedule matching must resolve the actual occurrence dates from each rule, including anchor dates and ordinal weekdays.
+7. Recurring rule ownership is expressed through typed Player/GM/Venue/GameSeries foreign keys; recurrence rows do not contain an unchecked polymorphic owner UUID.
+8. Missing reputation history never reduces Table Match eligibility or fit score.
+9. Reputation may not be used as a hard requirement for ordinary table discovery unless a narrowly defined safety/moderation restriction applies.
+10. Event feedback requires eligible participation in that Event.
+11. Public reputation is derived from verified ReputationEvents and minimum sample thresholds.
+12. Reports remain private and separate from reputation.
+13. An Event cannot become Confirmed until Venue approval requirements and minimum Event Player commitment are satisfied.
+14. A linked GameTable cannot be promoted to Confirmed unless its own authoritative formation requirements are satisfied.
+15. Venue capacity cannot be double-booked.
+16. Expected headcount updates when Registrations change.
+17. GameTable membership, Event Registration, and Attendance are separate facts and must not be conflated.
+18. Compatible/matched Players are invitations or opportunities until they explicitly commit; matching alone never fabricates membership or Attendance.
+19. A Venue does not need food service to participate or to be considered valuable.
+20. `purchase_policy` is optional operational information and must not be used as a proxy for Venue quality.
+21. Private email/home-address data is never exposed as a messaging identifier.
+22. Self-described experience is never presented as platform-verified expertise.
+23. Store timestamps timezone-aware and preserve Venue timezone for display/scheduling.
+24. Stable IDs survive migration between pilot and production storage.

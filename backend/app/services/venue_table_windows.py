@@ -57,6 +57,8 @@ def _response(
         max_people_per_table=window.max_people_per_table,
         purchase_policy=window.purchase_policy,
         approval_required=window.approval_required,
+        special_support_offerings=window.special_support_offerings,
+        special_support_notes=window.special_support_notes,
         environment_notes=window.environment_notes,
     )
 
@@ -81,6 +83,8 @@ def create_venue_table_window(
             max_people_per_table=payload.max_people_per_table,
             purchase_policy=payload.purchase_policy or None,
             approval_required=payload.approval_required,
+            special_support_offerings=[item.value for item in payload.special_support_offerings],
+            special_support_notes=payload.special_support_notes or None,
             environment_notes=payload.environment_notes or None,
             active=True,
         )

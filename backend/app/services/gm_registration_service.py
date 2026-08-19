@@ -19,6 +19,8 @@ from app.services.event_lifecycle_state import (
 from app.services.event_participant_eligibility import (
     player_profile_is_currently_eligible,
 )
+from app.services.game_table_membership_release import release_unestablished_membership
+from app.services.game_table_membership_sync import confirm_game_table_membership
 from app.services.registration_common import (
     RegistrationConflictError,
     RegistrationPersistenceError,
@@ -72,6 +74,7 @@ def decide_registration(
                 raise RegistrationConflictError("No confirmed Player seat remains.")
             registration.status = RegistrationStatus.CONFIRMED.value
             registration.responded_at = now
+            confirm_game_table_membership(session, event, registration.player_profile_id)
         elif action == "decline":
             if registration.status == RegistrationStatus.DECLINED.value:
                 return registration_response(registration)
@@ -96,6 +99,11 @@ def decide_registration(
             prior_status == RegistrationStatus.CONFIRMED.value
             and registration.status != prior_status
         ):
+            release_unestablished_membership(
+                session,
+                event,
+                registration.player_profile_id,
+            )
             promote_waitlist(session, event)
         booking = booking_for_event(session, event.id, lock=True)
         synchronize_event_state(session, event, booking)

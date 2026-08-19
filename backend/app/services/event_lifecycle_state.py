@@ -1,11 +1,16 @@
 """Server-side Event state derived from Venue approval and confirmed seats."""
 
+import logging
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.event import Event, EventStatus
 from app.models.registration import Registration, RegistrationStatus
 from app.models.venue_booking_request import VenueBookingRequest, VenueBookingStatus
+from app.services.game_table_event_state import synchronize_game_table_from_event
+
+LOGGER = logging.getLogger(__name__)
 
 
 class EventLifecycleConflictError(RuntimeError):
@@ -46,34 +51,39 @@ def synchronize_event_state(
     event: Event,
     booking: VenueBookingRequest | None = None,
 ) -> int:
-    """Update headcount and Event lifecycle from authoritative persisted state."""
+    """Update Event state, then promote its persistent Table when eligible."""
 
-    # Production sessions intentionally use autoflush=False. Lifecycle state must
-    # therefore flush pending registration mutations before issuing count queries.
-    session.flush()
-    booking = booking or booking_for_event(session, event.id)
-    confirmed = confirmed_registration_count(session, event.id)
-    booking.expected_guests = 1 + confirmed
+    try:
+        # Production sessions intentionally use autoflush=False. Lifecycle state must
+        # therefore flush pending registration mutations before issuing count queries.
+        session.flush()
+        booking = booking or booking_for_event(session, event.id)
+        confirmed = confirmed_registration_count(session, event.id)
+        booking.expected_guests = 1 + confirmed
 
-    if event.status == EventStatus.COMPLETED.value:
-        return confirmed
-    if booking.status in {
-        VenueBookingStatus.DECLINED.value,
-        VenueBookingStatus.CANCELLED.value,
-    }:
-        event.status = EventStatus.CANCELLED.value
-        return confirmed
-    if booking.status != VenueBookingStatus.APPROVED.value:
-        event.status = EventStatus.VENUE_REQUESTED.value
-        return confirmed
+        if event.status != EventStatus.COMPLETED.value:
+            if booking.status in {
+                VenueBookingStatus.DECLINED.value,
+                VenueBookingStatus.CANCELLED.value,
+            }:
+                event.status = EventStatus.CANCELLED.value
+            elif booking.status != VenueBookingStatus.APPROVED.value:
+                event.status = EventStatus.VENUE_REQUESTED.value
+            elif confirmed >= event.max_players:
+                event.status = EventStatus.FULL.value
+            elif confirmed >= event.min_players:
+                event.status = EventStatus.CONFIRMED.value
+            else:
+                event.status = EventStatus.FORMING.value
 
-    if confirmed >= event.max_players:
-        event.status = EventStatus.FULL.value
-    elif confirmed >= event.min_players:
-        event.status = EventStatus.CONFIRMED.value
-    else:
-        event.status = EventStatus.FORMING.value
-    return confirmed
+        synchronize_game_table_from_event(session, event, booking)
+        return confirmed
+    except Exception:
+        LOGGER.exception(
+            "Failed to synchronize Event lifecycle event_id=%s",
+            getattr(event, "id", None),
+        )
+        raise
 
 
 __all__ = [

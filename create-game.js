@@ -1,243 +1,201 @@
 (() => {
   "use strict";
 
-  function logError(message, error) {
-    console.error(`[Dinner Dice & Dragons] ${message}`, error);
+  let opportunity = null;
+  let tableMatchId = "";
+
+  function byId(id) {
+    return document.getElementById(id);
   }
 
-  function formatDuration(minutes) {
-    try {
-      const hours = Number(minutes) / 60;
-      return Number.isInteger(hours) ? `${hours} hours` : `${hours.toFixed(1)} hours`;
-    } catch (error) {
-      logError("Unable to format duration", error);
-      return "";
-    }
+  function announce(node, message, success = false) {
+    if (!node) return;
+    node.className = `form-status ${success ? "success-message" : "error-message"}`;
+    node.textContent = message;
   }
 
-  function readInt(selector) {
-    try {
-      const node = document.querySelector(selector);
-      return node ? Number.parseInt(node.value, 10) : Number.NaN;
-    } catch (error) {
-      logError(`Unable to read integer from ${selector}`, error);
-      return Number.NaN;
-    }
+  function clean(value) {
+    const text = String(value || "").trim();
+    return text || null;
   }
 
-  function setSelectIfAvailable(selector, value) {
+  function dateTimeLabel(start, end, timezone) {
     try {
-      const select = document.querySelector(selector);
-      if (!select || !Number.isFinite(Number(value))) return;
-      const desired = String(value);
-      if ([...select.options].some((option) => option.value === desired && !option.disabled)) select.value = desired;
-    } catch (error) {
-      logError(`Unable to set ${selector}`, error);
-    }
-  }
-
-  function updateCommitmentSummary() {
-    try {
-      const seats = document.querySelector("#player-seats");
-      const minimum = document.querySelector("#min-players");
-      const guests = document.querySelector("#expected-guests");
-      const rule = document.querySelector("#confirmation-rule");
-      if (!seats || !minimum || !guests || !rule) return;
-
-      const maxPlayers = Number.parseInt(seats.value, 10);
-      let minPlayers = Number.parseInt(minimum.value, 10);
-      if (!Number.isFinite(maxPlayers) || !Number.isFinite(minPlayers)) return;
-
-      [...minimum.options].forEach((option) => {
-        option.disabled = Number(option.value) > maxPlayers;
+      const formatter = new Intl.DateTimeFormat(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: timezone || undefined,
+        timeZoneName: "short"
       });
-      if (minPlayers > maxPlayers) {
-        minPlayers = maxPlayers;
-        minimum.value = String(maxPlayers);
+      return `${formatter.format(new Date(start))} – ${formatter.format(new Date(end))}`;
+    } catch {
+      return `${start} – ${end}`;
+    }
+  }
+
+  function systemLabel(system) {
+    if (!system) return "RPG";
+    return [system.name, system.edition].filter(Boolean).join(" · ");
+  }
+
+  function renderSummary(match) {
+    const root = byId("selected-slot");
+    if (!root) return;
+    root.replaceChildren();
+    const title = document.createElement("h2");
+    title.id = "selected-match-title";
+    title.textContent = systemLabel(match.system);
+    const venue = document.createElement("p");
+    venue.textContent = `${match.venue.name} · ${match.venue.city}, ${match.venue.state_region}`;
+    const schedule = document.createElement("p");
+    schedule.textContent = dateTimeLabel(match.proposed_start, match.proposed_end, match.timezone);
+    const capacity = document.createElement("p");
+    capacity.className = "microcopy";
+    capacity.textContent = `${match.compatible_player_count} compatible ${match.compatible_player_count === 1 ? "Player" : "Players"} · needs ${match.minimum_players}–${match.maximum_players} Players`;
+    root.append(title, venue, schedule, capacity);
+  }
+
+  function hydrateForm(match) {
+    byId("game-system").value = systemLabel(match.system);
+    byId("game-when").value = dateTimeLabel(match.proposed_start, match.proposed_end, match.timezone);
+    byId("game-venue").value = `${match.venue.name} · ${match.venue.city}, ${match.venue.state_region}`;
+    byId("min-players").value = String(match.minimum_players);
+    byId("max-players").value = String(match.maximum_players);
+    const form = byId("game-form");
+    form.hidden = false;
+  }
+
+  function showExistingEvent(match) {
+    const pageStatus = byId("create-game-page-status");
+    announce(pageStatus, "This Table Match has already been converted into an Event.", true);
+    byId("game-form").hidden = true;
+    const next = byId("game-next-step");
+    const link = byId("game-hub-link");
+    link.href = `game-hub.html?event=${encodeURIComponent(match.event_id)}`;
+    byId("game-created-copy").textContent = `Event status: ${String(match.event_status || "formed").replaceAll("_", " ")}. Continue in the Game Hub.`;
+    next.hidden = false;
+  }
+
+  function payloadFromForm(form) {
+    const minimumAge = clean(form.elements.minimum_age.value);
+    const characterGuidance = clean(form.elements.character_guidance.value);
+    return {
+      title: form.elements.title.value.trim(),
+      description: form.elements.description.value.trim(),
+      event_type: form.elements.event_type.value,
+      join_mode: form.elements.join_mode.value,
+      minimum_age: minimumAge === null ? null : Number(minimumAge),
+      beginner_friendly: form.elements.beginner_friendly.value === "true",
+      expected_sessions: Number(form.elements.expected_sessions.value),
+      gm_message: clean(form.elements.gm_message.value),
+      expectations: {
+        play_style: form.elements.play_style.value.trim(),
+        boundaries: form.elements.boundaries.value.trim(),
+        homebrew_policy: clean(form.elements.homebrew_policy.value),
+        age_environment: minimumAge === null ? null : `${minimumAge}+ table`,
+        new_players_welcome: form.elements.beginner_friendly.value === "true",
+        other_notes: characterGuidance
+      }
+    };
+  }
+
+  async function submitForm(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const status = form.querySelector(".form-status");
+    if (!form.checkValidity()) {
+      announce(status, "Please complete the required game and table-expectation fields.");
+      form.reportValidity();
+      return;
+    }
+
+    const submit = form.querySelector('[type="submit"]');
+    try {
+      submit.disabled = true;
+      announce(status, "Creating the real Event…", true);
+      const formed = await window.DDDProductionAPI.formTableMatch(tableMatchId, payloadFromForm(form));
+      form.hidden = true;
+      const next = byId("game-next-step");
+      const link = byId("game-hub-link");
+      link.href = `game-hub.html?event=${encodeURIComponent(formed.event_id)}`;
+      byId("game-created-copy").textContent = `Event status: ${formed.event_status.replaceAll("_", " ")}. Matched Players can now request seats and the Venue can review its booking request.`;
+      next.hidden = false;
+      announce(byId("create-game-page-status"), formed.created ? "Event created successfully." : "This match was already converted; the existing Event was reused.", true);
+      next.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    } catch (error) {
+      console.error("[Dinner Dice & Dragons] Unable to form matched Event", error);
+      submit.disabled = false;
+      announce(status, error?.message || "The matched Event could not be created.");
+    }
+  }
+
+  async function ensureProductionSession() {
+    if (!window.DDDProductionAPI?.isConfigured?.()) {
+      await window.DDDProductionAuth.init();
+    }
+    return window.DDDProductionAuth.getSession();
+  }
+
+  function showSelectionRequired() {
+    announce(byId("create-game-page-status"), "Choose a matched Table from your GM signup results first.");
+    byId("game-form").hidden = true;
+    const root = byId("selected-slot");
+    if (root) {
+      const help = document.createElement("p");
+      help.className = "microcopy";
+      help.textContent = "Return to the GM signup flow to refresh your current production matches.";
+      root.append(help);
+    }
+  }
+
+  async function init() {
+    const pageStatus = byId("create-game-page-status");
+    tableMatchId = new URLSearchParams(window.location.search).get("table_match_id") || "";
+    if (!tableMatchId) {
+      showSelectionRequired();
+      return;
+    }
+
+    try {
+      const session = await ensureProductionSession();
+      if (!session) {
+        throw new Error("Sign in with the GM account that owns this match, then reload this page.");
       }
 
-      guests.value = String(maxPlayers + 1);
-      rule.value = `Venue approval + ${minPlayers} confirmed Player${minPlayers === 1 ? "" : "s"}`;
-    } catch (error) {
-      logError("Unable to update commitment summary", error);
-    }
-  }
+      opportunity = await window.DDDProductionAPI.getMatchingOpportunity(tableMatchId);
+      if (!Array.isArray(opportunity.viewer_roles) || !opportunity.viewer_roles.includes("gm")) {
+        throw new Error("This Table Match does not belong to your GM profile.");
+      }
 
-  function updateRecurrenceDefaults() {
-    try {
-      const recurrence = document.querySelector("#game-recurrence");
-      const sessions = document.querySelector("#expected-sessions");
-      if (!recurrence || !sessions) return;
-      if (recurrence.value === "one_time") sessions.value = "1";
-      else if (Number.parseInt(sessions.value, 10) <= 1) sessions.value = "8";
-    } catch (error) {
-      logError("Unable to update recurrence defaults", error);
-    }
-  }
-
-  function setSystemFromMatch(form, system) {
-    try {
-      if (!form?.elements.system || !system) return;
-      if (system === "D&D 5e") {
-        form.elements.system.value = "";
-        form.elements.system.focus();
+      renderSummary(opportunity);
+      if (opportunity.event_id) {
+        showExistingEvent(opportunity);
         return;
       }
-      if (system === "Call of Cthulhu") {
-        form.elements.system.value = "Call of Cthulhu 7e";
-        return;
+
+      hydrateForm(opportunity);
+      byId("game-form").addEventListener("submit", submitForm);
+      announce(pageStatus, "Match loaded. Add the game details below to create the Event.", true);
+    } catch (error) {
+      console.error("[Dinner Dice & Dragons] Unable to initialize matched Event creation", error);
+      announce(pageStatus, error?.message || "The selected Table Match could not be loaded.");
+      byId("game-form").hidden = true;
+      const root = byId("selected-slot");
+      if (root) {
+        const help = document.createElement("p");
+        help.className = "microcopy";
+        help.textContent = "Return to the GM signup flow to refresh your current production matches.";
+        root.append(help);
       }
-      form.elements.system.value = system;
-    } catch (error) {
-      logError("Unable to apply matched RPG system", error);
     }
   }
 
-  function applyCapacityDefaults(slot) {
-    try {
-      const seatSelect = document.querySelector("#player-seats");
-      const capacity = Number(slot.playerCapacity);
-      if (seatSelect && Number.isFinite(capacity)) {
-        [...seatSelect.options].forEach((option) => {
-          option.disabled = Number(option.value) > capacity;
-        });
-        const usableChoice = [...seatSelect.options]
-          .map((option) => Number(option.value))
-          .filter((value) => Number.isFinite(value) && value <= capacity)
-          .sort((a, b) => b - a)[0];
-        if (Number.isFinite(usableChoice)) seatSelect.value = String(usableChoice);
-      }
-
-      const usablePlayers = Number(slot.usablePlayers);
-      if (Number.isFinite(usablePlayers) && usablePlayers >= 2) setSelectIfAvailable("#min-players", Math.min(3, usablePlayers));
-      updateCommitmentSummary();
-    } catch (error) {
-      logError("Unable to apply matched capacity defaults", error);
-    }
-  }
-
-  function bindSelection() {
-    try {
-      const raw = localStorage.getItem("ddd-selected-venue-slot");
-      if (!raw) return;
-      const slot = JSON.parse(raw);
-      const form = document.querySelector("#game-form");
-      const day = document.querySelector("#game-day");
-      const start = document.querySelector("#game-start");
-      const duration = document.querySelector("#game-duration");
-      const venue = document.querySelector("#game-venue");
-      const summary = document.querySelector("#selected-slot");
-
-      if (day) day.value = slot.day || "";
-      if (start) start.value = slot.gmStart || "";
-      if (duration) duration.value = formatDuration(slot.durationMinutes);
-      if (venue) venue.value = slot.venueName || "";
-      setSystemFromMatch(form, slot.system);
-      applyCapacityDefaults(slot);
-
-      if (summary) {
-        summary.replaceChildren();
-        const title = document.createElement("h2");
-        title.textContent = slot.venueName || "Selected venue";
-        const time = document.createElement("p");
-        time.textContent = `${slot.system || "RPG"} · ${slot.day || ""} · ${slot.gmStart || ""} · ${formatDuration(slot.durationMinutes)}`;
-        const fit = document.createElement("p");
-        const usable = Number(slot.usablePlayers) || Number(slot.eligiblePlayers) || 0;
-        const score = document.createElement("strong");
-        score.textContent = `${slot.matchScore || "—"}/100 fit`;
-        fit.append(
-          score,
-          document.createTextNode(` · ${slot.eligiblePlayers || 0} potential Player${slot.eligiblePlayers === 1 ? "" : "s"} match this game night · ${usable} fit the current table capacity`)
-        );
-        const capacity = document.createElement("p");
-        capacity.textContent = `Venue table capacity: you + ${slot.playerCapacity || "?"} Players. Larger Player-count options are disabled automatically.`;
-        const policy = document.createElement("p");
-        policy.textContent = `Venue policy: ${slot.policy || "See venue terms"}`;
-        const approval = document.createElement("p");
-        approval.className = "microcopy";
-        approval.textContent = slot.system === "D&D 5e" ? "Choose the D&D edition below. The table stays Forming until the venue approves and enough Players commit." : "The table stays Forming until the venue approves and enough Players commit.";
-        summary.append(title, time, fit, capacity, policy, approval);
-      }
-    } catch (error) {
-      logError("Unable to load selected Table Match", error);
-    }
-  }
-
-  function revealNextStep() {
-    try {
-      const next = document.querySelector("#game-next-step");
-      if (next) next.hidden = false;
-    } catch (error) {
-      logError("Unable to reveal game next step", error);
-    }
-  }
-
-  function bindLifecycleSeed() {
-    try {
-      const form = document.querySelector("#game-form");
-      if (!form) return;
-      form.addEventListener("ddd:save-success", () => {
-        try {
-          const minPlayers = readInt("#min-players");
-          const maxPlayers = readInt("#player-seats");
-          if (!Number.isFinite(minPlayers) || !Number.isFinite(maxPlayers) || minPlayers > maxPlayers) return;
-          const rawMatch = localStorage.getItem("ddd-selected-venue-slot");
-          const match = rawMatch ? JSON.parse(rawMatch) : {};
-          const venueCapacity = Number(match.playerCapacity) || maxPlayers;
-          if (maxPlayers > venueCapacity) {
-            logError("Player seat selection exceeds matched venue capacity", { maxPlayers, venueCapacity });
-            return;
-          }
-          const lifecycle = {
-            title: form.elements.title?.value || "Forming Table",
-            system: form.elements.system?.value || match.system || "RPG",
-            venue: form.elements.venue?.value || match.venueName || "Partner Venue",
-            venueId: match.venueId || "",
-            day: form.elements.day?.value || match.day || "",
-            start: form.elements.start_time?.value || match.gmStart || "",
-            minPlayers,
-            maxPlayers,
-            candidatePlayers: Number(match.eligiblePlayers) || 0,
-            usablePlayerDemand: Number(match.usablePlayers) || 0,
-            venuePlayerCapacity: venueCapacity,
-            matchScore: Number(match.matchScore) || 0,
-            confirmedPlayers: 0,
-            waitlistedPlayers: 0,
-            venueApproved: false,
-            status: "forming",
-            completed: false
-          };
-          localStorage.setItem("ddd-lifecycle-demo", JSON.stringify(lifecycle));
-          revealNextStep();
-        } catch (error) {
-          logError("Unable to seed table lifecycle demo", error);
-        }
-      });
-    } catch (error) {
-      logError("Unable to bind lifecycle seed", error);
-    }
-  }
-
-  function bindControls() {
-    try {
-      const seats = document.querySelector("#player-seats");
-      const minimum = document.querySelector("#min-players");
-      const recurrence = document.querySelector("#game-recurrence");
-      if (seats) seats.addEventListener("change", updateCommitmentSummary);
-      if (minimum) minimum.addEventListener("change", updateCommitmentSummary);
-      if (recurrence) recurrence.addEventListener("change", updateRecurrenceDefaults);
-      updateCommitmentSummary();
-      updateRecurrenceDefaults();
-    } catch (error) {
-      logError("Unable to initialize game creation controls", error);
-    }
-  }
-
-  try {
-    bindSelection();
-    bindControls();
-    bindLifecycleSeed();
-  } catch (error) {
-    logError("Unable to initialize game creation", error);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => { void init(); }, { once: true });
+  } else {
+    void init();
   }
 })();

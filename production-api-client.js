@@ -86,6 +86,14 @@
     return `/api/v1/events/${encodeURIComponent(String(eventId || ""))}${suffix}`;
   }
 
+  function opportunityPath(tableMatchId, suffix = "") {
+    return `/api/v1/matching/opportunities/${encodeURIComponent(String(tableMatchId || ""))}${suffix}`;
+  }
+
+  function venueWindowPath(venueId) {
+    return `/api/v1/matching/venues/${encodeURIComponent(String(venueId || ""))}/table-windows`;
+  }
+
   window.DDDProductionAPI = Object.freeze({
     ProductionApiError,
     configure,
@@ -96,6 +104,16 @@
     getGMOnboarding: () => request("GET", "/api/v1/onboarding/gm"),
     putGMOnboarding: (payload) => request("PUT", "/api/v1/onboarding/gm", payload),
     postVenueOnboarding: (payload) => request("POST", "/api/v1/onboarding/venue", payload),
+    getPlayerDemands: () => request("GET", "/api/v1/matching/player-demands"),
+    postPlayerDemand: (payload) => request("POST", "/api/v1/matching/player-demands", payload),
+    getGMSupplies: () => request("GET", "/api/v1/matching/gm-supplies"),
+    postGMSupply: (payload) => request("POST", "/api/v1/matching/gm-supplies", payload),
+    getVenueTableWindows: (venueId) => request("GET", venueWindowPath(venueId)),
+    postVenueTableWindow: (venueId, payload) => request("POST", venueWindowPath(venueId), payload),
+    findMyTable: (horizonDays = 60) => request("POST", "/api/v1/matching/find-my-table", { horizon_days: horizonDays }),
+    getMatchingOpportunities: () => request("GET", "/api/v1/matching/opportunities"),
+    getMatchingOpportunity: (tableMatchId) => request("GET", opportunityPath(tableMatchId)),
+    formTableMatch: (tableMatchId, payload) => request("POST", opportunityPath(tableMatchId, "/form"), payload),
     getGameHubs: () => request("GET", "/api/v1/game-hubs"),
     getEvent: (eventId) => request("GET", eventPath(eventId)),
     getGameHub: (eventId) => request("GET", eventPath(eventId, "/hub")),

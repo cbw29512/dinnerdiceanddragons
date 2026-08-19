@@ -89,6 +89,8 @@ def create_venue_and_claim(
             phone=optional_text(payload.phone),
             verified=False,
             amenities=list(payload.amenities),
+            host_support_offerings=[item.value for item in payload.host_support_offerings],
+            host_support_notes=optional_text(payload.host_support_notes),
             accessibility_notes=optional_text(payload.accessibility_notes),
             parking_notes=optional_text(payload.parking_notes),
             noise_notes=optional_text(payload.noise_notes),

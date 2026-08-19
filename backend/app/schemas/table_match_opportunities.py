@@ -22,6 +22,14 @@ class TableMatchRunRequest(BaseModel):
         return self
 
 
+class FindMyTableRequest(BaseModel):
+    """Simple user-facing refresh horizon for the three-sided matcher."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    horizon_days: int = Field(default=60, ge=1, le=90)
+
+
 class TableMatchRunResponse(BaseModel):
     """Non-sensitive summary of one matcher run."""
 
@@ -29,6 +37,7 @@ class TableMatchRunResponse(BaseModel):
     persisted_count: int = Field(ge=0)
     created_count: int = Field(ge=0)
     refreshed_count: int = Field(ge=0)
+    materialized_table_count: int = Field(default=0, ge=0)
     expired_count: int = Field(ge=0)
 
 
@@ -61,6 +70,9 @@ class TableMatchOpportunityResponse(BaseModel):
     """Role-safe summary that never exposes private location anchors."""
 
     id: UUID
+    game_table_id: UUID | None = None
+    event_id: UUID | None = None
+    event_status: str | None = None
     status: str
     proposed_start: datetime
     proposed_end: datetime
@@ -81,3 +93,11 @@ class TableMatchOpportunityDetailResponse(TableMatchOpportunityResponse):
     your_player_fit_flags: list[str] = Field(default_factory=list)
     your_player_availability_overlap: dict[str, str] | None = None
     explanations: list[OpportunityExplanationResponse] = Field(default_factory=list)
+
+
+class FindMyTableResponse(BaseModel):
+    """The user-facing BOOM result: matcher summary plus caller-visible Tables."""
+
+    boom: bool
+    run: TableMatchRunResponse
+    opportunities: list[TableMatchOpportunityResponse] = Field(default_factory=list)

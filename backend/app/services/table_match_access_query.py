@@ -20,6 +20,7 @@ VISIBLE_MATCH_STATUSES = (
     TableMatchStatus.POTENTIAL.value,
     TableMatchStatus.INVITED.value,
     TableMatchStatus.FORMING.value,
+    TableMatchStatus.CONVERTED.value,
 )
 VISIBLE_PLAYER_STATUSES = (
     TableMatchPlayerStatus.ELIGIBLE.value,
@@ -38,7 +39,7 @@ def user_roles(session: Session, user_id: UUID) -> frozenset[str]:
 
 
 def opportunity_query(user_id: UUID, roles: frozenset[str]) -> Select:
-    """Build a query that returns only active opportunities related to the caller."""
+    """Build a query that returns only relevant opportunities related to the caller."""
 
     conditions = []
     if UserRoleType.PLAYER.value in roles:

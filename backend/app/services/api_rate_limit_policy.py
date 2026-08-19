@@ -10,6 +10,7 @@ class RateLimitScope(StrEnum):
     TABLE_FORMATION = "table_formation"
     VENUE_BOOKING = "venue_booking"
     MATCHING_RUN = "matching_run"
+    MATCHING_REFRESH = "matching_refresh"
     ONBOARDING_MUTATION = "onboarding_mutation"
     MATCHING_INPUT = "matching_input"
     PROVIDER_GEOCODING = "provider_geocoding"
@@ -58,12 +59,20 @@ POLICIES: dict[RateLimitScope, RateLimitPolicy] = {
         refill_tokens=1,
         refill_seconds=10,
     ),
-    # Global matching is admin/internal and materially more expensive than ordinary writes.
+    # Global matching remains the most restricted admin/internal execution path.
     RateLimitScope.MATCHING_RUN: RateLimitPolicy(
         scope=RateLimitScope.MATCHING_RUN,
         capacity=2,
         refill_tokens=1,
         refill_seconds=300,
+    ),
+    # A human may deliberately ask "find my table" after changing a signal. The
+    # candidate budget still caps the global scan, while this prevents refresh spam.
+    RateLimitScope.MATCHING_REFRESH: RateLimitPolicy(
+        scope=RateLimitScope.MATCHING_REFRESH,
+        capacity=3,
+        refill_tokens=1,
+        refill_seconds=60,
     ),
     # Profile/onboarding writes replace substantial user-owned state and should be deliberate.
     RateLimitScope.ONBOARDING_MUTATION: RateLimitPolicy(

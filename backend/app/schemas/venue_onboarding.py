@@ -12,7 +12,7 @@ from pydantic import (
     model_validator,
 )
 
-from app.models.venue import VenueManagerRole, VenueType
+from app.models.venue import VenueManagerRole, VenueSupportOffering, VenueType
 
 Amenity = Annotated[
     str,
@@ -35,6 +35,11 @@ class VenueOnboardingRequest(BaseModel):
     website_url: str | None = Field(default=None, max_length=500)
     phone: str | None = Field(default=None, max_length=40)
     amenities: list[Amenity] = Field(default_factory=list, max_length=30)
+    host_support_offerings: list[VenueSupportOffering] = Field(
+        default_factory=list,
+        max_length=30,
+    )
+    host_support_notes: str | None = Field(default=None, max_length=2000)
     accessibility_notes: str | None = Field(default=None, max_length=2000)
     parking_notes: str | None = Field(default=None, max_length=2000)
     noise_notes: str | None = Field(default=None, max_length=2000)
@@ -49,12 +54,16 @@ class VenueOnboardingRequest(BaseModel):
         return value.upper()
 
     @model_validator(mode="after")
-    def reject_duplicate_amenities(self) -> Self:
-        """Prevent duplicate amenity values from polluting matching inputs."""
+    def reject_duplicate_list_values(self) -> Self:
+        """Keep amenity/support inputs deterministic for matching and display."""
 
-        normalized = [item.casefold() for item in self.amenities]
-        if len(normalized) != len(set(normalized)):
+        amenities = [item.casefold() for item in self.amenities]
+        if len(amenities) != len(set(amenities)):
             raise ValueError("Each venue amenity may appear only once.")
+
+        support = [item.value for item in self.host_support_offerings]
+        if len(support) != len(set(support)):
+            raise ValueError("Each venue support offering may appear only once.")
         return self
 
 

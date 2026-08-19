@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session
 from app.models.event import Event
 from app.models.game_series import GameSeries
 from app.models.game_system import GameSystem
+from app.models.game_table import GameTable
+from app.models.game_table_player import GameTablePlayer
 from app.models.gm_profile import GMProfile
 from app.models.gm_supply_signal import GMSupplySignal
 from app.models.player_demand_signal import PlayerDemandSignal
@@ -61,6 +63,8 @@ def create_formation_session() -> tuple[Session, Engine]:
         VenueTableWindow.__table__,
         TableMatch.__table__,
         TableMatchPlayer.__table__,
+        GameTable.__table__,
+        GameTablePlayer.__table__,
         GameSeries.__table__,
         Event.__table__,
         TableExpectations.__table__,

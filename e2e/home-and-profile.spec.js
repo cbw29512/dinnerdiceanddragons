@@ -41,7 +41,7 @@ test("Join page keeps account access in the header instead of a buried account s
   await expect(page.locator("#player").getByRole("heading", { name: /Find a D&D table that fits/i })).toBeVisible();
 });
 
-test("Player can add and remove preferences, save, and continue", async ({ page }) => {
+test("unsigned Player can edit preferences and keep a local draft until signing in", async ({ page }) => {
   await page.goto("/join.html#player");
   const form = page.locator("#player-form");
 
@@ -63,10 +63,11 @@ test("Player can add and remove preferences, save, and continue", async ({ page 
   await form.locator('.check-label input[type="checkbox"]').check();
   await form.getByRole("button", { name: "Find My Table" }).click();
 
-  await expect(form.locator(".form-status")).toContainText("Saved on this device");
+  await expect(form.locator(".form-status")).toContainText("Saved on this device as a draft");
   const stored = await page.evaluate(() => localStorage.getItem("ddd-preview-player"));
   expect(stored).toBeTruthy();
-  await expect(page.getByRole("link", { name: "See Forming Games" })).toBeVisible();
+  await expect(page.locator("header").getByRole("button", { name: "Sign In" })).toBeVisible();
+  await expect(page.locator("#player-production-results")).toBeHidden();
 });
 
 test("homepage remains usable at a phone-sized viewport", async ({ page }) => {

@@ -14,47 +14,47 @@ Players tell us what they want to play. Game Masters tell us what they can run. 
 
 The differentiator is **physical-table formation**, not generic social networking.
 
-## Live site
+## Deployment
 
-Primary deployment:
+Production frontend target: **Netlify via GitHub continuous deployment from `main`**.
 
-https://dinnerdiceanddragons.vercel.app
+- Netlify build configuration lives in `netlify.toml`.
+- Netlify publishes only the generated `dist/` frontend artifact.
+- Browser API requests stay same-origin at `/api/...` and are proxied by `netlify/functions/api-proxy.mjs`.
+- The FastAPI service remains containerized and is supplied to Netlify through the server-only `DDD_API_ORIGIN` environment variable.
+- Netlify skips deploys for backend/docs/test-only commits to avoid unnecessary build usage.
 
-GitHub Pages remains available as a static validation/deployment surface:
+The final Netlify URL will become the canonical public URL after the GitHub repository is connected and the production smoke test passes.
+
+GitHub Pages remains available as a static validation/fallback surface:
 
 https://cbw29512.github.io/dinnerdiceanddragons/
 
+See `USAGE.md` for the short production connection checklist.
+
 ## Current stage
 
-Production migration is actively underway.
-
-- FastAPI, PostgreSQL, Supabase Auth, Alembic migrations, durable identity, server-side authorization, Player/GM/Venue profile persistence, and structured recurring availability are implemented.
-- PlayerDemandSignal, GMSupplySignal, and VenueTableWindow persistence are implemented.
-- Player and GM onboarding are connected to the authenticated production path.
-- Venue account authentication is live, while the Venue table-opening workflow still has a temporary pilot/draft fallback.
-- Authenticated create/list APIs for Player demand, GM supply, and Venue table windows are implemented and recovered in PR #36.
-- Deterministic production recurrence expansion is implemented and recovered in PR #36.
-- The next major backend milestone is the real server-side Player x GM x Venue hard-fit Table Match engine.
+The production Table-first path is implemented across authenticated Player, GM, and Venue signals, hard-fit matching, persistent Tables, Event formation, registrations, venue booking decisions, and the Game Hub. Production acceptance testing with real accounts remains the release gate.
 
 Dinner, Dice & Dragons is United States-wide. Florence, South Carolina is the first concentrated density pilot, not a geographic restriction on participation.
 
-## Main prototype surfaces
+## Main surfaces
 
 - `index.html` — premise, role actions, Table Match explanation, table discovery
-- `join.html` — Find My Table and Form a Table signals
-- `find-venue.html` — current GM/venue overlap and future Player-demand matching
-- `venues.html` — Fill My Tables venue onboarding/business case
-- `create-game.html` — convert a viable match into a Forming table
-- `game-hub.html` — Confirmed-table coordination
+- `join.html` — Player demand and GM supply signals
+- `venues.html` — Venue onboarding and table openings
+- `find-venue.html` — venue/table discovery
+- `create-game.html` — convert a viable Table Match into an Event
+- `game-hub.html` — confirmed-table coordination
 - `conduct.html` — safety, reliability, and trust model
-- `games/<slug>/` — sample Forming table detail pages
+- `games/<slug>/` — sample game detail pages
 
 ## Product source of truth
 
 Read these before implementing features:
 
 - `PROJECT.md`
-- `docs/PRODUCTION_MVP_PLAN.md` - authoritative production execution checklist
+- `docs/PRODUCTION_MVP_PLAN.md`
 - `docs/PRODUCT_POSITIONING.md`
 - `docs/DEFINITION_OF_DONE.md`
 - `docs/DATA_SCHEMA.md`
@@ -64,19 +64,6 @@ Read these before implementing features:
 - `docs/GAME_HUB.md`
 
 A feature should primarily help discover useful demand, improve Table Match quality, form a viable table, reduce cancellations, help the session happen, improve safety/trust, or demonstrate venue value.
-
-## Development rule
-
-Do not let infrastructure determine the product, but do not treat production infrastructure as future work: the authenticated FastAPI/PostgreSQL foundation is already active.
-
-Current engineering priority is to complete the production Table Match path in dependency order:
-
-1. implement explainable server-side hard-fit matching for system, actual schedule overlap, travel distance, venue capacity, and required constraints;
-2. persist TableMatch, compatible Players, and MatchExplanation records;
-3. expose role-safe, explainable production match opportunities;
-4. add softer Table Fit ranking only after hard compatibility passes.
-
-Nationwide architecture is required now; matching remains local to each participant's geography, travel radius, schedule, and venue availability.
 
 ## Local run
 
@@ -88,16 +75,4 @@ Then open `http://localhost:8000`.
 
 ## Automated checks
 
-The repository has automated coverage across the production backend and validated frontend, including:
-
-- backend pytest coverage;
-- Ruff lint and backend format checks;
-- Alembic migration/head verification;
-- PostgreSQL and Supabase Auth integration checks in CI;
-- static page/link/fragment QA;
-- button and controller wiring QA;
-- JavaScript unit, API-client, and browser-auth tests;
-- Playwright functional, runtime-health, keyboard, accessibility, and 320px reflow tests;
-- Lighthouse performance, accessibility, best-practices, and SEO gates.
-
-The current recovery branch passes the full backend test suite locally; browser regression coverage remains part of the established test baseline.
+The repository validates the production backend and browser experience with backend tests, migration checks, PostgreSQL contracts, authentication/RLS smoke tests, static page/link checks, JavaScript tests, Playwright browser/accessibility/reflow checks, Lighthouse gates, supply-chain checks, CodeQL, the Docker runtime contract, and the generated Netlify deployment artifact contract.

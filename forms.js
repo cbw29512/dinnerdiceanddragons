@@ -141,12 +141,30 @@
     }
   }
 
+  function productionSuccessMessage(saved) {
+    if (saved.pendingVerification) {
+      return "Venue saved to your DDD account. Verification is required before this table opening can enter live matching.";
+    }
+    if (saved.matchingError) {
+      return `Your profile was saved, but live matching could not be activated. ${saved.matchingError.message || "Try again."}`;
+    }
+    if (saved.matching?.match) {
+      const opportunities = saved.matching.match.opportunities || [];
+      if (opportunities.length) {
+        return `Saved and matched. We found ${opportunities.length} compatible ${opportunities.length === 1 ? "table opportunity" : "table opportunities"}.`;
+      }
+      return "Saved and active in live matching. No complete three-way table is available yet.";
+    }
+    return "Saved to your DDD account.";
+  }
+
   async function saveProductionForm(type, rawValues, status, form) {
     try {
       if (status) status.textContent = "Saving to your DDD account…";
       const saved = await window.DDDProductionOnboarding.save(type, rawValues);
-      announce(status, "Saved to your DDD account. Your information is ready for the production matching flow.", true);
+      announce(status, productionSuccessMessage(saved), !saved.matchingError);
       form.dispatchEvent(new CustomEvent("ddd:save-success", {
+        bubbles: true,
         detail: {
           type,
           shared: true,
@@ -154,7 +172,10 @@
           result: saved.result,
           values: rawValues,
           payload: saved.payload,
-          deferred: saved.deferred
+          deferred: saved.deferred,
+          pendingVerification: Boolean(saved.pendingVerification),
+          matching: saved.matching,
+          matchingError: saved.matchingError || null
         }
       }));
       return true;
@@ -186,14 +207,20 @@
       const values = window.DDDFormPilot?.injectIdentity(type, rawValues) || rawValues;
       if (!window.DDDFormPilot?.actionFor(type) || !window.DDD_API?.isConfigured()) {
         announce(status, "Saved on this device. You can continue with the next step below.", true);
-        form.dispatchEvent(new CustomEvent("ddd:save-success", { detail:{ type, shared:false, result:null, values } }));
+        form.dispatchEvent(new CustomEvent("ddd:save-success", {
+          bubbles: true,
+          detail:{ type, shared:false, result:null, values }
+        }));
         return;
       }
 
       if (status) status.textContent = "Saving…";
       const saved = await window.DDDFormPilot.save(type, values);
       announce(status, "Saved. Your information is now available to the matching flow.", true);
-      form.dispatchEvent(new CustomEvent("ddd:save-success", { detail:{ type, shared:saved.shared, result:saved.result, values } }));
+      form.dispatchEvent(new CustomEvent("ddd:save-success", {
+        bubbles: true,
+        detail:{ type, shared:saved.shared, result:saved.result, values }
+      }));
     } catch (error) {
       logError("Unable to save form", error);
       announce(statusNode(form), "We couldn’t save online, but your information is still saved on this device.", false);
@@ -206,7 +233,7 @@
       field.setCustomValidity("");
       if (field.checkValidity()) field.removeAttribute("aria-invalid");
     } catch (error) {
-      logError("Unable to update field validation state", error);
+      logError("Unable to update form validation state", error);
     }
   }
 
@@ -232,7 +259,7 @@
         }
       });
     } catch (error) {
-      logError("Unable to initialize form", error);
+      logError("Unable to initialize forms", error);
     }
   }
 

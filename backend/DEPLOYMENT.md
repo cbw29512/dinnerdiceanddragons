@@ -1,41 +1,28 @@
 # Production API Deployment
 
-## Current active pilot topology
+## Production topology
 
-Dinner, Dice & Dragons currently uses:
+Dinner, Dice & Dragons uses a split deployment with a single public web origin:
 
-- **Public frontend:** GitHub Pages.
-- **Browser API target:** Vercel, configured only through root `production-config.js`.
-- **API runtime:** Dockerized FastAPI application under `/backend`.
+- **Frontend:** Netlify, continuously deployed from GitHub `main`.
+- **Browser API path:** same-origin `/api/...` on Netlify.
+- **API bridge:** `netlify/functions/api-proxy.mjs`, configured with server-only `DDD_API_ORIGIN`.
+- **API runtime:** Dockerized FastAPI application under `/backend` on a container host.
 - **Database/Auth:** managed PostgreSQL + Supabase Auth.
 
-The browser client must not contain a second hidden API origin. `production-config.js` is the reviewed source of truth for the active public browser API and Supabase origins. It contains public configuration only and must never contain database credentials, service-role keys, provider secrets, or admin credentials.
+The browser must not contain a container-host API origin. Netlify forwards authenticated API calls server-to-server, which keeps deployment routing out of browser configuration and removes the frontend's direct CORS dependency on the API host.
 
-The repository also retains `backend/railway.toml` as a supported container-host configuration. Railway is an alternative/future dedicated API host, not the active browser API target unless `production-config.js`, CORS, deployment documentation, and smoke tests are changed together in one reviewed release.
-
-## Enterprise hosting direction
-
-GitHub Pages and free preview/deployment quotas are suitable for pilot validation but are not the final enterprise authenticated hosting architecture. The enterprise target is a canonical production web origin that can enforce response security headers and support a same-site session/BFF design where practical. See `docs/BROWSER_SECURITY.md`.
+`backend/railway.toml` remains a ready container-host configuration. Another compatible container host is acceptable if it preserves the runtime contract below.
 
 ## Fail-closed production configuration
 
 `APP_ENV=production` is a trust boundary. FastAPI construction fails before serving requests when required production settings are unsafe or incomplete.
 
-Production rejects:
-
-- local/loopback PostgreSQL endpoints;
-- the local `ddd:ddd` database credential pair;
-- PostgreSQL URLs that do not use the `postgresql+psycopg` driver;
-- missing/non-HTTPS/local Supabase URLs;
-- blank JWT audience;
-- missing Geocodio credential;
-- empty, wildcard, HTTP, or loopback CORS origins.
-
-Private-network database endpoints remain valid because a production database may legitimately live inside a private VPC/network.
+Production rejects local/loopback PostgreSQL, local development credentials, non-psycopg PostgreSQL URLs, missing/non-HTTPS Supabase URLs, blank JWT audience, missing Geocodio credentials, and empty/wildcard/HTTP/loopback CORS origins.
 
 ## Required backend environment variables
 
-Configure these as deployment service variables. Do not commit real values to GitHub.
+Configure these only on the API/container host:
 
 ```text
 APP_ENV=production
@@ -46,129 +33,73 @@ DATABASE_URL=<managed PostgreSQL SQLAlchemy URL>
 SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_JWT_AUDIENCE=authenticated
 GEOCODIO_API_KEY=<server-side provider credential>
-CORS_ALLOWED_ORIGINS=https://cbw29512.github.io
+CORS_ALLOWED_ORIGINS=https://<production-netlify-or-custom-domain>
 ```
 
-The bounded runtime settings have safe defaults but may be tuned only through reviewed deployment configuration:
+The bounded database and outbound HTTP settings in `.env.example` have safe defaults and may be tuned only through reviewed deployment configuration.
+
+Do not use `*` for production CORS. Even though browsers call the same-origin Netlify proxy, the API's production configuration intentionally requires an explicit trusted HTTPS origin.
+
+## Netlify boundary
+
+Netlify receives only one server-side API routing variable:
 
 ```text
-DB_CONNECT_TIMEOUT_SECONDS=5
-DB_STATEMENT_TIMEOUT_MS=30000
-DB_LOCK_TIMEOUT_MS=5000
-DB_IDLE_TRANSACTION_TIMEOUT_MS=15000
-DB_POOL_SIZE=5
-DB_MAX_OVERFLOW=5
-DB_POOL_TIMEOUT_SECONDS=5
-DB_POOL_RECYCLE_SECONDS=300
-OUTBOUND_HTTP_TIMEOUT_SECONDS=5
+DDD_API_ORIGIN=https://<fastapi-container-host>
 ```
 
-Do not use `*` for production CORS. Add an origin only when a real frontend is deployed at that exact HTTPS origin.
+Do not copy `DATABASE_URL`, `GEOCODIO_API_KEY`, database credentials, Supabase service-role keys, or other backend secrets into the frontend or repository. The Supabase publishable browser key remains public by design; privileged keys do not.
 
-## Database URL and timeout policy
+The Netlify build produces `dist/` from reviewed public assets and excludes backend source, tests, internal docs, GitHub workflows, Supabase project files, Apps Script, and the prototype dashboard.
 
-The application expects a SQLAlchemy/Psycopg URL, for example:
+## Database and migration contract
+
+The application expects a SQLAlchemy/Psycopg URL such as:
 
 ```text
 postgresql+psycopg://<user>:<password>@<host>:5432/<database>
 ```
 
-Use managed provider credentials. Never deploy the local `ddd:ddd` development credentials.
+Use managed provider credentials. The long-running API process must not migrate automatically on startup. Apply `alembic upgrade head` as a controlled pre-deploy step. When practical, use separate migration credentials with schema-change privilege and a reduced-privilege steady-state API role.
 
-`DB_CONNECT_TIMEOUT_SECONDS` is applied at connection establishment. Statement, lock, and idle-in-transaction limits are applied with PostgreSQL transaction-local settings at the start of every application `Session` transaction.
-
-This distinction matters for Supabase/Supavisor transaction mode on port `6543`: transaction pooling does not preserve session-level timeout settings between transactions. DDD therefore applies those three limits inside each transaction instead of relying on connection startup options. Transaction-mode endpoints still use `NullPool` and disable psycopg prepared statements. Direct/session-pooler endpoints use bounded SQLAlchemy pool size, overflow, wait timeout, recycle, and pre-ping settings.
-
-The Docker/PostgreSQL CI contract opens the same application Session used in production and verifies PostgreSQL reports the configured transaction-local timeout values.
-
-### Migration privilege boundary
-
-The web image contains Alembic so a controlled release job can run migrations, but the long-running web process must not automatically migrate on startup. Production should use separate migration credentials with schema-change privileges when the selected host/database plan supports practical credential separation. The steady-state API credential should be reduced to only the DML privileges the application needs. This remains an operational deployment control until separate production roles are configured and verified.
-
-## Outbound provider timeout policy
-
-`OUTBOUND_HTTP_TIMEOUT_SECONDS` is the shared hard bound used for:
-
-- Supabase JWKS retrieval;
-- Geocodio public Venue geocoding;
-- Geocodio postal-centroid lookup.
-
-Provider-backed Geocodio calls do not automatically retry inside the adapter. A timeout/provider error is surfaced to the controlled API error path, and a deliberate retry remains subject to the application abuse/rate-limit policy. This avoids multiplying externally metered requests during provider incidents.
-
-## Browser origin policy
-
-`CORS_ALLOWED_ORIGINS` is a comma-separated list of exact HTTP(S) browser origins. Origins must not contain paths, queries, or fragments. Production additionally requires HTTPS and rejects loopback/local origins.
-
-For the current GitHub Pages frontend, the origin is:
-
-```text
-https://cbw29512.github.io
-```
-
-The repository path `/dinnerdiceanddragons/` is not part of the browser origin.
+Supabase/Supavisor transaction-mode endpoints on port `6543` use `NullPool`; the application applies statement, lock, and idle-in-transaction limits within each transaction. Direct/session-pooler endpoints use bounded SQLAlchemy pooling.
 
 ## Container host contract
 
-Any production container host must preserve the same contract:
+Any production container host must:
 
 1. Build from `backend/Dockerfile`.
-2. Run the application as the image's fixed non-root identity (`10001:10001`), never as root.
-3. Prefer a read-only root filesystem. Provide only a small bounded writable scratch mount such as `/tmp` when the host requires temporary space.
+2. Run as the fixed non-root identity `10001:10001`.
+3. Prefer a read-only root filesystem and bounded writable scratch space only where required.
 4. Drop Linux capabilities and enable `no-new-privileges` where the host exposes those controls.
-5. Inject valid fail-closed production environment variables and a runtime `PORT` when required by the host.
-6. Apply `alembic upgrade head` as a controlled pre-deploy/migration step, not from the long-running web process.
+5. Inject valid production variables and the host-provided `PORT`.
+6. Run `alembic upgrade head` as a controlled migration step.
 7. Start Uvicorn on `0.0.0.0:$PORT`.
 8. Require `/api/v1/health` to return HTTP 200 before activation.
-9. Reject activation when migration, configuration, CORS, auth, runtime-hardening, or health checks fail.
+9. Reject activation when migration, configuration, auth, runtime-hardening, or health checks fail.
 
-The repository deployment contract proves the API starts as UID/GID `10001`, with a read-only root filesystem, all Linux capabilities dropped, `no-new-privileges`, and only a bounded `/tmp` tmpfs. A production host that cannot express every Docker runtime flag must provide equivalent isolation controls and document the exception.
+The GitHub Production Deployment Contract continuously proves the image accepts an injected port, starts as UID/GID `10001`, runs with a read-only root filesystem, drops all Linux capabilities, enables `no-new-privileges`, and becomes healthy.
 
-### Why this image remains single-stage
+## Release verification
 
-The production image installs only prebuilt, hash-verified Python wheels and does not install a compiler or build toolchain. A second Docker build stage would not currently remove meaningful build-only dependencies from the final filesystem. Revisit multi-stage packaging if a future dependency requires compilation or application assets are built inside the container.
-
-## Verification after deployment
-
-Verify the public API URL before activating a browser configuration change:
+Verify the API origin directly first:
 
 ```text
 GET /api/v1/health
 GET /api/v1/version
 ```
 
-Expected liveness JSON:
-
-```json
-{"status":"ok","service":"dinner-dice-and-dragons-api"}
-```
-
-`/api/v1/version` must contain only the service name, application version, build SHA, and environment. It must never expose database URLs, provider credentials, auth secrets, or internal runtime configuration.
-
-Then verify a real confirmed Supabase JWT against:
+Then configure `DDD_API_ORIGIN` in Netlify and verify through the public Netlify origin:
 
 ```text
-GET /api/v1/me
+GET /api/v1/health
 ```
 
-Finally verify the configured browser origin succeeds on authenticated CORS preflight/request and that the production Game Hub can load a role-safe authenticated Event.
+After the public proxy health check succeeds:
 
-## Browser configuration release rule
+1. Add the Netlify production URL and final custom domain, when applicable, to the Supabase Auth site/redirect allow-list.
+2. Verify sign-up/email-confirmation returns to `/join.html` on the same public origin.
+3. Verify a real Supabase JWT with authenticated `/api/v1/me`.
+4. Run the controlled Player + GM + Venue Table Match acceptance test through Event formation, seat request/approval, Venue approval, and Game Hub.
 
-Changing the production API or Supabase origin requires one reviewed change that updates and validates all of the following together:
-
-- `production-config.js`;
-- backend `CORS_ALLOWED_ORIGINS`;
-- Supabase redirect/site URL allowlist as applicable;
-- deployment/runbook documentation;
-- production API health/auth checks;
-- browser authentication and live Game Hub smoke tests.
-
-Do not maintain undocumented competing production origins.
-
-## Deployment quota and provider failures
-
-A provider quota failure is an operational deployment failure even when code CI is green. Do not repeatedly retry deployments solely to clear a free-tier quota. Record the incident, preserve the last known-good release, and resume deployment when the provider quota/window permits or move to the approved production plan/host.
-
-## Rollback rule
-
-A failed migration, unsafe production configuration, unhealthy container, invalid CORS configuration, failed auth verification, failed runtime-hardening verification, or failed browser smoke blocks activation. Roll back to the last known-good application/configuration pair rather than partially activating a new frontend/API origin.
+A failed migration, unsafe configuration, unhealthy API, broken proxy, invalid auth callback, or failed browser smoke blocks activation. Roll back to the last known-good deployment/configuration pair rather than partially activating the release.

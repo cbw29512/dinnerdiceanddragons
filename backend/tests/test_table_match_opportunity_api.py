@@ -115,6 +115,34 @@ def test_player_detail_contains_explanation_and_only_own_match_facts(api_context
     _assert_no_private_location_fields(body)
 
 
+def test_find_my_table_runs_matcher_and_returns_caller_visible_boom(api_context) -> None:
+    client, _, shared_id, _, _ = api_context
+
+    def stub_runner(*, window_start: date, window_end: date) -> TableMatchRunResult:
+        assert (window_end - window_start).days == 29
+        return TableMatchRunResult(computed_opportunities=1, persisted=())
+
+    client.app.dependency_overrides[get_match_runner] = lambda: stub_runner
+    response = client.post(
+        "/api/v1/matching/find-my-table",
+        headers=_auth("alice-token"),
+        json={"horizon_days": 30},
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["boom"] is True
+    assert [item["id"] for item in body["opportunities"]] == [str(shared_id)]
+    assert body["run"] == {
+        "computed_opportunities": 1,
+        "persisted_count": 0,
+        "created_count": 0,
+        "refreshed_count": 0,
+        "materialized_table_count": 0,
+        "expired_count": 0,
+    }
+
+
 def test_match_run_is_admin_only_and_returns_non_sensitive_counts(api_context) -> None:
     client, factory, _, _, alice_id = api_context
 
@@ -153,6 +181,7 @@ def test_match_run_is_admin_only_and_returns_non_sensitive_counts(api_context) -
         "persisted_count": 2,
         "created_count": 1,
         "refreshed_count": 2,
+        "materialized_table_count": 0,
         "expired_count": 1,
     }
 

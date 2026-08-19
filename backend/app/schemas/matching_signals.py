@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_vali
 
 from app.models.gm_system_experience import GMGameFormat
 from app.models.player_profile import PreferredGameFormat
+from app.models.venue import VenueSupportOffering
 from app.schemas.availability import AvailabilityWindowInput
 
 ShortPreference = Annotated[
@@ -16,7 +17,7 @@ ShortPreference = Annotated[
 
 
 class PlayerDemandCreate(BaseModel):
-    """Create one intent signal owned by the authenticated Player profile."""
+    """Create one concrete statement of what/when/where a Player can play."""
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
@@ -25,6 +26,7 @@ class PlayerDemandCreate(BaseModel):
         max_length=120,
         pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$",
     )
+    availability: list[AvailabilityWindowInput] = Field(min_length=1, max_length=12)
     preferred_format: PreferredGameFormat = PreferredGameFormat.ANY
     preferred_cadence: str | None = Field(default=None, max_length=32)
     minimum_age_preference: int | None = Field(default=None, ge=0, le=120)
@@ -40,7 +42,7 @@ class PlayerDemandResponse(PlayerDemandCreate):
 
 
 class GMSupplyCreate(BaseModel):
-    """Create one capability/supply signal owned by the authenticated GM profile."""
+    """Create one concrete statement of what/when/where a GM can run."""
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
@@ -49,6 +51,7 @@ class GMSupplyCreate(BaseModel):
         max_length=120,
         pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$",
     )
+    availability: list[AvailabilityWindowInput] = Field(min_length=1, max_length=12)
     preferred_format: GMGameFormat
     preferred_cadence: str | None = Field(default=None, max_length=32)
     minimum_players: int = Field(ge=1, le=20)
@@ -81,7 +84,21 @@ class VenueTableWindowCreate(BaseModel):
     max_people_per_table: int = Field(ge=1, le=100)
     purchase_policy: str | None = Field(default=None, max_length=2000)
     approval_required: bool = True
+    special_support_offerings: list[VenueSupportOffering] = Field(
+        default_factory=list,
+        max_length=30,
+    )
+    special_support_notes: str | None = Field(default=None, max_length=2000)
     environment_notes: str | None = Field(default=None, max_length=2000)
+
+    @model_validator(mode="after")
+    def reject_duplicate_support_offerings(self) -> Self:
+        """Keep per-window support values deterministic for display and matching."""
+
+        values = [item.value for item in self.special_support_offerings]
+        if len(values) != len(set(values)):
+            raise ValueError("Each special Venue support offering may appear only once.")
+        return self
 
 
 class VenueTableWindowResponse(VenueTableWindowCreate):

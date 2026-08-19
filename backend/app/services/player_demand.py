@@ -10,6 +10,10 @@ from app.models.game_system import GameSystem
 from app.models.player_demand_signal import PlayerDemandSignal
 from app.models.user import User
 from app.schemas.matching_signals import PlayerDemandCreate, PlayerDemandResponse
+from app.services.matching_signal_availability import (
+    add_player_demand_availability,
+    player_demand_availability,
+)
 from app.services.matching_signal_common import (
     MatchingSignalConflictError,
     MatchingSignalPersistenceError,
@@ -26,11 +30,16 @@ def _optional_text(value: str | None) -> str | None:
     return value or None
 
 
-def _response(signal: PlayerDemandSignal, slug: str) -> PlayerDemandResponse:
+def _response(
+    session: Session,
+    signal: PlayerDemandSignal,
+    slug: str,
+) -> PlayerDemandResponse:
     return PlayerDemandResponse(
         id=signal.id,
         status=signal.status,
         system_slug=slug,
+        availability=player_demand_availability(session, signal.id),
         preferred_format=signal.preferred_format,
         preferred_cadence=signal.preferred_cadence,
         minimum_age_preference=signal.minimum_age_preference,
@@ -44,7 +53,7 @@ def create_player_demand(
     user: User,
     payload: PlayerDemandCreate,
 ) -> PlayerDemandResponse:
-    """Persist one Player-owned demand signal atomically."""
+    """Persist one Player-owned what/when/where demand signal atomically."""
 
     try:
         profile = require_player_profile(session, user)
@@ -59,9 +68,11 @@ def create_player_demand(
             environment_preferences=list(payload.environment_preferences),
         )
         session.add(signal)
+        session.flush()
+        add_player_demand_availability(session, signal.id, payload.availability)
         session.commit()
         LOGGER.info("Created Player demand %s for user %s", signal.id, user.id)
-        return _response(signal, system.slug)
+        return _response(session, signal, system.slug)
     except (MatchingSignalValidationError, MatchingSignalConflictError):
         session.rollback()
         raise
@@ -91,7 +102,7 @@ def list_player_demands(session: Session, user: User) -> list[PlayerDemandRespon
             .order_by(PlayerDemandSignal.created_at.desc(), PlayerDemandSignal.id)
             .limit(MAX_OWNER_MATCHING_SIGNAL_ITEMS)
         ).all()
-        return [_response(signal, slug) for signal, slug in rows]
+        return [_response(session, signal, slug) for signal, slug in rows]
     except (MatchingSignalValidationError, MatchingSignalConflictError):
         raise
     except SQLAlchemyError as exc:

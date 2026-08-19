@@ -55,6 +55,13 @@ def test_venue_onboarding_creates_pending_server_owned_claim(onboarding_context)
         assert venue.state_region == "SC"
         assert venue.verified is False
         assert venue.latitude is None and venue.longitude is None
+        assert venue.host_support_offerings == [
+            "consistent_space",
+            "loyalty_rewards",
+            "prize_support",
+            "beverages",
+        ]
+        assert "loyalty punches" in venue.host_support_notes
         relationship = session.scalar(
             select(VenueManager).where(
                 VenueManager.venue_id == venue.id,

@@ -3,57 +3,99 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Create Your D&D Table | Dinner, Dice & Dragons</title>
-  <meta name="description" content="Dungeon Masters can turn a matched time and venue into a clear game listing that Players can understand and join.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://acpjfycmwbnxzlkvoouv.supabase.co https://dinnerdiceanddragons.vercel.app; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Build Your Matched RPG Table | Dinner, Dice &amp; Dragons</title>
+  <meta name="description" content="Dungeon Masters can turn a verified three-way Table Match into the real scheduled Event Players and venues can confirm.">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="global-auth-ui.css">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to main content</a>
-<header class="site-header"><div class="shell nav-wrap"><a class="brand" href="index.html"><span aria-hidden="true">🎲</span><span>Dinner, Dice &amp; Dragons</span></a><nav aria-label="Primary navigation"><a href="index.html">Home</a><a href="join.html#player">Players</a><a aria-current="page" href="join.html#gm">DMs</a><a href="venues.html">Venues</a><a href="conduct.html">Safety</a></nav></div></header>
+<header class="site-header">
+  <div class="shell nav-wrap">
+    <a class="brand" href="index.html"><span aria-hidden="true">🎲</span><span>Dinner, Dice &amp; Dragons</span></a>
+    <nav aria-label="Primary navigation">
+      <a href="index.html">Home</a>
+      <a href="join.html#player">Players</a>
+      <a aria-current="page" href="join.html#gm">DMs</a>
+      <a href="venues.html">Venues</a>
+      <a href="conduct.html">Safety</a>
+      <button id="ddd-global-account-button" class="ddd-account-trigger" type="button" aria-haspopup="dialog" aria-controls="ddd-global-account-dialog">Sign In</button>
+    </nav>
+  </div>
+</header>
+
 <main id="main" tabindex="-1">
-<section class="hero"><div class="shell hero-grid"><div><p class="eyebrow">FOR DUNGEON MASTERS · STEP 2</p><h1>You found the people, place, and time. Now tell Players what you want to run.</h1><p class="lede">Turn the match into a clear Forming table. Players can see the game, schedule, venue, table expectations, and how to join before they commit.</p><div class="cta-row"><a class="button secondary" href="find-venue.html">← Back to Matches</a></div></div><aside class="hero-card"><p class="eyebrow">YOUR SELECTED GAME NIGHT</p><div id="selected-slot"><h2>Start with a match</h2><p>Choose a compatible Player + venue option first so the time, place, and capacity carry into this form automatically.</p><a class="button primary" href="find-venue.html">Find Players + a Place</a></div></aside></div></section>
-<section class="section"><div class="shell"><div class="template-intro"><div><p class="eyebrow">CREATE YOUR FORMING TABLE</p><h2>Give Players what they need to say yes.</h2><p>Keep it simple: what you are running, when and where, how many seats you have, and what kind of table experience to expect.</p></div><div class="template-summary"><strong>What happens after you save?</strong><span>Your table starts as Forming. Players can commit, the venue can approve the booking when required, and the table becomes Confirmed when your minimum is met.</span></div></div>
-<form class="panel form-grid prototype-form" id="game-form" data-profile-type="Game" novalidate>
-<h3 class="form-section-title">1. What are you running?</h3>
-<label>Game title<input name="title" placeholder="Shadows Over Florence" required></label>
-<label>D&D / RPG system<select name="system" required><option value="">Choose system</option><option>D&D 5e 2014</option><option>D&D 5e 2024</option><option>Pathfinder 2e</option><option>Call of Cthulhu 7e</option><option>Cyberpunk RED</option><option>Other</option></select></label>
-<label>Game type<select name="game_type"><option>One-shot</option><option>Campaign session</option><option>New campaign</option><option>Learn-to-play</option><option>Organized play</option></select></label>
-<label>Level / character guidance<input name="level" placeholder="Level 3; pregens provided"></label>
-<label>What is the game about?<textarea name="description" rows="4" placeholder="Give Players a short pitch for the adventure and the kind of experience they can expect." required></textarea></label>
+  <section class="hero">
+    <div class="shell hero-grid">
+      <div>
+        <p class="eyebrow">FOR DUNGEON MASTERS · FORM THE EVENT</p>
+        <h1>Turn this matched Table into the game night.</h1>
+        <p class="lede">The game system, time, venue, and Player capacity already passed hard-fit matching. Add the game pitch and table expectations, then create the real Event.</p>
+        <div class="cta-row"><a class="button secondary" href="join.html#gm">← Back to My Matches</a></div>
+      </div>
+      <aside class="hero-card" aria-labelledby="selected-match-title">
+        <p class="eyebrow">MATCHED GAME NIGHT</p>
+        <div id="selected-slot" aria-live="polite">
+          <h2 id="selected-match-title">Loading your match…</h2>
+          <p>Checking the authenticated Table Match.</p>
+        </div>
+      </aside>
+    </div>
+  </section>
 
-<h3 class="form-section-title">2. Confirm when and where</h3>
-<label>Day<input id="game-day" name="day" readonly required></label>
-<label>Start time<input id="game-start" name="start_time" type="time" readonly required></label>
-<label>Session length<input id="game-duration" name="duration" readonly required></label>
-<label>Venue<input id="game-venue" name="venue" readonly required></label>
-<p class="microcopy">Need a different time or venue? <a href="find-venue.html">Choose another match.</a></p>
+  <section class="section">
+    <div class="shell">
+      <p id="create-game-page-status" class="form-status" role="status" aria-live="polite"></p>
 
-<h3 class="form-section-title">3. Is this one night or a recurring game?</h3>
-<label>Schedule<select name="recurrence" id="game-recurrence" required><option value="one_time">One time</option><option value="weekly">Weekly</option><option value="every_other_week">Every other week</option><option value="monthly">Monthly</option><option value="custom">Custom / varies</option></select></label>
-<label>How many sessions?<input type="number" min="1" max="52" name="expected_sessions" id="expected-sessions" value="1" required></label>
-<label>Schedule notes<textarea name="recurrence_notes" rows="3" placeholder="Example: Every other Tuesday for 8 sessions"></textarea></label>
+      <form class="panel form-grid" id="game-form" novalidate hidden>
+        <h3 class="form-section-title">1. What are you running?</h3>
+        <label>Game title<input name="title" maxlength="200" placeholder="Shadows Over Florence" required></label>
+        <label>Game type<select name="event_type" required><option value="one_shot" selected>One-shot</option><option value="campaign_session">Campaign session</option><option value="new_campaign">New campaign</option><option value="learn_to_play">Learn-to-play</option><option value="organized_play">Organized play</option></select></label>
+        <label>Game system<input id="game-system" readonly required></label>
+        <label>Character / level guidance<input name="character_guidance" maxlength="4000" placeholder="Level 3; pregens provided"></label>
+        <label>What is the game about?<textarea name="description" rows="4" maxlength="8000" placeholder="Give Players a short pitch for the adventure and the experience they can expect." required></textarea></label>
 
-<h3 class="form-section-title">4. How many Players do you need?</h3>
-<label>Minimum Players needed<select name="min_players" id="min-players" required><option value="2">2 Players</option><option value="3" selected>3 Players</option><option value="4">4 Players</option><option value="5">5 Players</option><option value="6">6 Players</option></select></label>
-<label>Maximum Player seats<select name="seats" id="player-seats" required><option value="3">3</option><option value="4" selected>4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option></select></label>
-<label>Expected people at the venue<input id="expected-guests" name="expected_guests" readonly value="5"></label>
-<label>Table confirms when<input id="confirmation-rule" readonly value="Venue approval + 3 confirmed Players"></label>
-<label>How do Players join?<select name="join_mode"><option>Request to join — DM approves</option><option>Instant join while seats remain</option></select></label>
-<label>Experience level<select name="experience"><option>Brand new Players welcome</option><option>Some experience helpful</option><option>Experienced Players preferred</option><option>Any experience level</option></select></label>
-<label>Age / environment<select name="age"><option>All ages / family appropriate</option><option>Teen friendly</option><option>18+ adult table</option></select></label>
+        <h3 class="form-section-title">2. Matched time, place, and capacity</h3>
+        <label>Game night<input id="game-when" readonly required></label>
+        <label>Venue<input id="game-venue" readonly required></label>
+        <label>Minimum Players<input id="min-players" readonly required></label>
+        <label>Maximum Player seats<input id="max-players" readonly required></label>
+        <p class="microcopy">These facts come from the verified Table Match and cannot be changed here. Return to your matches if you need a different combination.</p>
 
-<h3 class="form-section-title">5. What should Players know before joining?</h3>
-<label>Play style<textarea name="play_style" rows="3" placeholder="High roleplay, medium combat, light puzzles" required></textarea></label>
-<label>Table rules / boundaries<textarea name="boundaries" rows="4" placeholder="No PvP, respectful table, breaks every 90 minutes" required></textarea></label>
-<label>Homebrew / rules notes<textarea name="rules_notes" rows="3" placeholder="Optional house rules or character creation notes"></textarea></label>
-<label class="check-label"><input type="checkbox" required><span>I confirm this accurately describes the game I intend to run.</span></label>
-<button class="button primary" type="submit">Create My Forming Table</button>
-<p class="form-status" role="status" aria-live="polite"></p>
-</form>
-<div class="next-step" id="game-next-step" hidden><strong>Table created. Next:</strong><a class="button primary" href="table-lifecycle.html?role=gm">Review Players & Confirm the Table</a><a class="button secondary" href="find-venue.html">Choose a Different Match</a></div>
-</div></section>
+        <h3 class="form-section-title">3. Commitment rules</h3>
+        <label>Expected sessions<input type="number" min="1" max="52" name="expected_sessions" value="1" required></label>
+        <label>How do Players join?<select name="join_mode" required><option value="request_to_join" selected>Request to join — DM approves</option><option value="instant_join">Instant join while seats remain</option></select></label>
+        <label>Minimum age<select name="minimum_age"><option value="">No additional age minimum</option><option value="13">13+</option><option value="18">18+</option></select></label>
+        <label>New Players welcome?<select name="beginner_friendly" required><option value="true" selected>Yes</option><option value="false">No</option></select></label>
+
+        <h3 class="form-section-title">4. Table expectations</h3>
+        <label>Play style<textarea name="play_style" rows="3" maxlength="2000" placeholder="High roleplay, medium combat, light puzzles" required></textarea></label>
+        <label>Table rules / boundaries<textarea name="boundaries" rows="4" maxlength="4000" placeholder="No PvP without consent, respectful table, breaks every 90 minutes…" required></textarea></label>
+        <label>Homebrew / rules notes<textarea name="homebrew_policy" rows="3" maxlength="4000" placeholder="Optional house rules or character creation notes"></textarea></label>
+        <label>Private note to the venue<textarea name="gm_message" rows="3" maxlength="4000" placeholder="Optional operational note for the venue booking request"></textarea></label>
+        <label class="check-label"><input type="checkbox" name="accuracy_confirmed" required><span>I confirm this accurately describes the game I intend to run.</span></label>
+        <button class="button primary" type="submit">Create This Event</button>
+        <p class="form-status" role="status" aria-live="polite"></p>
+      </form>
+
+      <section class="panel" id="game-next-step" hidden aria-labelledby="game-created-title">
+        <p class="eyebrow">EVENT CREATED</p>
+        <h2 id="game-created-title">The Table can move toward confirmation.</h2>
+        <p id="game-created-copy">Matched Players can now request seats and the Venue can review its booking request.</p>
+        <div class="cta-row"><a class="button primary" id="game-hub-link" href="game-hub.html">Open Game Hub</a><a class="button secondary" href="join.html#gm">Back to My Matches</a></div>
+      </section>
+    </div>
+  </section>
 </main>
-<footer class="site-footer"><div class="shell footer-grid"><div><strong>Dinner, Dice &amp; Dragons</strong><p>Find the fit. Form the table. Confirm the group. Play.</p></div><div><a href="index.html">Home</a> · <a href="join.html#player">Players</a> · <a href="join.html#gm">DMs</a> · <a href="venues.html">Venues</a> · <a href="conduct.html">Safety</a></div></div></footer>
-<script src="api-config.js"></script><script src="api-client.js"></script><script src="form-pilot.js"></script><script src="forms.js"></script><script src="create-game.js"></script>
+
+<footer class="site-footer"><div class="shell footer-grid"><div><strong>Dinner, Dice & Dragons</strong><p>Find the fit. Form the Event. Confirm the group. Play.</p></div><div><a href="index.html">Home</a> · <a href="join.html#player">Players</a> · <a href="join.html#gm">DMs</a> · <a href="venues.html">Venues</a> · <a href="conduct.html">Safety</a></div></div></footer>
+<script src="production-config.js"></script>
+<script src="production-api-client.js"></script>
+<script src="production-session-store.js"></script>
+<script src="production-auth.js"></script>
+<script src="global-auth-ui.js"></script>
+<script src="create-game.js"></script>
 </body>
 </html>

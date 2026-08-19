@@ -1,0 +1,26 @@
+[build]
+  command = "npm run build:netlify"
+  publish = "dist"
+  ignore = "node scripts/netlify-ignore.mjs"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NPM_FLAGS = "--omit=dev --ignore-scripts"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://acpjfycmwbnxzlkvoouv.supabase.co https://api.zippopotam.us; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-store"
