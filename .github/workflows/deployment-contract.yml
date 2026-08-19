@@ -109,8 +109,8 @@ jobs:
             IF to_regclass('public.events') IS NULL THEN
               RAISE EXCEPTION 'events is missing';
             END IF;
-            IF to_regclass('public.game_hub_messages') IS NULL THEN
-              RAISE EXCEPTION 'game_hub_messages is missing';
+            IF to_regclass('public.messages') IS NULL THEN
+              RAISE EXCEPTION 'messages is missing';
             END IF;
           END
           $$;
