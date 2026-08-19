@@ -58,16 +58,13 @@ async function installAuthenticatedSession(
     email = "browser@example.test"
   } = {}
 ) {
-  const accessToken = fakeJwt({ sub: userId, email, aud: "authenticated", exp: 4102444800 });
-  await page.addInitScript(({ token, userId: id, email: address }) => {
-    localStorage.setItem("ddd-production-auth-session", JSON.stringify({
-      access_token: token,
-      refresh_token: "browser-refresh-token",
-      expires_at: 4102444800,
-      user: { id, email: address }
-    }));
-  }, { token: accessToken, userId, email });
-  return accessToken;
+  await page.route("**/api/v1/auth/session", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ authenticated: true, id: userId, email })
+    });
+  });
 }
 
 module.exports = {
