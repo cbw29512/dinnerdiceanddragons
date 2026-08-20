@@ -125,7 +125,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
-      - name: Verify deployed static site, database health, identity session, and auth boundary
+      - name: Verify deployed static site, liveness, readiness, identity session, and auth boundary
         env:
           PREVIEW_URL: https://deploy-preview-${{ github.event.pull_request.number }}--dinnerdiceanddragons.netlify.app
         shell: bash
@@ -143,7 +143,9 @@ jobs:
           grep -q 'apiBaseUrl: window.location.origin' /tmp/production-config.js
           grep -q 'Dinner, Dice & Dragons' /tmp/home.html
 
-          curl --fail --silent --show-error --location "$PREVIEW_URL/api/v1/health" -o /tmp/health.json
+          curl --fail --silent --show-error --location \
+            --dump-header /tmp/health-headers.txt \
+            "$PREVIEW_URL/api/v1/health" -o /tmp/health.json
           node - <<'NODE'
           const fs = require('node:fs');
           const health = JSON.parse(fs.readFileSync('/tmp/health.json', 'utf8'));
@@ -158,6 +160,19 @@ jobs:
             if (health[key] !== value) throw new Error(`Unexpected health.${key}: ${health[key]}`);
           }
           NODE
+          grep -Eqi '^x-request-id: [0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}' /tmp/health-headers.txt
+
+          curl --fail --silent --show-error --location \
+            --dump-header /tmp/ready-headers.txt \
+            "$PREVIEW_URL/api/v1/ready" -o /tmp/ready.json
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const ready = JSON.parse(fs.readFileSync('/tmp/ready.json', 'utf8'));
+          if (ready.status !== 'ready' || ready.database !== 'ok') {
+            throw new Error(`Unexpected readiness payload: ${JSON.stringify(ready)}`);
+          }
+          NODE
+          grep -Eqi '^x-request-id: [0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}' /tmp/ready-headers.txt
 
           curl --fail --silent --show-error --location "$PREVIEW_URL/api/v1/auth/session" -o /tmp/session.json
           node - <<'NODE'

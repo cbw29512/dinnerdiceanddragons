@@ -1,7 +1,7 @@
 import { confirmEmail, getUser, login, logout, signup, verifyRequestOrigin } from "@netlify/identity";
 import { currentUser, publicCurrentUser, userRoles } from "./_lib/auth.mjs";
 import { databaseHealth } from "./_lib/database.mjs";
-import { json, methodNotAllowed, noContent, notFound, pathParts, readJson, route } from "./_lib/http.mjs";
+import { currentRequestId, json, methodNotAllowed, noContent, notFound, pathParts, readJson, route } from "./_lib/http.mjs";
 import {
   createGMSupply,
   createPlayerDemand,
@@ -43,7 +43,12 @@ function authFailure(error, fallback) {
   const status = Number(error?.status || error?.statusCode || 0);
   if (status === 403) return new SupabaseRestError("Authentication request was rejected.", 403);
   if (status >= 400 && status < 500) return new SupabaseRestError(fallback, status);
-  console.warn("[Dinner Dice & Dragons] Netlify Identity request failed", error);
+  console.warn(JSON.stringify({
+    event: "identity_request_failed",
+    request_id: currentRequestId(),
+    error_type: String(error?.name || error?.constructor?.name || "Error").slice(0, 100),
+    status: status || null
+  }));
   return new SupabaseRestError("Authentication is temporarily unavailable.", 503);
 }
 
@@ -259,17 +264,24 @@ async function admin(request, parts) {
   return noContent();
 }
 
-export default async (request) => route(async () => {
+export default async (request) => route(request, async () => {
   const parts = pathParts(request);
   if (parts[0] === "health" && parts.length === 1) {
     if (request.method !== "GET") return methodNotAllowed(["GET"]);
-    const database = await databaseHealth();
     return json({
-      status: database ? "ok" : "degraded",
+      status: "ok",
       runtime: "netlify-functions",
       database: "netlify-database",
       identity: "netlify-identity",
       version: "v1"
+    });
+  }
+  if (parts[0] === "ready" && parts.length === 1) {
+    if (request.method !== "GET") return methodNotAllowed(["GET"]);
+    const database = await databaseHealth();
+    return json({
+      status: database ? "ready" : "not_ready",
+      database: database ? "ok" : "unavailable"
     }, database ? 200 : 503);
   }
   if (parts[0] === "auth") return auth(request, parts);
