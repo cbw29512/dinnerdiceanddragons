@@ -24,13 +24,9 @@ export function noContent() {
 
 export async function readJson(request, { maxBytes = 64 * 1024 } = {}) {
   const type = String(request.headers.get("content-type") || "").toLowerCase();
-  if (!type.includes("application/json")) {
-    throw new SupabaseRestError("Request body must be JSON.", 415);
-  }
+  if (!type.includes("application/json")) throw new SupabaseRestError("Request body must be JSON.", 415);
   const text = await request.text();
-  if (new TextEncoder().encode(text).length > maxBytes) {
-    throw new SupabaseRestError("Request body is too large.", 413);
-  }
+  if (new TextEncoder().encode(text).length > maxBytes) throw new SupabaseRestError("Request body is too large.", 413);
   if (!text.trim()) return {};
   try {
     return JSON.parse(text);
@@ -42,7 +38,7 @@ export async function readJson(request, { maxBytes = 64 * 1024 } = {}) {
 export function pathParts(request) {
   const pathname = new URL(request.url).pathname;
   const path = pathname
-    .replace(/^\/\.netlify\/functions\/api\/v1\/?/, "")
+    .replace(/^\/auth-api\/v1\/?/, "")
     .replace(/^\/api\/v1\/?/, "");
   return path.split("/").filter(Boolean).map((part) => decodeURIComponent(part));
 }
@@ -58,17 +54,13 @@ export function notFound() {
 export function asInteger(value, name, { min = Number.MIN_SAFE_INTEGER, max = Number.MAX_SAFE_INTEGER, fallback } = {}) {
   if ((value === undefined || value === null || value === "") && fallback !== undefined) return fallback;
   const number = Number(value);
-  if (!Number.isInteger(number) || number < min || number > max) {
-    throw new SupabaseRestError(`${name} must be an integer between ${min} and ${max}.`, 422);
-  }
+  if (!Number.isInteger(number) || number < min || number > max) throw new SupabaseRestError(`${name} must be an integer between ${min} and ${max}.`, 422);
   return number;
 }
 
 export function asNumber(value, name, { min = -Infinity, max = Infinity } = {}) {
   const number = Number(value);
-  if (!Number.isFinite(number) || number < min || number > max) {
-    throw new SupabaseRestError(`${name} must be a number between ${min} and ${max}.`, 422);
-  }
+  if (!Number.isFinite(number) || number < min || number > max) throw new SupabaseRestError(`${name} must be a number between ${min} and ${max}.`, 422);
   return number;
 }
 
@@ -76,16 +68,12 @@ export function asString(value, name, { min = 0, max = 10000, nullable = false, 
   if ((value === undefined || value === null || value === "") && nullable) return null;
   if (typeof value !== "string") throw new SupabaseRestError(`${name} must be text.`, 422);
   const text = value.trim();
-  if (text.length < min || text.length > max || (pattern && !pattern.test(text))) {
-    throw new SupabaseRestError(`${name} is invalid.`, 422);
-  }
+  if (text.length < min || text.length > max || (pattern && !pattern.test(text))) throw new SupabaseRestError(`${name} is invalid.`, 422);
   return text;
 }
 
 export function asArray(value, name, { min = 0, max = 1000 } = {}) {
-  if (!Array.isArray(value) || value.length < min || value.length > max) {
-    throw new SupabaseRestError(`${name} must contain between ${min} and ${max} items.`, 422);
-  }
+  if (!Array.isArray(value) || value.length < min || value.length > max) throw new SupabaseRestError(`${name} must contain between ${min} and ${max} items.`, 422);
   return value;
 }
 
@@ -96,9 +84,7 @@ export function asBoolean(value, name) {
 
 export function requireUuid(value, name = "id") {
   const text = String(value || "").trim();
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(text)) {
-    throw new SupabaseRestError(`${name} must be a valid UUID.`, 422);
-  }
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(text)) throw new SupabaseRestError(`${name} must be a valid UUID.`, 422);
   return text;
 }
 
