@@ -1,11 +1,12 @@
 const { test, expect } = require("@playwright/test");
-const { mockZipLookup, installAuthenticatedSession } = require("./helpers");
+const { mockZipLookup, seedMatchingDemand, installAuthenticatedSession } = require("./helpers");
 
 const API_BASE = "http://127.0.0.1:4173";
 
 test("DM can check recurring dates, create the recurring table, and review commitments", async ({ page }) => {
   await mockZipLookup(page);
   await page.goto("/recurring-match.html");
+  await seedMatchingDemand(page);
 
   await page.locator("#series-system").selectOption({ label: "D&D 5e" });
   await page.locator("#series-day").selectOption({ label: "Tuesday" });
