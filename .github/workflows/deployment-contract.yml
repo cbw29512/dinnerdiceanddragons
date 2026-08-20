@@ -84,7 +84,7 @@ jobs:
             echo "Checking native function module: $file"
             node --check "$file"
           done < <(find netlify/functions -type f -name '*.mjs' -print0)
-          node -e "import('./netlify/functions/api.mjs').then((m) => { if (typeof m.default !== 'function' || m.config?.path !== '/api/*') process.exit(1); })"
+          node -e "import('./netlify/functions/api.mjs').then((m) => { const paths = m.config?.path; if (typeof m.default !== 'function' || !Array.isArray(paths) || !paths.includes('/api/*') || !paths.includes('/.netlify/functions/api/*')) process.exit(1); })"
 
       - name: Apply and verify Netlify Database migration
         env:
@@ -164,6 +164,13 @@ jobs:
           const fs = require('node:fs');
           const session = JSON.parse(fs.readFileSync('/tmp/session.json', 'utf8'));
           if (session.authenticated !== false) throw new Error(`Anonymous session contract failed: ${JSON.stringify(session)}`);
+          NODE
+
+          curl --fail --silent --show-error --location "$PREVIEW_URL/.netlify/functions/api/v1/auth/session" -o /tmp/canonical-session.json
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const session = JSON.parse(fs.readFileSync('/tmp/canonical-session.json', 'utf8'));
+          if (session.authenticated !== false) throw new Error(`Canonical anonymous session contract failed: ${JSON.stringify(session)}`);
           NODE
 
           status="$(curl --silent --show-error --output /tmp/me.json --write-out '%{http_code}' "$PREVIEW_URL/api/v1/me")"
