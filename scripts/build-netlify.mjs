@@ -6,6 +6,7 @@ const OUT = path.join(ROOT, "dist");
 const OLD_API_ORIGIN = "https://dinnerdiceanddragons.vercel.app";
 const OLD_SITE_ORIGIN = "https://cbw29512.github.io/dinnerdiceanddragons";
 const SUPABASE_MARKERS = ["supabase.co", "sb_publishable_", "SUPABASE_SECRET_KEY"];
+const DEMO_GAME_MARKERS = ["Shadows Over Florence", "The Lighthouse at Blackwater", "Trouble Below the Old Road"];
 const REQUIRED_FILES = [
   "index.html",
   "join.html",
@@ -23,6 +24,7 @@ const EXCLUDED_DIRS = new Set([
   "dist",
   "docs",
   "e2e",
+  "games",
   "netlify",
   "node_modules",
   "playwright-report",
@@ -99,7 +101,7 @@ async function assertProductionArtifact(deployUrl) {
     throw new Error("Netlify production config is not using same-origin /api routing.");
   }
 
-  const forbiddenNames = ["backend", ".github", "e2e", "tests", "supabase", "apps-script", "dashboard-prototype.html"];
+  const forbiddenNames = ["backend", ".github", "e2e", "games", "tests", "supabase", "apps-script", "dashboard-prototype.html"];
   const topLevel = new Set(await readdir(OUT));
   for (const name of forbiddenNames) {
     if (topLevel.has(name)) throw new Error(`Forbidden deployment content found in dist: ${name}`);
@@ -117,6 +119,9 @@ async function assertProductionArtifact(deployUrl) {
       if (text.includes(OLD_API_ORIGIN)) throw new Error(`Legacy Vercel origin remains in ${path.relative(OUT, filePath)}`);
       for (const marker of SUPABASE_MARKERS) {
         if (text.includes(marker)) throw new Error(`Supabase production dependency remains in ${path.relative(OUT, filePath)}`);
+      }
+      for (const marker of DEMO_GAME_MARKERS) {
+        if (text.includes(marker)) throw new Error(`Demo game content remains in production artifact: ${marker} in ${path.relative(OUT, filePath)}`);
       }
       if (deployUrl && text.includes(OLD_SITE_ORIGIN)) {
         throw new Error(`Legacy GitHub Pages origin remains in ${path.relative(OUT, filePath)}`);
