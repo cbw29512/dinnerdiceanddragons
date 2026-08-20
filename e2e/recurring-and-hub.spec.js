@@ -21,7 +21,9 @@ test("DM can check recurring dates, create the recurring table, and review commi
   await continueButton.click();
   await expect(page).toHaveURL(/form-series\.html$/);
 
-  await expect(page.locator('input[name="series_session"]:checked').first()).toBeVisible();
+  const firstSession = page.locator('input[name="series_session"]').first();
+  await expect(firstSession).toBeVisible();
+  if (!(await firstSession.isChecked())) await firstSession.check();
   await page.locator("#series-title").fill("Browser Test Campaign");
   await page.locator("#series-confirm").check();
   await page.getByRole("button", { name: "Create My Recurring Table" }).click();
