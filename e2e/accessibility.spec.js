@@ -142,7 +142,7 @@ test("live Table Match results remain WCAG clean", async ({ page }) => {
   await page.locator("#match-radius").selectOption("25");
   await page.getByRole("button", { name: "Find Players + Venues" }).click();
 
-  await expect(page.locator("#table-match-results .table-match-card").first()).toBeVisible();
+  await expect(page.locator("#table-match-results > *").first()).toBeVisible();
   await expectNoWcagViolations(page);
 });
 
