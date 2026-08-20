@@ -10,7 +10,7 @@
   function defaultState() {
     try {
       return {
-        title: "Shadows Over Florence",
+        title: "Matched Table Preview",
         system: "D&D 5e",
         venue: "Partner Venue",
         day: "Tuesday",
