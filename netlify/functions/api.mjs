@@ -75,10 +75,7 @@ async function auth(request, parts) {
     if (action === "signup" && parts.length === 2) {
       const { email, password } = credentials(await readJson(request));
       const user = await signup(email, password, {});
-      return json({
-        status: "confirmation_required",
-        email: user?.email || email
-      }, 201);
+      return json({ status: "confirmation_required", email: user?.email || email }, 201);
     }
 
     if (action === "login" && parts.length === 2) {
@@ -204,10 +201,7 @@ async function events(request, parts) {
   if (parts[2] === "messages" && parts.length === 3) {
     if (request.method === "GET") {
       const url = new URL(request.url);
-      return json(await getHubMessages(user, eventId, {
-        limit: url.searchParams.get("limit") || 50,
-        cursor: url.searchParams.get("cursor") || ""
-      }));
+      return json(await getHubMessages(user, eventId, { limit: url.searchParams.get("limit") || 50, cursor: url.searchParams.get("cursor") || "" }));
     }
     if (request.method === "POST") {
       await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.HUB_MESSAGE);
@@ -247,12 +241,7 @@ async function booking(request, parts) {
 }
 
 async function admin(request, parts) {
-  if (
-    parts.length !== 6 ||
-    parts[1] !== "venues" ||
-    parts[3] !== "manager-claims" ||
-    parts[5] !== "verify"
-  ) return notFound();
+  if (parts.length !== 6 || parts[1] !== "venues" || parts[3] !== "manager-claims" || parts[5] !== "verify") return notFound();
   if (request.method !== "POST") return methodNotAllowed(["POST"]);
   const { user } = await activeUser(request);
   await verifyVenueClaim(user, parts[2], parts[4]);
@@ -264,13 +253,7 @@ export default async (request) => route(async () => {
   if (parts[0] === "health" && parts.length === 1) {
     if (request.method !== "GET") return methodNotAllowed(["GET"]);
     const database = await databaseHealth();
-    return json({
-      status: database ? "ok" : "degraded",
-      runtime: "netlify-functions",
-      database: "netlify-database",
-      identity: "netlify-identity",
-      version: "v1"
-    }, database ? 200 : 503);
+    return json({ status: database ? "ok" : "degraded", runtime: "netlify-functions", database: "netlify-database", identity: "netlify-identity", version: "v1" }, database ? 200 : 503);
   }
   if (parts[0] === "auth") return auth(request, parts);
   if (parts[0] === "me" && parts.length === 1) return identity(request);
@@ -288,5 +271,5 @@ export default async (request) => route(async () => {
 });
 
 export const config = {
-  path: ["/api/*", "/.netlify/functions/api/*"]
+  path: ["/api/*", "/auth-api/*"]
 };
