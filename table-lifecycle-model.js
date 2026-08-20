@@ -10,7 +10,7 @@
   function defaultState() {
     try {
       return {
-        title: "Shadows Over Florence",
+        title: "Sample Game Night",
         system: "D&D 5e",
         venue: "Partner Venue",
         day: "Tuesday",
