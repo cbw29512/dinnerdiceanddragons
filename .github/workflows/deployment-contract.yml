@@ -52,12 +52,14 @@ jobs:
           set -euo pipefail
           test -f netlify.toml
           test -f netlify/functions/api.mjs
+          test -f netlify/functions/auth-api.mjs
           test -f netlify/functions/_lib/database.mjs
           test -f netlify/database/migrations/0001_initial_schema.sql
           test ! -e netlify/functions/api-proxy.mjs
           test -f dist/index.html
           test -f dist/join.html
           test -f dist/venues.html
+          test -f dist/production-auth.js
           test -f dist/sitemap.xml
           test -f dist/robots.txt
           test ! -e dist/backend
@@ -68,6 +70,7 @@ jobs:
           test ! -e dist/apps-script
           test ! -e dist/dashboard-prototype.html
           grep -q 'apiBaseUrl: window.location.origin' dist/production-config.js
+          grep -q '/auth-api/v1/auth/' dist/production-auth.js
           grep -q 'https://ddd-contract.netlify.app' dist/sitemap.xml
           grep -q 'Sitemap: https://ddd-contract.netlify.app/sitemap.xml' dist/robots.txt
           grep -q '"@netlify/database"' package.json
@@ -84,7 +87,7 @@ jobs:
             echo "Checking native function module: $file"
             node --check "$file"
           done < <(find netlify/functions -type f -name '*.mjs' -print0)
-          node -e "import('./netlify/functions/api.mjs').then((m) => { if (typeof m.default !== 'function' || m.config?.path !== '/api/*') process.exit(1); })"
+          node -e "Promise.all([import('./netlify/functions/api.mjs'), import('./netlify/functions/auth-api.mjs')]).then(([api, auth]) => { if (typeof api.default !== 'function' || api.config?.path !== '/api/*' || typeof auth.default !== 'function' || auth.config?.path !== '/auth-api/*') process.exit(1); })"
 
       - name: Apply and verify Netlify Database migration
         env:
@@ -140,7 +143,9 @@ jobs:
           curl --fail --silent --show-error --location "$PREVIEW_URL/join.html" -o /tmp/join.html
           curl --fail --silent --show-error --location "$PREVIEW_URL/venues.html" -o /tmp/venues.html
           curl --fail --silent --show-error --location "$PREVIEW_URL/production-config.js" -o /tmp/production-config.js
+          curl --fail --silent --show-error --location "$PREVIEW_URL/production-auth.js" -o /tmp/production-auth.js
           grep -q 'apiBaseUrl: window.location.origin' /tmp/production-config.js
+          grep -q '/auth-api/v1/auth/' /tmp/production-auth.js
           grep -q 'Dinner, Dice & Dragons' /tmp/home.html
 
           curl --fail --silent --show-error --location "$PREVIEW_URL/api/v1/health" -o /tmp/health.json
@@ -164,6 +169,13 @@ jobs:
           const fs = require('node:fs');
           const session = JSON.parse(fs.readFileSync('/tmp/session.json', 'utf8'));
           if (session.authenticated !== false) throw new Error(`Anonymous session contract failed: ${JSON.stringify(session)}`);
+          NODE
+
+          curl --fail --silent --show-error --location "$PREVIEW_URL/auth-api/v1/auth/session" -o /tmp/auth-session.json
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const session = JSON.parse(fs.readFileSync('/tmp/auth-session.json', 'utf8'));
+          if (session.authenticated !== false) throw new Error(`Auth proxy anonymous session contract failed: ${JSON.stringify(session)}`);
           NODE
 
           status="$(curl --silent --show-error --output /tmp/me.json --write-out '%{http_code}' "$PREVIEW_URL/api/v1/me")"

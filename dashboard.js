@@ -7,14 +7,13 @@
     venue: "venue_manager"
   });
 
-  // Data schema: one role owns its label, hero copy, and the two next-step actions.
   const ROLE_CONFIG = Object.freeze({
     player: {
       label: "Player",
       title: "Find your next game.",
       copy: "Tell local GMs what you want to play, browse forming tables, and see when your game night is ready.",
       primary: { href: "join.html#player", label: "Find My Table" },
-      secondary: { href: "games/shadows-over-florence/", label: "Preview a Forming Table" }
+      secondary: { href: "join.html#player", label: "Browse Forming Tables" }
     },
     gm: {
       label: "Game Master",
@@ -32,7 +31,6 @@
     }
   });
 
-  // State logic: role is the only mutable dashboard state in this static prototype.
   const state = { role: "player" };
 
   function logError(message, error) {
