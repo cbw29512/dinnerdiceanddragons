@@ -1,4 +1,53 @@
+import { AsyncLocalStorage } from "node:async_hooks";
+import { randomUUID } from "node:crypto";
+import { performance } from "node:perf_hooks";
+
 import { ApiConfigError, SupabaseRestError } from "./supabase-rest.mjs";
+
+const REQUEST_CONTEXT = new AsyncLocalStorage();
+
+function exceptionType(error) {
+  return String(error?.name || error?.constructor?.name || "Error").slice(0, 100);
+}
+
+function requestPath(request) {
+  try {
+    return new URL(request.url).pathname;
+  } catch {
+    return "/api";
+  }
+}
+
+function requestLogPayload({ event, request, requestId, status, durationMs, error = null }) {
+  const payload = {
+    event,
+    request_id: requestId,
+    method: String(request.method || "GET").toUpperCase(),
+    path: requestPath(request),
+    status,
+    duration_ms: Math.max(0, Math.round(durationMs))
+  };
+  if (error) payload.error_type = exceptionType(error);
+  return payload;
+}
+
+function responseWithRequestId(response, requestId) {
+  const headers = new Headers(response.headers);
+  headers.set("x-request-id", requestId);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
+
+export function currentRequestContext() {
+  return REQUEST_CONTEXT.getStore() || null;
+}
+
+export function currentRequestId() {
+  return currentRequestContext()?.requestId || null;
+}
 
 export function json(body, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(body), {
@@ -106,17 +155,42 @@ export function errorResponse(error) {
     return json(body, error.status || 500);
   }
   if (error instanceof ApiConfigError) {
-    console.error("[Dinner Dice & Dragons] Native API configuration error", error);
     return json({ detail: "Production API configuration is incomplete." }, 503);
   }
-  console.error("[Dinner Dice & Dragons] Native API failure", error);
   return json({ detail: "Production API request failed." }, 500);
 }
 
-export async function route(handler) {
-  try {
-    return await handler();
-  } catch (error) {
-    return errorResponse(error);
-  }
+export async function route(request, handler) {
+  const requestId = randomUUID();
+  const startedAt = performance.now();
+
+  return REQUEST_CONTEXT.run({ requestId }, async () => {
+    let response;
+    let failure = null;
+
+    try {
+      response = await handler();
+      if (!(response instanceof Response)) {
+        throw new TypeError("Route handler did not return a Response.");
+      }
+    } catch (error) {
+      failure = error;
+      response = errorResponse(error);
+    }
+
+    const finalResponse = responseWithRequestId(response, requestId);
+    const payload = requestLogPayload({
+      event: failure ? "request_failed" : "request_complete",
+      request,
+      requestId,
+      status: finalResponse.status,
+      durationMs: performance.now() - startedAt,
+      error: failure
+    });
+
+    if (failure) console.error(JSON.stringify(payload));
+    else console.log(JSON.stringify(payload));
+
+    return finalResponse;
+  });
 }

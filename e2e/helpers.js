@@ -6,6 +6,12 @@ const ZIP_COORDINATES = Object.freeze({
   "29506": { city: "Florence", state: "SC", latitude: "34.2250", longitude: "-79.7350" }
 });
 
+const MATCHING_DEMAND_FIXTURE = Object.freeze([
+  { id: "e2e-player-1", system: "D&D 5e", day: "Tuesday", start: "18:00", end: "22:00", zip: "29501", radius: 25 },
+  { id: "e2e-player-2", system: "D&D 5e", day: "Tuesday", start: "17:30", end: "22:30", zip: "29505", radius: 25 },
+  { id: "e2e-player-3", system: "D&D 5e", day: "Tuesday", start: "17:00", end: "23:00", zip: "29506", radius: 25 }
+]);
+
 async function mockZipLookup(page) {
   try {
     await page.route("https://api.zippopotam.us/us/**", async (route) => {
@@ -29,6 +35,19 @@ async function mockZipLookup(page) {
     });
   } catch (error) {
     console.error("Unable to install ZIP lookup mock", error);
+    throw error;
+  }
+}
+
+async function seedMatchingDemand(page) {
+  try {
+    await page.evaluate((signals) => {
+      // Production demand intentionally starts empty. Browser tests inject only the
+      // minimum deterministic fixture needed to exercise matching UI behavior.
+      window.DDD_PLAYER_DEMAND = signals;
+    }, MATCHING_DEMAND_FIXTURE);
+  } catch (error) {
+    console.error("Unable to seed matching demand fixture", error);
     throw error;
   }
 }
@@ -69,6 +88,7 @@ async function installAuthenticatedSession(
 
 module.exports = {
   mockZipLookup,
+  seedMatchingDemand,
   expectNoHorizontalOverflow,
   fakeJwt,
   installAuthenticatedSession

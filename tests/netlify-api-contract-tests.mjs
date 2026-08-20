@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import api from "../netlify/functions/api.mjs";
 import { normalizeAvailability } from "../netlify/functions/_lib/availability.mjs";
 import { occurrenceDates, occurrences, intersect } from "../netlify/functions/_lib/matching-calendar.mjs";
-import { pathParts } from "../netlify/functions/_lib/http.mjs";
+import { json, pathParts, route } from "../netlify/functions/_lib/http.mjs";
 
 let failures = 0;
 
@@ -19,16 +19,92 @@ async function test(name, callback) {
   }
 }
 
-await test("native API health fails closed when Netlify Database is unavailable", async () => {
+function assertRequestId(response) {
+  const requestId = response.headers.get("x-request-id");
+  assert.ok(requestId);
+  assert.match(requestId, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  return requestId;
+}
+
+await test("native API liveness stays dependency-free when Netlify Database is unavailable", async () => {
   const response = await api(new Request("https://ddd-contract.netlify.app/api/v1/health"));
-  assert.equal(response.status, 503);
+  assert.equal(response.status, 200);
+  assertRequestId(response);
   assert.deepEqual(await response.json(), {
-    status: "degraded",
+    status: "ok",
     runtime: "netlify-functions",
     database: "netlify-database",
     identity: "netlify-identity",
     version: "v1"
   });
+});
+
+await test("native API readiness fails closed when Netlify Database is unavailable", async () => {
+  const response = await api(new Request("https://ddd-contract.netlify.app/api/v1/ready"));
+  assert.equal(response.status, 503);
+  assertRequestId(response);
+  assert.deepEqual(await response.json(), {
+    status: "not_ready",
+    database: "unavailable"
+  });
+});
+
+await test("server request ID cannot be controlled by the client", async () => {
+  const response = await api(new Request("https://ddd-contract.netlify.app/api/v1/health", {
+    headers: { "x-request-id": "client-controlled-request-id" }
+  }));
+  assert.equal(response.status, 200);
+  assert.notEqual(assertRequestId(response), "client-controlled-request-id");
+});
+
+await test("request telemetry excludes query strings, headers, bodies, and raw exception messages", async () => {
+  const captured = [];
+  const originalLog = console.log;
+  const originalError = console.error;
+  console.log = (...values) => captured.push(values.join(" "));
+  console.error = (...values) => captured.push(values.join(" "));
+
+  try {
+    const request = new Request("https://ddd-contract.netlify.app/api/v1/private?token=query-secret", {
+      method: "POST",
+      headers: {
+        authorization: "Bearer header-secret",
+        cookie: "session=cookie-secret",
+        "x-request-id": "client-secret-id"
+      },
+      body: "body-secret"
+    });
+    const response = await route(request, async () => {
+      throw new Error("exception-secret");
+    });
+    assert.equal(response.status, 500);
+    assertRequestId(response);
+  } finally {
+    console.log = originalLog;
+    console.error = originalError;
+  }
+
+  const output = captured.join("\n");
+  assert.match(output, /"event":"request_failed"/);
+  assert.match(output, /"path":"\/api\/v1\/private"/);
+  assert.match(output, /"error_type":"Error"/);
+  for (const secret of ["query-secret", "header-secret", "cookie-secret", "body-secret", "exception-secret", "client-secret-id"]) {
+    assert.equal(output.includes(secret), false, `telemetry leaked ${secret}`);
+  }
+});
+
+await test("successful routed responses include a request ID", async () => {
+  const response = await route(new Request("https://ddd-contract.netlify.app/api/v1/test"), async () => json({ ok: true }));
+  assert.equal(response.status, 200);
+  assertRequestId(response);
+  assert.deepEqual(await response.json(), { ok: true });
+});
+
+await test("invalid route return values fail safely with correlation", async () => {
+  const response = await route(new Request("https://ddd-contract.netlify.app/api/v1/test"), async () => ({ ok: true }));
+  assert.equal(response.status, 500);
+  assertRequestId(response);
+  assert.deepEqual(await response.json(), { detail: "Production API request failed." });
 });
 
 test("native API path parsing strips the version prefix", () => {
