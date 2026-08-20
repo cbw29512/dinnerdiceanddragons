@@ -170,6 +170,9 @@ export async function route(request, handler) {
 
     try {
       response = await handler();
+      if (!(response instanceof Response)) {
+        throw new TypeError("Route handler did not return a Response.");
+      }
     } catch (error) {
       failure = error;
       response = errorResponse(error);
