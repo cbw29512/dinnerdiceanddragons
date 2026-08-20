@@ -5,6 +5,8 @@ const ROOT = process.cwd();
 const OUT = path.join(ROOT, "dist");
 const OLD_API_ORIGIN = "https://dinnerdiceanddragons.vercel.app";
 const OLD_SITE_ORIGIN = "https://cbw29512.github.io/dinnerdiceanddragons";
+const SOURCE_AUTH_ROUTE = "/api/v1/auth/";
+const DEPLOYED_AUTH_ROUTE = "/auth-api/v1/auth/";
 const SUPABASE_MARKERS = ["supabase.co", "sb_publishable_", "SUPABASE_SECRET_KEY"];
 const DEMO_GAME_MARKERS = ["Shadows Over Florence", "The Lighthouse at Blackwater", "Trouble Below the Old Road"];
 const REQUIRED_FILES = [
@@ -13,6 +15,7 @@ const REQUIRED_FILES = [
   "venues.html",
   "production-config.js",
   "production-api-client.js",
+  "production-auth.js",
   "sitemap.xml"
 ];
 const EXCLUDED_DIRS = new Set([
@@ -54,9 +57,12 @@ function normalizedDeployUrl() {
   return url.origin;
 }
 
-function transformText(_relativePath, text, deployUrl) {
+function transformText(relativePath, text, deployUrl) {
   let output = text.replaceAll(` ${OLD_API_ORIGIN}`, "");
   if (deployUrl) output = output.replaceAll(OLD_SITE_ORIGIN, deployUrl);
+  if (relativePath === "production-auth.js") {
+    output = output.replaceAll(SOURCE_AUTH_ROUTE, DEPLOYED_AUTH_ROUTE);
+  }
   return output;
 }
 
@@ -99,6 +105,11 @@ async function assertProductionArtifact(deployUrl) {
   const config = await readFile(path.join(OUT, "production-config.js"), "utf8");
   if (!config.includes("apiBaseUrl: window.location.origin")) {
     throw new Error("Netlify production config is not using same-origin /api routing.");
+  }
+
+  const auth = await readFile(path.join(OUT, "production-auth.js"), "utf8");
+  if (!auth.includes(DEPLOYED_AUTH_ROUTE) || auth.includes(SOURCE_AUTH_ROUTE)) {
+    throw new Error("Netlify production auth client is not using the dedicated auth route.");
   }
 
   const forbiddenNames = ["backend", ".github", "e2e", "games", "tests", "supabase", "apps-script", "dashboard-prototype.html"];
