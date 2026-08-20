@@ -100,6 +100,13 @@ await test("successful routed responses include a request ID", async () => {
   assert.deepEqual(await response.json(), { ok: true });
 });
 
+await test("invalid route return values fail safely with correlation", async () => {
+  const response = await route(new Request("https://ddd-contract.netlify.app/api/v1/test"), async () => ({ ok: true }));
+  assert.equal(response.status, 500);
+  assertRequestId(response);
+  assert.deepEqual(await response.json(), { detail: "Production API request failed." });
+});
+
 test("native API path parsing strips the version prefix", () => {
   const parts = pathParts(new Request("https://ddd-contract.netlify.app/api/v1/matching/opportunities/abc"));
   assert.deepEqual(parts, ["matching", "opportunities", "abc"]);
