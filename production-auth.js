@@ -55,7 +55,7 @@
     const { apiBaseUrl } = productionConfig();
     let response;
     try {
-      response = await fetch(`${apiBaseUrl}/api/v1/auth/${path}`, {
+      response = await fetch(`${apiBaseUrl}/.netlify/functions/api/v1/auth/${path}`, {
         method,
         credentials: "same-origin",
         headers: {
