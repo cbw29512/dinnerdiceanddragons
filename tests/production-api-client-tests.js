@@ -169,8 +169,8 @@ async function run() {
     const calls = [];
     global.fetch = async (url, options) => {
       calls.push({ url, options });
-      if (url.endsWith("/api/v1/auth/login")) return jsonResponse(200, { authenticated: true, id: "identity-1", email: "player@example.com" });
-      if (url.endsWith("/api/v1/auth/session")) return jsonResponse(200, { authenticated: true, id: "identity-1", email: "player@example.com" });
+      if (url.endsWith("/.netlify/functions/api/v1/auth/login")) return jsonResponse(200, { authenticated: true, id: "identity-1", email: "player@example.com" });
+      if (url.endsWith("/.netlify/functions/api/v1/auth/session")) return jsonResponse(200, { authenticated: true, id: "identity-1", email: "player@example.com" });
       return jsonResponse(404, {});
     };
 
@@ -178,18 +178,18 @@ async function run() {
     assert.equal(session.user.email, "player@example.com");
     assert.equal(session.access_token, "netlify-identity-cookie");
     assert.equal(await DDDProductionAuth.getAccessToken(), "");
-    assert.equal(calls[0].url, "https://dinnerdiceanddragons.netlify.app/api/v1/auth/login");
+    assert.equal(calls[0].url, "https://dinnerdiceanddragons.netlify.app/.netlify/functions/api/v1/auth/login");
     assert.equal(calls[0].options.credentials, "same-origin");
     assert.deepEqual(JSON.parse(calls[0].options.body), { email: "player@example.com", password: "test-password" });
-    assert.equal(calls[1].url, "https://dinnerdiceanddragons.netlify.app/api/v1/auth/session");
+    assert.equal(calls[1].url, "https://dinnerdiceanddragons.netlify.app/.netlify/functions/api/v1/auth/session");
   });
 
   await test("Netlify Identity signup returns confirmation-required account", async () => {
     const calls = [];
     global.fetch = async (url, options) => {
       calls.push({ url, options });
-      if (url.endsWith("/api/v1/auth/signup")) return jsonResponse(201, { status: "confirmation_required", email: "new@example.com" });
-      if (url.endsWith("/api/v1/auth/session")) return jsonResponse(200, { authenticated: false });
+      if (url.endsWith("/.netlify/functions/api/v1/auth/signup")) return jsonResponse(201, { status: "confirmation_required", email: "new@example.com" });
+      if (url.endsWith("/.netlify/functions/api/v1/auth/session")) return jsonResponse(200, { authenticated: false });
       return jsonResponse(404, {});
     };
 
@@ -205,15 +205,15 @@ async function run() {
     const calls = [];
     global.fetch = async (url, options) => {
       calls.push({ url, options });
-      if (url.endsWith("/api/v1/auth/confirm")) return jsonResponse(200, { confirmed: true, id: "identity-2", email: "confirmed@example.com" });
-      if (url.endsWith("/api/v1/auth/session")) return jsonResponse(200, { authenticated: true, id: "identity-2", email: "confirmed@example.com" });
+      if (url.endsWith("/.netlify/functions/api/v1/auth/confirm")) return jsonResponse(200, { confirmed: true, id: "identity-2", email: "confirmed@example.com" });
+      if (url.endsWith("/.netlify/functions/api/v1/auth/session")) return jsonResponse(200, { authenticated: true, id: "identity-2", email: "confirmed@example.com" });
       return jsonResponse(404, {});
     };
 
     const session = await DDDProductionAuth.getSession();
     assert.equal(history.replaced, "/join.html");
     assert.equal(session.user.email, "confirmed@example.com");
-    assert.equal(calls[0].url, "https://dinnerdiceanddragons.netlify.app/api/v1/auth/confirm");
+    assert.equal(calls[0].url, "https://dinnerdiceanddragons.netlify.app/.netlify/functions/api/v1/auth/confirm");
     assert.deepEqual(JSON.parse(calls[0].options.body), { token: "one-time-token" });
     window.location.hash = "";
   });
@@ -225,7 +225,7 @@ async function run() {
       return jsonResponse(204, null);
     };
     await DDDProductionAuth.signOut();
-    assert.equal(captured.url, "https://dinnerdiceanddragons.netlify.app/api/v1/auth/logout");
+    assert.equal(captured.url, "https://dinnerdiceanddragons.netlify.app/.netlify/functions/api/v1/auth/logout");
     assert.equal(captured.options.method, "POST");
     assert.equal(captured.options.credentials, "same-origin");
   });
