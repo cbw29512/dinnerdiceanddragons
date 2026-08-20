@@ -1,0 +1,130 @@
+name: Netlify Production Live Smoke
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  production-live-smoke:
+    name: Exact deployed main smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 2
+
+      - name: Determine whether Netlify should deploy this push
+        id: deploy
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "$BEFORE_SHA" =~ ^0+$ ]]; then
+            echo "required=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if ! git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
+            git fetch --no-tags --depth=1 origin "$BEFORE_SHA"
+          fi
+
+          set +e
+          CACHED_COMMIT_REF="$BEFORE_SHA" COMMIT_REF="$AFTER_SHA" node scripts/netlify-ignore.mjs
+          decision=$?
+          set -e
+
+          if [[ "$decision" == "1" ]]; then
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          elif [[ "$decision" == "0" ]]; then
+            echo "required=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Unexpected Netlify deploy-decision exit code: $decision"
+            exit 1
+          fi
+
+      - name: Wait for exact commit and verify live production auth
+        if: steps.deploy.outputs.required == 'true'
+        env:
+          PRODUCTION_URL: https://dinnerdiceanddragons.netlify.app
+          EXPECTED_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          deployed_sha=""
+          for attempt in $(seq 1 48); do
+            if curl --fail --silent --show-error --location --max-time 15 \
+              -H 'Cache-Control: no-cache' \
+              "$PRODUCTION_URL/deploy-meta.json" -o /tmp/deploy-meta.json; then
+              deployed_sha="$(node - <<'NODE'
+          const fs = require('node:fs');
+          try {
+            const value = JSON.parse(fs.readFileSync('/tmp/deploy-meta.json', 'utf8'))?.commit;
+            process.stdout.write(typeof value === 'string' ? value : '');
+          } catch {
+            process.stdout.write('');
+          }
+          NODE
+              )"
+              if [[ "$deployed_sha" == "$EXPECTED_SHA" ]]; then
+                echo "Exact Netlify production commit is live: $deployed_sha"
+                break
+              fi
+            fi
+            echo "Waiting for Netlify production deploy ($attempt/48); currently: ${deployed_sha:-unavailable}"
+            sleep 10
+          done
+
+          if [[ "$deployed_sha" != "$EXPECTED_SHA" ]]; then
+            echo "Expected Netlify production commit $EXPECTED_SHA but found ${deployed_sha:-none}."
+            exit 1
+          fi
+
+          curl --fail --silent --show-error --location "$PRODUCTION_URL/production-auth.js" -o /tmp/production-auth.js
+          grep -q '/auth-api/v1/auth/' /tmp/production-auth.js
+
+          curl --fail --silent --show-error --location "$PRODUCTION_URL/api/v1/health" -o /tmp/health.json
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const health = JSON.parse(fs.readFileSync('/tmp/health.json', 'utf8'));
+          const expected = {
+            status: 'ok',
+            runtime: 'netlify-functions',
+            database: 'netlify-database',
+            identity: 'netlify-identity',
+            version: 'v1'
+          };
+          for (const [key, value] of Object.entries(expected)) {
+            if (health[key] !== value) throw new Error(`Unexpected health.${key}: ${health[key]}`);
+          }
+          NODE
+
+          for route in api/v1/auth/session auth-api/v1/auth/session; do
+            curl --fail --silent --show-error --location "$PRODUCTION_URL/$route" -o /tmp/session.json
+            node - <<'NODE'
+          const fs = require('node:fs');
+          const session = JSON.parse(fs.readFileSync('/tmp/session.json', 'utf8'));
+          if (session.authenticated !== false) throw new Error(`Anonymous session contract failed: ${JSON.stringify(session)}`);
+          NODE
+          done
+
+          status="$(curl --silent --show-error --output /tmp/me.json --write-out '%{http_code}' "$PRODUCTION_URL/api/v1/me")"
+          if [[ "$status" != "401" && "$status" != "403" ]]; then
+            echo "Expected unauthenticated /api/v1/me to return 401 or 403, got $status"
+            cat /tmp/me.json
+            exit 1
+          fi
+
+          echo "Exact-head Netlify production smoke passed."
+
+      - name: Record intentional Netlify skip
+        if: steps.deploy.outputs.required == 'false'
+        run: echo "This push does not affect the Netlify artifact; live production smoke is intentionally skipped."

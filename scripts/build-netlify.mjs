@@ -1,5 +1,6 @@
 import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { deploymentMetadata } from "./deploy-metadata.mjs";
 
 const ROOT = process.cwd();
 const OUT = path.join(ROOT, "dist");
@@ -16,6 +17,7 @@ const REQUIRED_FILES = [
   "production-config.js",
   "production-api-client.js",
   "production-auth.js",
+  "deploy-meta.json",
   "sitemap.xml"
 ];
 const EXCLUDED_DIRS = new Set([
@@ -149,5 +151,6 @@ const copied = await copyPublicFiles(ROOT, "", deployUrl);
 const robots = ["User-agent: *", "Allow: /"];
 if (deployUrl) robots.push(`Sitemap: ${deployUrl}/sitemap.xml`);
 await writeFile(path.join(OUT, "robots.txt"), `${robots.join("\n")}\n`, "utf8");
+await writeFile(path.join(OUT, "deploy-meta.json"), `${JSON.stringify(deploymentMetadata())}\n`, "utf8");
 await assertProductionArtifact(deployUrl);
-console.log(`Netlify production artifact ready: ${copied} public files + robots.txt.`);
+console.log(`Netlify production artifact ready: ${copied} public files + robots.txt + deploy-meta.json.`);
