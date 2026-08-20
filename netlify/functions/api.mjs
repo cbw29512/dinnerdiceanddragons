@@ -288,5 +288,5 @@ export default async (request) => route(async () => {
 });
 
 export const config = {
-  path: ["/api/*", "/.netlify/functions/api/*"]
+  path: "/api/*"
 };
