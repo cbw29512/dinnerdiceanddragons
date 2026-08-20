@@ -42,8 +42,7 @@ export async function readJson(request, { maxBytes = 64 * 1024 } = {}) {
 export function pathParts(request) {
   const pathname = new URL(request.url).pathname;
   const path = pathname
-    .replace(/^\/\.netlify\/functions\/api\/?/, "")
-    .replace(/^api\/v1\/?/, "")
+    .replace(/^\/\.netlify\/functions\/api\/v1\/?/, "")
     .replace(/^\/api\/v1\/?/, "");
   return path.split("/").filter(Boolean).map((part) => decodeURIComponent(part));
 }
