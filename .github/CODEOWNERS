@@ -1,0 +1,26 @@
+# Dinner, Dice & Dragons repository ownership
+#
+# CODEOWNERS identifies the accountable reviewer for security- and
+# production-sensitive repository paths. Enforcement requires a GitHub
+# branch protection rule or ruleset that requires Code Owner review.
+
+* @cbw29512
+
+# Production runtime and deployment boundary
+/netlify/ @cbw29512
+/netlify.toml @cbw29512
+/production-auth.js @cbw29512
+/production-api-client.js @cbw29512
+/production-config.js @cbw29512
+/production-session-store.js @cbw29512
+
+# Security, CI, and dependency inputs
+/.github/ @cbw29512
+/package.json @cbw29512
+/package-lock.json @cbw29512
+/SECURITY.md @cbw29512
+
+# Reference backend identity and schema provenance
+/backend/alembic/ @cbw29512
+/backend/app/auth/ @cbw29512
+/backend/app/core/ @cbw29512
