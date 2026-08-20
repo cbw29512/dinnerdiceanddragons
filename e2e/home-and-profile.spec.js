@@ -80,3 +80,25 @@ test("homepage remains usable at a phone-sized viewport", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Fill My Tables" }).first()).toBeVisible();
   await expectNoHorizontalOverflow(page);
 });
+
+test("homepage toolbar stays aligned at a tablet-sized viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 900, height: 900 });
+  await page.goto("/index.html");
+
+  const header = page.locator("header");
+  const roleLinks = header.locator(".ddd-header-role-links");
+  const signIn = header.getByRole("button", { name: "Sign In" });
+
+  await expect(roleLinks).toBeVisible();
+  await expect(signIn).toBeVisible();
+
+  const [roleBox, signInBox] = await Promise.all([
+    roleLinks.boundingBox(),
+    signIn.boundingBox(),
+  ]);
+
+  expect(roleBox).not.toBeNull();
+  expect(signInBox).not.toBeNull();
+  expect(Math.abs(roleBox.y - signInBox.y)).toBeLessThanOrEqual(4);
+  await expectNoHorizontalOverflow(page);
+});
