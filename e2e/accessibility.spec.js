@@ -1,6 +1,6 @@
 const { test, expect } = require("@playwright/test");
 const AxeBuilder = require("@axe-core/playwright").default;
-const { mockZipLookup, installAuthenticatedSession } = require("./helpers");
+const { mockZipLookup, seedMatchingDemand, installAuthenticatedSession } = require("./helpers");
 
 const API_BASE = "http://127.0.0.1:4173";
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
@@ -130,9 +130,10 @@ test("invalid Player form announces a useful error and focuses the first problem
   await expect(displayName).not.toHaveAttribute("aria-invalid", "true");
 });
 
-test("live Table Match results remain WCAG clean", async ({ page }) => {
+test("Table Match results remain WCAG clean with controlled demand", async ({ page }) => {
   await mockZipLookup(page);
   await page.goto("/find-venue.html");
+  await seedMatchingDemand(page);
 
   await page.locator("#match-system").selectOption({ label: "D&D 5e" });
   await page.locator("#match-day").selectOption({ label: "Tuesday" });
