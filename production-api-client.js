@@ -6,70 +6,38 @@
 
   class ProductionApiError extends Error {
     constructor(message, status = 0, detail = null) {
-      super(message);
-      this.name = "ProductionApiError";
-      this.status = status;
-      this.detail = detail;
+      super(message); this.name = "ProductionApiError"; this.status = status; this.detail = detail;
     }
   }
-
-  function logError(message, error) {
-    console.error(`[Dinner Dice & Dragons] ${message}`, error);
-  }
-
-  function normalizeBaseUrl(value) {
-    return String(value || "").trim().replace(/\/+$/, "");
-  }
-
+  function logError(message, error) { console.error(`[Dinner Dice & Dragons] ${message}`, error); }
+  function normalizeBaseUrl(value) { return String(value || "").trim().replace(/\/+$/, ""); }
   function configure(options = {}) {
     try {
       const nextBaseUrl = normalizeBaseUrl(options.baseUrl);
       if (!nextBaseUrl) throw new ProductionApiError("Production API base URL is required.");
-      if (options.accessTokenProvider != null && typeof options.accessTokenProvider !== "function") {
-        throw new ProductionApiError("Production API accessTokenProvider must be a function when supplied.");
-      }
-      baseUrl = nextBaseUrl;
-      accessTokenProvider = options.accessTokenProvider || null;
-    } catch (error) {
-      logError("Unable to configure production API client", error);
-      throw error;
-    }
+      if (options.accessTokenProvider != null && typeof options.accessTokenProvider !== "function") throw new ProductionApiError("Production API accessTokenProvider must be a function when supplied.");
+      baseUrl = nextBaseUrl; accessTokenProvider = options.accessTokenProvider || null;
+    } catch (error) { logError("Unable to configure production API client", error); throw error; }
   }
-
   function isConfigured() { return Boolean(baseUrl); }
-
   async function parseResponse(response) {
-    const text = await response.text();
-    if (!text) return null;
+    const text = await response.text(); if (!text) return null;
     try { return JSON.parse(text); }
-    catch (error) {
-      logError("Production API returned invalid JSON", error);
-      throw new ProductionApiError("Production API returned an invalid response.", response.status);
-    }
+    catch (error) { logError("Production API returned invalid JSON", error); throw new ProductionApiError("Production API returned an invalid response.", response.status); }
   }
-
   async function request(method, path, payload = undefined, options = {}) {
     try {
       if (!isConfigured()) throw new ProductionApiError("Production API client is not configured.");
       const token = accessTokenProvider ? String(await accessTokenProvider() || "").trim() : "";
       const response = await fetch(`${baseUrl}${path}`, {
-        method,
-        credentials: "same-origin",
-        headers: {
-          Accept: "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(payload === undefined ? {} : { "Content-Type": "application/json" })
-        },
+        method, credentials: "same-origin",
+        headers: { Accept: "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(payload === undefined ? {} : { "Content-Type": "application/json" }) },
         ...(payload === undefined ? {} : { body: JSON.stringify(payload) })
       });
       const body = await parseResponse(response);
       if (!response.ok) {
         const detail = body?.detail || body?.error || null;
-        throw new ProductionApiError(
-          typeof detail === "string" ? detail : `Production API request failed (${response.status}).`,
-          response.status,
-          detail
-        );
+        throw new ProductionApiError(typeof detail === "string" ? detail : `Production API request failed (${response.status}).`, response.status, detail);
       }
       return body;
     } catch (error) {
@@ -77,26 +45,16 @@
       throw error;
     }
   }
-
   async function optionalOnboarding(path) {
     try { return await request("GET", path, undefined, { silentStatuses: [404] }); }
     catch (error) { if (error?.status === 404) return null; throw error; }
   }
-
-  function eventPath(eventId, suffix = "") {
-    return `/api/v1/events/${encodeURIComponent(String(eventId || ""))}${suffix}`;
-  }
-  function opportunityPath(tableMatchId, suffix = "") {
-    return `/api/v1/matching/opportunities/${encodeURIComponent(String(tableMatchId || ""))}${suffix}`;
-  }
-  function venueWindowPath(venueId) {
-    return `/api/v1/matching/venues/${encodeURIComponent(String(venueId || ""))}/table-windows`;
-  }
+  const eventPath = (eventId, suffix = "") => `/api/v1/events/${encodeURIComponent(String(eventId || ""))}${suffix}`;
+  const opportunityPath = (tableMatchId, suffix = "") => `/api/v1/matching/opportunities/${encodeURIComponent(String(tableMatchId || ""))}${suffix}`;
+  const venueWindowPath = (venueId) => `/api/v1/matching/venues/${encodeURIComponent(String(venueId || ""))}/table-windows`;
 
   window.DDDProductionAPI = Object.freeze({
-    ProductionApiError,
-    configure,
-    isConfigured,
+    ProductionApiError, configure, isConfigured,
     getMe: () => request("GET", "/api/v1/me"),
     getNotifications: () => request("GET", "/api/v1/notifications"),
     markNotification: (notificationId, action) => request("PATCH", `/api/v1/notifications/${encodeURIComponent(String(notificationId || ""))}`, { action }),
@@ -109,12 +67,14 @@
     getGMOnboardingOptional: () => optionalOnboarding("/api/v1/onboarding/gm"),
     putGMOnboarding: (payload) => request("PUT", "/api/v1/onboarding/gm", payload),
     postVenueOnboarding: (payload) => request("POST", "/api/v1/onboarding/venue", payload),
+    getManagedVenues: () => request("GET", "/api/v1/onboarding/venues"),
     getPlayerDemands: () => request("GET", "/api/v1/matching/player-demands"),
     postPlayerDemand: (payload) => request("POST", "/api/v1/matching/player-demands", payload),
     getGMSupplies: () => request("GET", "/api/v1/matching/gm-supplies"),
     postGMSupply: (payload) => request("POST", "/api/v1/matching/gm-supplies", payload),
     getVenueTableWindows: (venueId) => request("GET", venueWindowPath(venueId)),
     postVenueTableWindow: (venueId, payload) => request("POST", venueWindowPath(venueId), payload),
+    putVenueTableWindows: (venueId, payload) => request("PUT", venueWindowPath(venueId), payload),
     findMyTable: (horizonDays = 60) => request("POST", "/api/v1/matching/find-my-table", { horizon_days: horizonDays }),
     getMatchingOpportunities: () => request("GET", "/api/v1/matching/opportunities"),
     getMatchingOpportunity: (tableMatchId) => request("GET", opportunityPath(tableMatchId)),
