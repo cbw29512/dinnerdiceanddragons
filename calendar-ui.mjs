@@ -22,6 +22,17 @@ export class AvailabilityCalendar {
     }
   }
 
+  loadBlocks(blocks) {
+    try {
+      this.state = createAvailabilityState(blocks || []);
+      this.render();
+      this.emit();
+    } catch (error) {
+      console.error("[DDD Calendar] Unable to load availability", error);
+      throw error;
+    }
+  }
+
   addBlock(day, start, end) {
     try {
       this.state = createAvailabilityState([...this.state.blocks, {
