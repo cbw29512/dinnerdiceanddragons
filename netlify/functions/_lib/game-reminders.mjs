@@ -1,5 +1,4 @@
-import { deleteRows, eq, insertRows, selectMany, selectOne, updateRows } from "./supabase-rest.mjs";
-import { SupabaseRestError } from "./supabase-rest.mjs";
+import { SupabaseRestError, deleteRows, eq, insertRows, selectMany, selectOne, updateRows, withTransaction } from "./supabase-rest.mjs";
 
 export const DEFAULT_REMINDER_MINUTES = Object.freeze([1440, 60]);
 const MAX_REMINDERS = 5;
@@ -37,35 +36,39 @@ export async function listGameReminders(user, matchId) {
 }
 
 export async function replaceGameReminders(user, matchId, minutes) {
-  await requireAccepted(user.id, matchId);
-  const offsets = normalizeReminderMinutes(minutes);
-  await deleteRows("game_reminders", { user_id: eq(user.id), table_match_id: eq(matchId) });
-  if (!offsets.length) return [];
-  const now = new Date().toISOString();
-  await insertRows("game_reminders", offsets.map((minutesBefore) => ({
-    id: crypto.randomUUID(), user_id: user.id, table_match_id: matchId,
-    minutes_before: minutesBefore, enabled: true, sent_for_start_at: null,
-    sent_at: null, created_at: now, updated_at: now
-  })), { returning: false });
-  return offsets.map((minutesBefore) => ({ minutes_before: minutesBefore, enabled: true }));
-}
-
-export async function seedDefaultGameReminders(matchId, responses) {
-  const accepted = responses.filter((row) => row.decision === "accepted");
-  const userIds = [...new Set(accepted.map((row) => row.user_id))];
-  const now = new Date().toISOString();
-  for (const userId of userIds) {
-    const existing = await selectMany("game_reminders", { user_id: eq(userId), table_match_id: eq(matchId), limit: 1 });
-    if (existing.length) continue;
-    const prefs = await selectOne("notification_preferences", { user_id: eq(userId) });
-    const offsets = normalizeReminderMinutes(prefs?.default_reminder_minutes || DEFAULT_REMINDER_MINUTES);
-    if (!offsets.length) continue;
+  return withTransaction(async () => {
+    await requireAccepted(user.id, matchId);
+    const offsets = normalizeReminderMinutes(minutes);
+    await deleteRows("game_reminders", { user_id: eq(user.id), table_match_id: eq(matchId) });
+    if (!offsets.length) return [];
+    const now = new Date().toISOString();
     await insertRows("game_reminders", offsets.map((minutesBefore) => ({
-      id: crypto.randomUUID(), user_id: userId, table_match_id: matchId,
+      id: crypto.randomUUID(), user_id: user.id, table_match_id: matchId,
       minutes_before: minutesBefore, enabled: true, sent_for_start_at: null,
       sent_at: null, created_at: now, updated_at: now
     })), { returning: false });
-  }
+    return offsets.map((minutesBefore) => ({ minutes_before: minutesBefore, enabled: true }));
+  });
+}
+
+export async function seedDefaultGameReminders(matchId, responses) {
+  return withTransaction(async () => {
+    const accepted = responses.filter((row) => row.decision === "accepted");
+    const userIds = [...new Set(accepted.map((row) => row.user_id))];
+    const now = new Date().toISOString();
+    for (const userId of userIds) {
+      const existing = await selectMany("game_reminders", { user_id: eq(userId), table_match_id: eq(matchId), limit: 1 });
+      if (existing.length) continue;
+      const prefs = await selectOne("notification_preferences", { user_id: eq(userId) });
+      const offsets = normalizeReminderMinutes(prefs?.default_reminder_minutes || DEFAULT_REMINDER_MINUTES);
+      if (!offsets.length) continue;
+      await insertRows("game_reminders", offsets.map((minutesBefore) => ({
+        id: crypto.randomUUID(), user_id: userId, table_match_id: matchId,
+        minutes_before: minutesBefore, enabled: true, sent_for_start_at: null,
+        sent_at: null, created_at: now, updated_at: now
+      })), { returning: false });
+    }
+  });
 }
 
 export async function markReminderSent(id, startAt, sentAt) {

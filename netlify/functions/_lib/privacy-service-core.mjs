@@ -28,6 +28,7 @@ function publicPreferences(row) {
 
 export function createPrivacyService(repository, clock = () => new Date().toISOString()) {
   if (!repository) throw new Error("Privacy repository is required.");
+  const transaction = (callback) => typeof repository.transaction === "function" ? repository.transaction(callback) : callback();
 
   async function preferences(userId) {
     try {
@@ -41,12 +42,14 @@ export function createPrivacyService(repository, clock = () => new Date().toISOS
 
   async function savePreferences(userId, raw) {
     try {
-      const values = parsePreferenceUpdate(raw);
-      const row = await repository.upsertPreferences(userId, { ...values, updated_at: clock() });
-      if (typeof repository.syncMatchingPause === "function") {
-        await repository.syncMatchingPause(userId, values.matching_paused);
-      }
-      return publicPreferences(row || values);
+      return await transaction(async () => {
+        const values = parsePreferenceUpdate(raw);
+        const row = await repository.upsertPreferences(userId, { ...values, updated_at: clock() });
+        if (typeof repository.syncMatchingPause === "function") {
+          await repository.syncMatchingPause(userId, values.matching_paused);
+        }
+        return publicPreferences(row || values);
+      });
     } catch (error) {
       console.error("[DDD Privacy] Unable to save preferences", { error_type: String(error?.name || "Error") });
       throw error;
@@ -96,21 +99,23 @@ export function createPrivacyService(repository, clock = () => new Date().toISOS
 
   async function respond(userId, matchId, role, decision) {
     try {
-      const current = await repository.findResponse(userId, matchId, role);
-      if (!current) throw Object.assign(new Error("Opportunity response not found."), { status: 404 });
-      const next = applyUserDecision(current, decision, clock());
-      await repository.updateResponse(current.id, userId, role, next);
-      const match = await repository.findMatch(matchId);
-      if (!match) throw Object.assign(new Error("Table Match not found."), { status: 404 });
-      const responses = await repository.listResponses(matchId);
-      const progress = formationProgress(responses, Number(match.minimum_players));
-      let tableStatus = match.status;
-      if (progress.formed && ["potential", "invited"].includes(match.status)) {
-        tableStatus = "forming";
-        await repository.updateMatchStatus(matchId, tableStatus, clock());
-        await notifyFormed(matchId, responses);
-      }
-      return Object.freeze({ role, decision: next.decision, progress, table_status: tableStatus });
+      return await transaction(async () => {
+        const current = await repository.findResponse(userId, matchId, role);
+        if (!current) throw Object.assign(new Error("Opportunity response not found."), { status: 404 });
+        const next = applyUserDecision(current, decision, clock());
+        await repository.updateResponse(current.id, userId, role, next);
+        const match = await repository.findMatch(matchId);
+        if (!match) throw Object.assign(new Error("Table Match not found."), { status: 404 });
+        const responses = await repository.listResponses(matchId);
+        const progress = formationProgress(responses, Number(match.minimum_players));
+        let tableStatus = match.status;
+        if (progress.formed && ["potential", "invited"].includes(match.status)) {
+          tableStatus = "forming";
+          await repository.updateMatchStatus(matchId, tableStatus, clock());
+          await notifyFormed(matchId, responses);
+        }
+        return Object.freeze({ role, decision: next.decision, progress, table_status: tableStatus });
+      });
     } catch (error) {
       console.error("[DDD Privacy] Unable to respond to opportunity", { error_type: String(error?.name || "Error") });
       throw error;
