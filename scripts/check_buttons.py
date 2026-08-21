@@ -26,11 +26,11 @@ SOURCE_WIRING = {
     "production-auth.js": ("confirmation_token", "credentials: \"same-origin\"", "DDDProductionAPI.configure"),
     "availability-calendar-init.mjs": ("AvailabilityCalendar", "enhanceAvailabilityPresets", ".availability-builder"),
     "availability-presets.mjs": ("Weeknights 6–10 PM", "Saturday 6–10 PM", "calendar.addBlock"),
-    "player-start.js": ("Start Looking for Games", "availabilityReady", "DDDProductionOnboarding.save"),
-    "player-start-profile.js": ("getPlayerOnboardingOptional", "loadBlocks"),
-    "dm-start.js": ("Start Looking for a Table", "availabilityReady", "DDDProductionOnboarding.save"),
-    "dm-start-profile.js": ("getGMOnboardingOptional", "loadBlocks"),
-    "host-start.js": ("postVenueTableWindow", "venue_manager", "getMe"),
+    "player-start.js": ("availabilityReady", 'DDDProductionOnboarding.save("Player"', "getPlayerOnboardingOptional"),
+    "player-start-profile.js": ("calendar.loadBlocks", "updatePayload", "accessibility_notes_private"),
+    "dm-start.js": ("availabilityReady", 'DDDProductionOnboarding.save("Game Master"', "getGMOnboardingOptional"),
+    "dm-start-profile.js": ("calendar.loadBlocks", "refreshSupplies", "updatePayload"),
+    "host-start.js": ("venue_manager", "getMe", 'DDDProductionOnboarding.save("Venue"'),
     "my-ddd.js": ("matching_paused", "putNotificationPreferences", "dm.html?edit=1"),
     "notifications.js": ("getNotifications", "opportunity.html?", "getNotificationPreferences"),
     "opportunity-review.js": ("respondToOpportunity", "Not This One", "create-game.html?table_match_id="),
@@ -110,6 +110,9 @@ def check_sources() -> list[str]:
             errors.append(f"production-api-client.js: direct messaging wiring remains: {forbidden}")
     if (ROOT / "game-hub-messages.js").exists():
         errors.append("game-hub-messages.js must not exist")
+    for name in ("host.html", "host-start.js"):
+        if "private_residence" in (ROOT / name).read_text(encoding="utf-8"):
+            errors.append(f"{name}: private-residence hosting must not be exposed")
     return errors
 
 
