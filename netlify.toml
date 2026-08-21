@@ -1,4 +1,4 @@
-# Release-candidate deploy trigger for controlled Netlify smoke testing.
+# Release-candidate deploy trigger for PR #79 live smoke validation.
 [build]
   command = "npm run build:netlify"
   publish = "dist"
