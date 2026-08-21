@@ -48,7 +48,7 @@ jobs:
             dist/index.html dist/play.html dist/dm.html dist/host.html dist/signin.html dist/my-ddd.html \
             dist/notifications.html dist/opportunity.html dist/create-game.html dist/game-hub.html \
             dist/player-start.js dist/player-start-profile.js dist/dm-start.js dist/dm-start-profile.js \
-            dist/host-start.js dist/host-account.js dist/host-managed-venues.js dist/auth-confirm.js \
+            dist/host-start.js dist/host-start-account.js dist/host-managed-venues.js dist/auth-confirm.js \
             dist/my-ddd-games.js dist/my-ddd-reminders.js dist/venue-window-payloads.js \
             dist/availability-calendar-init.mjs dist/availability-presets.mjs \
             dist/calendar-state.mjs dist/calendar-ui.mjs dist/production-auth.js dist/sitemap.xml dist/robots.txt; do
@@ -103,6 +103,7 @@ jobs:
         run: |
           node tests/netlify-api-contract-tests.mjs
           node tests/privacy-matching-tests.mjs
+          node tests/notification-delivery-contract-tests.mjs
           node tests/production-api-client-tests.js
 
   netlify-deploy-preview-smoke:
@@ -120,7 +121,7 @@ jobs:
           curl --fail --silent --show-error --location --retry 24 --retry-delay 10 --retry-all-errors "$PREVIEW_URL/" -o /tmp/home.html
           for asset in play.html dm.html host.html signin.html my-ddd.html notifications.html opportunity.html create-game.html game-hub.html \
             player-start.js player-start-profile.js dm-start.js dm-start-profile.js \
-            host-start.js host-account.js host-managed-venues.js auth-confirm.js \
+            host-start.js host-start-account.js host-managed-venues.js auth-confirm.js \
             my-ddd-games.js my-ddd-reminders.js venue-window-payloads.js availability-presets.mjs \
             production-config.js production-auth.js availability-calendar-init.mjs calendar-state.mjs calendar-ui.mjs; do
             curl --fail --silent --show-error --location "$PREVIEW_URL/$asset" -o "/tmp/${asset//\//_}"
@@ -128,7 +129,7 @@ jobs:
           grep -q 'apiBaseUrl: window.location.origin' /tmp/production-config.js
           grep -q '/auth-api/v1/auth/' /tmp/production-auth.js
           grep -q 'What do you want to do?' /tmp/home.html
-          grep -q 'DDDHostAccount' /tmp/host-account.js
+          grep -q 'DDDHostStartAccount' /tmp/host-start-account.js
           grep -q 'DDDHostManagedVenues' /tmp/host-managed-venues.js
           ! grep -q 'private_residence' /tmp/host.html /tmp/host-start.js
           ! grep -q 'game-hub-messages.js\|message-channel-grid\|venue-question-form' /tmp/game-hub.html
