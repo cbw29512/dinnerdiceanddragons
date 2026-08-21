@@ -112,6 +112,10 @@ jobs:
           END
           $$;
           SQL
+      - name: Exercise GM onboarding transaction against PostgreSQL
+        env:
+          NETLIFY_DB_URL: postgres://ddd:ddd@127.0.0.1:5432/ddd_contract
+        run: node tests/netlify-database-onboarding-integration.mjs
       - name: Run native Netlify API contract tests
         run: |
           node tests/netlify-api-contract-tests.mjs
