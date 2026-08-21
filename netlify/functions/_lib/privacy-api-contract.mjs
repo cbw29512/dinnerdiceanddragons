@@ -20,7 +20,7 @@ function reminderMinutes(value) {
   const raw = value === undefined ? DEFAULT_REMINDERS : value;
   if (!Array.isArray(raw) || raw.length > 5) throw new PrivacyApiContractError("default_reminder_minutes is invalid.");
   const values = raw.map((item) => Number(item));
-  if (values.some((item) => !Number.isInteger(item) || item < 1 || item > 20160)) {
+  if (values.some((item) => !Number.isInteger(item) || item < 15 || item > 20160)) {
     throw new PrivacyApiContractError("default_reminder_minutes is invalid.");
   }
   return [...new Set(values)].sort((a, b) => b - a);
