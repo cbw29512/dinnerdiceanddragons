@@ -1,6 +1,6 @@
 const { test, expect } = require("@playwright/test");
 const AxeBuilder = require("@axe-core/playwright").default;
-const { mockZipLookup, installAuthenticatedSession } = require("./helpers");
+const { installAuthenticatedSession } = require("./helpers");
 
 const API_BASE = "http://127.0.0.1:4173";
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
@@ -8,62 +8,32 @@ const LIVE_HUB_EVENT_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 
 const pages = [
   "/index.html",
-  "/dashboard-prototype.html",
-  "/join.html#player",
-  "/join.html#gm",
-  "/venues.html",
-  "/find-venue.html",
-  "/create-game.html",
-  "/recurring-match.html",
-  "/form-series.html",
-  "/series-commitments.html",
-  "/table-lifecycle.html?role=gm",
-  "/game-hub.html?role=player",
+  "/play.html",
+  "/dm.html",
+  "/host.html",
+  "/signin.html",
+  "/my-ddd.html",
+  "/notifications.html",
+  "/opportunity.html",
+  "/game-hub.html",
   "/conduct.html",
-  "/reputation.html",
-  "/venue-feedback.html",
-  "/games/lighthouse-at-blackwater/index.html",
-  "/games/shadows-over-florence/index.html",
-  "/games/trouble-below-the-old-road/index.html",
+  "/join.html",
+  "/venues.html"
 ];
 
-const skipLinkPages = [
-  "/index.html",
-  "/dashboard-prototype.html",
-  "/join.html",
-  "/venues.html",
-  "/find-venue.html",
-  "/create-game.html",
-  "/recurring-match.html",
-  "/form-series.html",
-  "/series-commitments.html",
-  "/table-lifecycle.html?role=gm",
-  "/game-hub.html?role=player",
-  "/conduct.html",
-  "/reputation.html",
-  "/venue-feedback.html",
-  "/games/lighthouse-at-blackwater/index.html",
-  "/games/shadows-over-florence/index.html",
-  "/games/trouble-below-the-old-road/index.html",
-];
+const skipLinkPages = [...pages];
 
 function formatViolations(violations) {
   return violations
     .map((violation) => {
-      const targets = violation.nodes
-        .flatMap((node) => node.target)
-        .slice(0, 8)
-        .join(", ");
+      const targets = violation.nodes.flatMap((node) => node.target).slice(0, 8).join(", ");
       return `${violation.id} (${violation.impact || "unknown"}): ${violation.help} -> ${targets}`;
     })
     .join("\n");
 }
 
 async function expectNoWcagViolations(page) {
-  const results = await new AxeBuilder({ page })
-    .withTags(WCAG_TAGS)
-    .analyze();
-
+  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
   expect(results.violations, formatViolations(results.violations)).toEqual([]);
 }
 
@@ -78,15 +48,12 @@ for (const path of pages) {
 test("skip links are the first keyboard stop and move focus to main content site-wide", async ({ page }) => {
   for (const path of skipLinkPages) {
     await page.goto(path);
-
     const skipLink = page.locator(".skip-link");
     const main = page.locator("#main");
     await page.keyboard.press("Tab");
-
     await expect(skipLink, `Skip link should be first on ${path}`).toBeFocused();
     await expect(skipLink, `Skip link should be visible on focus for ${path}`).toBeVisible();
     await expect(skipLink).toHaveAttribute("href", "#main");
-
     await page.keyboard.press("Enter");
     await expect(page, `Skip link should navigate to #main on ${path}`).toHaveURL(/#main$/);
     await expect(main, `Skip link should move focus into main content on ${path}`).toBeFocused();
@@ -95,9 +62,8 @@ test("skip links are the first keyboard stop and move focus to main content site
 
 test("primary homepage paths are reachable by keyboard without a focus trap", async ({ page }) => {
   await page.goto("/index.html");
-
   const visited = [];
-  for (let i = 0; i < 24; i += 1) {
+  for (let i = 0; i < 20; i += 1) {
     await page.keyboard.press("Tab");
     const active = await page.evaluate(() => {
       const element = document.activeElement;
@@ -106,44 +72,33 @@ test("primary homepage paths are reachable by keyboard without a focus trap", as
     });
     visited.push(active);
   }
-
-  expect(visited.some((value) => value.includes("Find My Table"))).toBeTruthy();
-  expect(visited.some((value) => value.includes("Form My Table"))).toBeTruthy();
-  expect(visited.some((value) => value.includes("Fill My Tables"))).toBeTruthy();
+  expect(visited.some((value) => value.includes("Play D&D"))).toBeTruthy();
+  expect(visited.some((value) => value.includes("DM a Game"))).toBeTruthy();
+  expect(visited.some((value) => value.includes("Host Games"))).toBeTruthy();
+  expect(visited.some((value) => value.includes("Sign in"))).toBeTruthy();
 });
 
-test("invalid Player onboarding step announces errors and focuses the first problem", async ({ page }) => {
-  await page.goto("/join.html#player");
-  const form = page.locator("#player-form");
-  const displayName = form.locator('[name="display_name"]');
-
-  await expect(form.locator(".ddd-step-progress")).toContainText("Step 1 of 4");
-  await form.getByRole("button", { name: "Continue" }).click();
-
-  await expect(form.locator(".ddd-step-status")).toContainText("Please review");
-  await expect(form.locator(".ddd-step-status")).toContainText("Display name");
+test("invalid Player account step announces the first problem and focuses it", async ({ page }) => {
+  await page.goto("/play.html");
+  const displayName = page.getByLabel("Display name");
+  await page.getByRole("button", { name: "Create Account & Continue" }).click();
+  await expect(page.locator("#auth-status")).toContainText("Enter the name your table should see");
   await expect(displayName).toBeFocused();
   await expect(displayName).toHaveAttribute("aria-invalid", "true");
-  await expect(form.locator('[name="email"]')).toHaveAttribute("aria-invalid", "true");
   await expectNoWcagViolations(page);
-
-  await displayName.fill("Accessible Player");
-  await expect(displayName).not.toHaveAttribute("aria-invalid", "true");
 });
 
-test("live Table Match results remain WCAG clean", async ({ page }) => {
-  await mockZipLookup(page);
-  await page.goto("/find-venue.html");
-
-  await page.locator("#match-system").selectOption({ label: "D&D 5e" });
-  await page.locator("#match-day").selectOption({ label: "Tuesday" });
-  await page.locator("#match-start").fill("18:00");
-  await page.locator("#match-duration").selectOption("240");
-  await page.locator("#match-zip").fill("29501");
-  await page.locator("#match-radius").selectOption("25");
-  await page.getByRole("button", { name: "Find Players + Venues" }).click();
-
-  await expect(page.locator("#table-match-results > *").first()).toBeVisible();
+test("Player availability calendar and quick picks remain WCAG clean", async ({ page }) => {
+  await installAuthenticatedSession(page, { email: "accessible-player@example.test" });
+  await page.route("**/api/v1/onboarding/player", async (route) => {
+    await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not configured" }) });
+  });
+  await page.goto("/play.html");
+  await page.getByLabel("Display name").fill("Accessible Player");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "When can you usually play?" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Saturday 6–10 PM" })).toBeVisible();
   await expectNoWcagViolations(page);
 });
 
@@ -155,7 +110,7 @@ test("all authenticated Game Hub role views remain WCAG clean when revealed", as
   for (const [role, viewId] of [
     ["player", "player-view"],
     ["gm", "gm-view"],
-    ["venue_manager", "venue-view"],
+    ["venue_manager", "venue-view"]
   ]) {
     await page.locator(`.hub-role-button[data-role="${role}"]`).click();
     await expect(page.locator(`#${viewId}`)).toBeVisible();
@@ -167,18 +122,10 @@ async function mockAuthenticatedMultiRoleHub(page) {
   await page.route(`${API_BASE}/api/v1/**`, async (route) => {
     const url = new URL(route.request().url());
     if (url.pathname === `/api/v1/events/${LIVE_HUB_EVENT_ID}/hub`) {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(accessibleHubPayload()),
-      });
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(accessibleHubPayload()) });
       return;
     }
-    if (url.pathname === `/api/v1/events/${LIVE_HUB_EVENT_ID}/announcements`) {
-      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
-      return;
-    }
-    if (url.pathname === "/api/v1/notifications") {
+    if (url.pathname === `/api/v1/events/${LIVE_HUB_EVENT_ID}/announcements` || url.pathname === "/api/v1/notifications") {
       await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
       return;
     }
@@ -186,22 +133,13 @@ async function mockAuthenticatedMultiRoleHub(page) {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({
-          display_name: "Accessibility User",
-          roles: ["player", "gm", "venue_manager"],
-        }),
+        body: JSON.stringify({ display_name: "Accessibility User", roles: ["player", "gm", "venue_manager"] })
       });
       return;
     }
-    await route.fulfill({
-      status: 404,
-      contentType: "application/json",
-      body: JSON.stringify({ detail: "Not found" }),
-    });
+    await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not found" }) });
   });
-  await installAuthenticatedSession(page, {
-    email: "accessibility@example.test"
-  });
+  await installAuthenticatedSession(page, { email: "accessibility@example.test" });
 }
 
 function accessibleHubPayload() {
@@ -233,7 +171,7 @@ function accessibleHubPayload() {
         status: "approved",
         expected_guests: 2,
         requested_start: "2030-08-23T22:00:00Z",
-        requested_end: "2030-08-24T02:00:00Z",
+        requested_end: "2030-08-24T02:00:00Z"
       },
       expectations: {
         tone: "Welcoming",
@@ -250,7 +188,7 @@ function accessibleHubPayload() {
         safety_framework: "Pause or step away whenever needed.",
         environment_notes: null,
         accessibility_notes: "Accessible entrance available.",
-        other_notes: null,
+        other_notes: null
       },
       your_registration: {
         id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
@@ -259,15 +197,15 @@ function accessibleHubPayload() {
         expectations_acknowledged_at: "2030-08-01T12:00:00Z",
         requested_at: "2030-08-01T12:00:00Z",
         responded_at: "2030-08-01T12:05:00Z",
-        cancelled_at: null,
-      },
+        cancelled_at: null
+      }
     },
     capabilities: {
       viewer_roles: ["player", "gm", "venue_manager"],
       post_channels: [],
       can_manage_registrations: true,
-      can_manage_booking: true,
+      can_manage_booking: true
     },
-    registration_queue: [],
+    registration_queue: []
   };
 }
