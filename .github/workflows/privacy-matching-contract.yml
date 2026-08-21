@@ -13,6 +13,7 @@ on:
       - "netlify/database/migrations/**"
       - "tests/privacy-*"
       - "tests/venue-pending-*"
+      - "tests/venue-preapproval-*"
       - "tests/signal-replacement-*"
       - "tests/matching-pause-*"
       - "e2e/privacy-*"
@@ -30,6 +31,7 @@ on:
       - "netlify/database/migrations/**"
       - "tests/privacy-*"
       - "tests/venue-pending-*"
+      - "tests/venue-preapproval-*"
       - "tests/signal-replacement-*"
       - "tests/matching-pause-*"
       - "e2e/privacy-*"
@@ -72,6 +74,9 @@ jobs:
 
       - name: Run pending Venue persistence contract
         run: node tests/venue-pending-window-contract-tests.mjs
+
+      - name: Run Venue preapproval contract
+        run: node tests/venue-preapproval-contract-tests.mjs
 
       - name: Run stale signal replacement contract
         run: node tests/signal-replacement-contract-tests.mjs
