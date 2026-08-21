@@ -35,6 +35,21 @@ function publicVenueFields(venue) {
   }
 }
 
+function publicCapabilities(raw) {
+  try {
+    const viewerRoles = Array.isArray(raw?.viewer_roles) ? [...new Set(raw.viewer_roles.map(String))] : [];
+    return Object.freeze({
+      viewer_roles: Object.freeze(viewerRoles),
+      can_manage_registrations: viewerRoles.includes("gm"),
+      can_manage_booking: viewerRoles.includes("venue_manager"),
+      can_post_announcement: viewerRoles.includes("gm")
+    });
+  } catch (error) {
+    console.error("[DDD Event Location] Unable to project Game Hub capabilities", { error_type: String(error?.name || "Error") });
+    throw error;
+  }
+}
+
 async function decorateEvent(event) {
   try {
     if (!event?.id) return event;
@@ -58,7 +73,11 @@ export async function getEvent(user, eventId, options = {}) {
 export async function getGameHub(user, eventId) {
   try {
     const hub = await getLifecycleGameHub(user, eventId);
-    return { ...hub, event: await decorateEvent(hub.event) };
+    return {
+      ...hub,
+      capabilities: publicCapabilities(hub.capabilities),
+      event: await decorateEvent(hub.event)
+    };
   } catch (error) {
     console.error("[DDD Event Location] Unable to load Game Hub", { error_type: String(error?.name || "Error") });
     throw error;
