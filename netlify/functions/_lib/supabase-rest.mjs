@@ -13,6 +13,7 @@ export {
   neq,
   selectMany,
   selectOne,
+  selectOneForUpdate,
   updateRows,
   withTransaction
 } from "./database.mjs";
