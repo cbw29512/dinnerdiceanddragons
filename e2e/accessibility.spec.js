@@ -112,15 +112,16 @@ test("primary homepage paths are reachable by keyboard without a focus trap", as
   expect(visited.some((value) => value.includes("Fill My Tables"))).toBeTruthy();
 });
 
-test("invalid Player form announces a useful error and focuses the first problem", async ({ page }) => {
+test("invalid Player onboarding step announces errors and focuses the first problem", async ({ page }) => {
   await page.goto("/join.html#player");
   const form = page.locator("#player-form");
   const displayName = form.locator('[name="display_name"]');
 
-  await form.getByRole("button", { name: "Find My Table" }).click();
+  await expect(form.locator(".ddd-step-progress")).toContainText("Step 1 of 4");
+  await form.getByRole("button", { name: "Continue" }).click();
 
-  await expect(form.locator(".form-status")).toContainText("Please review");
-  await expect(form.locator(".form-status")).toContainText("Display name");
+  await expect(form.locator(".ddd-step-status")).toContainText("Please review");
+  await expect(form.locator(".ddd-step-status")).toContainText("Display name");
   await expect(displayName).toBeFocused();
   await expect(displayName).toHaveAttribute("aria-invalid", "true");
   await expect(form.locator('[name="email"]')).toHaveAttribute("aria-invalid", "true");
@@ -173,12 +174,12 @@ async function mockAuthenticatedMultiRoleHub(page) {
       });
       return;
     }
-    if (url.pathname === `/api/v1/events/${LIVE_HUB_EVENT_ID}/messages`) {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ items: [], next_cursor: null }),
-      });
+    if (url.pathname === `/api/v1/events/${LIVE_HUB_EVENT_ID}/announcements`) {
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+      return;
+    }
+    if (url.pathname === "/api/v1/notifications") {
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
       return;
     }
     if (url.pathname === "/api/v1/me") {
@@ -222,6 +223,7 @@ function accessibleHubPayload() {
       system_name: "Dungeons & Dragons",
       system_edition: "5e (2014)",
       venue_name: "Accessible Test Cafe",
+      venue_address_line1: "123 Accessible Way",
       venue_city: "Florence",
       venue_state_region: "SC",
       viewer_roles: ["player", "gm", "venue_manager"],
@@ -262,13 +264,7 @@ function accessibleHubPayload() {
     },
     capabilities: {
       viewer_roles: ["player", "gm", "venue_manager"],
-      post_channels: [
-        "table_announcement",
-        "table_discussion",
-        "gm_venue",
-        "player_gm",
-        "player_venue_question",
-      ],
+      post_channels: [],
       can_manage_registrations: true,
       can_manage_booking: true,
     },
