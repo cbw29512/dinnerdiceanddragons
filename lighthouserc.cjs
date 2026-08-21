@@ -4,8 +4,9 @@ module.exports = {
       staticDistDir: ".",
       url: [
         "http://localhost/index.html",
-        "http://localhost/join.html",
-        "http://localhost/venues.html",
+        "http://localhost/play.html",
+        "http://localhost/dm.html",
+        "http://localhost/host.html",
         "http://localhost/conduct.html"
       ],
       numberOfRuns: 3,
