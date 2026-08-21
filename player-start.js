@@ -18,17 +18,6 @@
     node.textContent = message;
   }
 
-  function showStep(next) {
-    try {
-      step = Math.max(editMode ? 3 : 1, Math.min(5, next));
-      document.querySelectorAll(".start-step").forEach((node) => { node.hidden = Number(node.dataset.step) !== step; });
-      byId("step-count").textContent = editMode ? `Update ${step - 2} of 3` : `Step ${step} of 5`;
-      byId("progress-bar").style.width = editMode ? `${(step - 2) * 33.34}%` : `${step * 20}%`;
-      if (step === 5) renderReview();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (error) { log("Unable to change step", error); }
-  }
-
   function rawValues() {
     const output = {};
     for (const [rawKey, value] of new FormData(form()).entries()) {
@@ -37,6 +26,21 @@
       if (array) (output[key] ||= []).push(value); else output[key] = value;
     }
     return output;
+  }
+
+  function showReady() {
+    window.DDDPlayerStartSave.showReady(form(), document.querySelector(".start-progress"), byId("player-ready"));
+  }
+
+  function showStep(next) {
+    try {
+      step = Math.max(editMode ? 3 : 1, Math.min(5, next));
+      document.querySelectorAll(".start-step").forEach((node) => { node.hidden = Number(node.dataset.step) !== step; });
+      byId("step-count").textContent = editMode ? `Update ${step - 2} of 3` : `Step ${step} of 5`;
+      byId("progress-bar").style.width = editMode ? `${(step - 2) * 33.34}%` : `${step * 20}%`;
+      if (step === 5) window.DDDPlayerStartSave.renderReview(byId("player-review"), rawValues(), editMode);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) { log("Unable to change step", error); }
   }
 
   function fieldReady(name, message) {
@@ -104,41 +108,16 @@
     return false;
   }
 
-  function renderReview() {
-    const values = rawValues();
-    const windows = (values.availability_day || []).map((day, i) => `${day} ${values.availability_start?.[i] || ""}–${values.availability_end?.[i] || ""}`).join(" · ");
-    const game = editMode ? "Game preferences unchanged" : (values.player_system?.[0] || "D&D 5e (2024)");
-    const rows = [["Game", game], ["Available", windows || "No times selected"], ["Travel", `${values.radius || 25} miles from ${values.postal_code || "your ZIP"}`]];
-    const review = byId("player-review");
-    review.replaceChildren();
-    for (const [label, value] of rows) {
-      const row = document.createElement("div"); row.className = "review-row";
-      const name = document.createElement("span"); name.textContent = label;
-      const strong = document.createElement("strong"); strong.textContent = value;
-      row.append(name, strong); review.append(row);
-    }
-  }
-
-  function showReady() {
-    form().hidden = true;
-    document.querySelector(".start-progress").hidden = true;
-    byId("player-ready").hidden = false;
-  }
-
   async function savePlayer(event) {
     event.preventDefault();
     try {
-      if (!byId("conduct-check").checked) { byId("conduct-check").focus(); return announce("save-status", "Please agree to the Code of Conduct first."); }
-      announce("save-status", editMode ? "Updating your availability…" : "Saving your availability and starting your game search…", true);
-      if (editMode && existingProfile) {
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const payload = window.DDDPlayerStartProfile.updatePayload(existingProfile, rawValues(), timezone);
-        await window.DDDProductionAPI.putPlayerOnboarding(payload);
-        await window.DDDProductionMatching.syncAndFind("Player", { payload, deferred: { table_style_preference: null } }, rawValues());
-      } else {
-        const saved = await window.DDDProductionOnboarding.save("Player", rawValues());
-        if (saved.matchingError) return announce("save-status", `Your profile saved, but game search could not start: ${saved.matchingError.message}`);
+      if (!byId("conduct-check").checked) {
+        byId("conduct-check").focus();
+        return announce("save-status", "Please agree to the Code of Conduct first.");
       }
+      announce("save-status", editMode ? "Updating your availability…" : "Saving your availability and starting your game search…", true);
+      const saved = await window.DDDPlayerStartSave.persist({ editMode, existingProfile, values: rawValues() });
+      if (saved?.matchingError) return announce("save-status", `Your profile saved, but game search could not start: ${saved.matchingError.message}`);
       showReady();
     } catch (error) {
       log("Unable to save Player availability", error);
