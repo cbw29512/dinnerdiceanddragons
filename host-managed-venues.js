@@ -4,24 +4,32 @@
   const titleCase = (value) => String(value || "").replace(/\b\w/g, (letter) => letter.toUpperCase());
 
   function blocks(windows) {
-    return (windows || []).filter((item) => item.active).map((item) => {
-      const rule = item.availability || {};
-      const monthly = rule.pattern_type === "monthly_ordinal_weekday";
-      return {
-        day: titleCase(rule.day_of_week), start: rule.start_time, end: rule.end_time,
-        recurrence: {
-          type: monthly ? "monthly" : "weekly",
-          interval: Number(monthly ? rule.month_interval || 1 : rule.week_interval || 1),
-          anchorDate: rule.anchor_date || null,
-          ordinal: titleCase(rule.monthly_ordinal || "last")
-        }
-      };
-    });
+    try {
+      return (windows || []).filter((item) => item.active !== false).map((item) => {
+        const rule = item.availability || {};
+        const monthly = rule.pattern_type === "monthly_ordinal_weekday";
+        return {
+          day: titleCase(rule.day_of_week),
+          start: rule.start_time,
+          end: rule.end_time,
+          recurrence: {
+            type: monthly ? "monthly" : "weekly",
+            interval: Number(monthly ? rule.month_interval || 1 : rule.week_interval || 1),
+            anchorDate: rule.anchor_date || null,
+            ordinal: titleCase(rule.monthly_ordinal || "last")
+          }
+        };
+      });
+    } catch (error) {
+      console.error("[DDD Venue Edit] Unable to map Venue windows", error);
+      return [];
+    }
   }
 
   function hydrate(form, venue, windows) {
     try {
       form.elements.business_name.value = venue.name || "";
+      form.elements.address.value = venue.address_line1 || "";
       form.elements.city.value = venue.city || "";
       form.elements.state.value = venue.state_region || "";
       form.elements.postal_code.value = venue.postal_code || "";
@@ -29,7 +37,7 @@
         const field = form.elements[name];
         if (field) field.readOnly = true;
       }
-      const active = (windows || []).filter((item) => item.active);
+      const active = (windows || []).filter((item) => item.active !== false);
       const first = active[0];
       if (first) {
         form.elements.table_count.value = String(first.table_count || 1);
@@ -72,20 +80,25 @@
   }
 
   function renderManagedList(root, venues) {
-    root.replaceChildren();
-    for (const venue of venues || []) {
-      const card = document.createElement("div");
-      card.className = "review-row managed-venue-row";
-      const copy = document.createElement("span");
-      copy.textContent = `${venue.name} · ${venue.city}, ${venue.state_region} · ${venue.verified ? "Verified" : "Verification pending"}`;
-      const link = document.createElement("a");
-      link.className = "button secondary";
-      link.href = `host.html?edit=${encodeURIComponent(venue.id)}`;
-      link.textContent = "Change Calendar";
-      card.append(copy, link);
-      root.append(card);
+    try {
+      root.replaceChildren();
+      for (const venue of venues || []) {
+        const card = document.createElement("div");
+        card.className = "review-row managed-venue-row";
+        const copy = document.createElement("span");
+        copy.textContent = `${venue.name} · ${venue.city}, ${venue.state_region} · ${venue.verified ? "Verified" : "Verification pending"}`;
+        const link = document.createElement("a");
+        link.className = "button secondary";
+        link.href = `host.html?edit=${encodeURIComponent(venue.id)}`;
+        link.textContent = "Change Calendar";
+        card.append(copy, link);
+        root.append(card);
+      }
+    } catch (error) {
+      console.error("[DDD Venue Edit] Unable to render managed Venues", error);
+      throw error;
     }
   }
 
-  window.DDDHostManagedVenues = Object.freeze({ hydrate, replacementPayload, renderManagedList });
+  window.DDDHostManagedVenues = Object.freeze({ blocks, hydrate, replacementPayload, renderManagedList });
 })();
