@@ -15,7 +15,7 @@ const REQUIRED_FILES = [
   "index.html", "play.html", "dm.html", "host.html", "signin.html", "my-ddd.html",
   "notifications.html", "opportunity.html", "create-game.html", "create-game.js", "game-hub.html",
   "player-start.js", "player-start-profile.js", "dm-start.js", "dm-start-profile.js",
-  "host-start.js", "host-account.js", "host-managed-venues.js",
+  "host-start.js", "host-start-account.js", "host-managed-venues.js",
   "signin.js", "my-ddd.js", "my-ddd-games.js", "my-ddd-reminders.js",
   "auth-confirm.js", "venue-window-payloads.js",
   "availability-calendar-init.mjs", "availability-presets.mjs", "calendar-state.mjs", "calendar-ui.mjs",
