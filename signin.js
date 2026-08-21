@@ -3,6 +3,7 @@
 
   const form = document.getElementById("signin-form");
   const status = document.getElementById("signin-status");
+  const params = new URLSearchParams(window.location.search);
 
   function announce(message, success = false) {
     status.className = `form-status ${success ? "success-message" : "error-message"}`;
@@ -33,7 +34,8 @@
       form.addEventListener("submit", (event) => void submit(event));
       await window.DDDProductionAuth.init();
       const session = await window.DDDProductionAuth.getSession();
-      if (session) window.location.replace("my-ddd.html");
+      if (session) return window.location.replace("my-ddd.html");
+      if (params.get("confirmed") === "1") announce("Email confirmed. Sign in to continue.", true);
     } catch (error) {
       console.error("[DDD Sign In] Unable to initialize", error);
       announce("Account service is temporarily unavailable.");
