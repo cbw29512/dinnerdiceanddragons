@@ -3,125 +3,33 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.zippopotam.us; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <title>Bring D&amp;D Groups to Your Venue | Dinner, Dice &amp; Dragons</title>
-  <meta name="description" content="Restaurants, breweries, cafes, game stores, and public venues can turn open tables into organized recurring D&D game nights with clear schedules and headcounts.">
+  <title>Host D&amp;D Game Nights | Dinner, Dice &amp; Dragons</title>
+  <meta name="description" content="Restaurants, breweries, cafes, game stores, libraries, and other public venues can offer table availability for organized local tabletop game nights.">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="global-auth-ui.css">
-  <link rel="stylesheet" href="availability-calendar.css">
+  <link rel="stylesheet" href="home-simple.css">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to main content</a>
-<header class="site-header">
-  <div class="shell nav-wrap">
-    <a class="brand" href="index.html"><span aria-hidden="true">🎲</span><span>Dinner, Dice &amp; Dragons</span></a>
-    <nav aria-label="Primary navigation">
-      <a href="index.html">Home</a>
-      <a href="index.html#how-it-works">How It Works</a>
-      <a href="conduct.html">Safety</a>
-      <div class="ddd-header-role-links" aria-label="Start by role">
-        <a href="join.html#player" data-ddd-role-link="player">Find a Game</a>
-        <a href="join.html#gm" data-ddd-role-link="gm">Run a Game</a>
-        <a href="venues.html#signup" data-ddd-role-link="venue">For Venues</a>
-      </div>
-      <button id="ddd-global-account-button" class="ddd-account-trigger" type="button" aria-haspopup="dialog" aria-controls="ddd-global-account-dialog">Sign In</button>
-    </nav>
-  </div>
-</header>
-
-<main id="main" tabindex="-1">
-  <section class="hero">
-    <div class="shell hero-grid">
-      <div>
-        <p class="eyebrow">🍽️ FOR RESTAURANTS · BREWERIES · CAFES · GAME STORES · PUBLIC VENUES</p>
-        <h1>Bring organized D&amp;D groups to the tables you want filled.</h1>
-        <p class="lede">You choose the days, hours, table capacity, purchase expectations, and house rules. Dinner, Dice &amp; Dragons connects those openings with DMs and Players trying to make a game night happen.</p>
-        <div class="cta-row"><a class="button primary" href="#signup">🍽️ Fill My Tables</a><a class="button secondary" href="#benefits">See the Benefits</a></div>
-        <p class="microcopy">Venue managers can sign in or switch roles from the top of the page at any time.</p>
-      </div>
-      <aside class="hero-card">
-        <p class="eyebrow">WHAT YOUR STAFF GETS</p>
-        <div class="match-flow">
-          <div><strong>Clear schedule</strong><span>when the group arrives and leaves</span></div><b>+</b>
-          <div><strong>Expected headcount</strong><span>how many guests are coming</span></div><b>+</b>
-          <div><strong>Your policies up front</strong><span>purchase · age · space · house rules</span></div><b>+</b>
-          <div><strong>DDD-coordinated confirmations</strong><span>structured approvals without exposing private guest contact information</span></div><b>=</b>
-          <div class="match-result"><strong>An organized game night</strong><span>without asking staff to run D&amp;D or contact strangers</span></div>
-        </div>
-      </aside>
+<header class="home-header"><div class="home-shell home-nav">
+  <a class="brand" href="index.html"><span aria-hidden="true">🎲</span><span>Dinner, Dice &amp; Dragons</span></a>
+  <nav class="home-nav-right" aria-label="Primary navigation"><a class="text-link" href="index.html">Home</a><a class="button secondary" href="signin.html">Sign In</a></nav>
+</div></header>
+<main id="main" class="home-main" tabindex="-1"><div class="home-shell">
+  <section class="home-hero">
+    <p class="eyebrow">FOR PUBLIC VENUES</p>
+    <h1>Turn open tables into organized game nights.</h1>
+    <p class="home-lede">Tell DDD when tables are available, how many people you can host, and the basic house rules. DDD coordinates the rest through structured approvals.</p>
+    <div class="simple-steps">
+      <article class="simple-step"><span class="step-number">1</span><h3>Set your open times</h3><p>Use a simple calendar to mark when game groups are welcome.</p></article>
+      <article class="simple-step"><span class="step-number">2</span><h3>Set capacity and policies</h3><p>Tell us how many guests fit and whether a purchase is expected.</p></article>
+      <article class="simple-step"><span class="step-number">3</span><h3>Approve through DDD</h3><p>See expected headcount and accept or decline without sharing private guest contact details.</p></article>
     </div>
+    <div class="privacy-strip"><div class="shield" aria-hidden="true">🛡️</div><div><strong>Venue managers do not have to contact strangers.</strong><p>DDD handles match alerts, confirmations, and Event status. Player contact information stays private.</p></div></div>
+    <p><a class="button primary" href="host.html">Host Games at My Venue</a></p>
   </section>
-
-  <section class="section" id="benefits">
-    <div class="shell">
-      <div class="section-heading centered"><p class="eyebrow">WHY A VENUE WOULD USE THIS</p><h2>Turn open capacity into repeat game-night traffic.</h2><p>Post only the windows you actually want to fill.</p></div>
-      <div class="role-grid">
-        <article class="role-card"><div class="role-icon" aria-hidden="true">🕒</div><h3>Use quieter hours</h3><p>Offer specific days and times when extra table traffic is useful to your business.</p></article>
-        <article class="role-card"><div class="role-icon" aria-hidden="true">🔁</div><h3>Create repeat visits</h3><p>Recurring campaigns can bring the same organized group back on a predictable schedule.</p></article>
-        <article class="role-card"><div class="role-icon" aria-hidden="true">🎲</div><h3>Reach local tabletop groups</h3><p>Make your available space visible to nearby DMs and Players already looking for a place to play.</p></article>
-      </div>
-    </div>
-  </section>
-
-  <section class="section alt">
-    <div class="shell">
-      <div class="section-heading"><p class="eyebrow">YOU DO NOT HAVE TO WAIT FOR A GROUP TO ASK</p><h2>Your open table can help start the game night.</h2><p>Players, DMs, and venues can each create the first signal that reveals an opportunity.</p></div>
-      <div class="steps">
-        <article><span>🎲</span><h3>A Player wants a game</h3><p>DDD watches that Player's game, schedule, and travel preferences for a compatible table.</p></article>
-        <article><span>🧙</span><h3>A DM wants to run</h3><p>Compatible Players and venue openings can be matched to the DM.</p></article>
-        <article><span>🍽️</span><h3>You have a table to fill</h3><p>Compatible DMs and Player interest can be matched to the hours you want used.</p></article>
-      </div>
-    </div>
-  </section>
-
-  <section class="section" id="signup">
-    <div class="shell">
-      <div class="template-intro">
-        <div><p class="eyebrow">POST OPEN TABLES</p><h2>When would you like D&amp;D groups in your venue?</h2><p>Mark every recurring window you want available. Once the venue and manager are verified, those openings can enter live matching.</p></div>
-        <div class="template-summary"><strong>Example:</strong><span>Tuesday · 6–10 PM + Saturday · 1–6 PM · 1 table · up to 6 guests</span></div>
-      </div>
-      <form class="panel form-grid prototype-form" id="venue-form" data-profile-type="Venue" novalidate>
-        <h3 class="form-section-title">1. Your business</h3>
-        <label>Business name<input name="business_name" autocomplete="organization" required></label>
-        <label>Contact name<input name="contact_name" autocomplete="name" required></label>
-        <label>Business email<input type="email" name="email" autocomplete="email" required></label>
-        <label>Street address<input name="address" autocomplete="street-address" required></label>
-        <label>City<input name="city" autocomplete="address-level2" required></label>
-        <label>State<input name="state" autocomplete="address-level1" maxlength="2" placeholder="SC" required></label>
-        <label>ZIP code<input name="postal_code" autocomplete="postal-code" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="29501" required></label>
-
-        <h3 class="form-section-title">2. When do you want groups?</h3>
-        <div class="availability-builder"><p class="microcopy">Drag across every time window when your venue can host a table. Tap a saved block to edit recurrence.</p><div class="availability-list" aria-live="polite"></div><button class="button secondary add-availability" type="button">+ Add Another Time Window</button></div>
-        <label>How many tables are available during these windows?<select name="table_count"><option selected>1</option><option>2</option><option>3</option><option>4</option></select></label>
-        <label>Maximum guests per table<select name="seats_per_table"><option>4</option><option selected>6</option><option>8</option></select></label>
-
-        <h3 class="form-section-title">3. What should DDD know about the venue?</h3>
-        <label>Food / drink purchase policy<textarea name="purchase_policy" rows="3" placeholder="Example: One food or drink purchase per guest" required></textarea></label>
-        <label>Age or alcohol notes<textarea name="age_policy" rows="3" placeholder="All ages until 9 PM; alcohol served"></textarea></label>
-        <label>Accessibility, parking, noise, or seating notes<textarea name="accessibility" rows="3" placeholder="Accessible entrance, parking, quieter back room, fixed booth seating..."></textarea></label>
-        <label class="check-label"><input type="checkbox" name="approval_required" checked><span>I want to approve each final Event booking before the table is confirmed.</span></label>
-        <label class="check-label"><input type="checkbox" required><span>I confirm this is a public/community venue and agree to the <a href="conduct.html">Code of Conduct</a>.</span></label>
-        <button class="button primary" type="submit">Save My Open Tables</button>
-        <p class="microcopy">Venue details save to your DDD account. New venues are verified before their table windows become active in matching. DDD handles match alerts and structured confirmations without giving Players your private manager contact details.</p>
-        <p class="form-status" role="status" aria-live="polite"></p>
-      </form>
-      <div class="next-step"><strong>When a game is confirmed:</strong><a class="button secondary" href="game-hub.html?role=venue_manager">See the Venue Game Hub</a></div>
-    </div>
-  </section>
-</main>
-
-<footer class="site-footer"><div class="shell footer-grid"><div><strong>Dinner, Dice & Dragons</strong><p>More D&amp;D. More organized game nights. More reasons to come back.</p></div><div><a href="index.html">Home</a> · <a href="join.html#player">Players</a> · <a href="join.html#gm">DMs</a> · <a href="#signup">Venues</a> · <a href="conduct.html">Safety</a></div></div></footer>
-<script src="production-config.js"></script>
-<script src="production-api-client.js"></script>
-<script src="production-session-store.js"></script>
-<script src="production-auth.js"></script>
-<script src="global-auth-ui.js"></script>
-<script src="production-onboarding-adapters.js"></script>
-<script src="venue-window-payloads.js"></script>
-<script src="production-onboarding.js"></script>
-<script src="availability.js"></script>
-<script type="module" src="availability-calendar-init.mjs"></script>
-<script src="forms.js"></script>
+</div></main>
+<footer class="home-footer"><div class="home-shell"><span>Dinner, Dice &amp; Dragons</span><span><a href="play.html">Players</a> · <a href="dm.html">DMs</a> · <a href="conduct.html">Safety</a></span></div></footer>
 </body>
 </html>
