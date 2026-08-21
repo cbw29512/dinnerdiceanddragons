@@ -13,11 +13,11 @@ import {
 } from "./_lib/matching-inputs.mjs";
 import { runMatching } from "./_lib/matching-engine.mjs";
 import { findMyTable, getOpportunity, listOpportunities } from "./_lib/opportunities.mjs";
+import { formAcceptedTableMatch } from "./_lib/matched-event-formation.mjs";
 import {
   cancelMyRegistration,
   decideRegistration,
   decideVenueBooking,
-  formTableMatch,
   getEvent,
   getGameHub,
   listGameHubs,
@@ -186,7 +186,7 @@ async function matching(request, parts) {
   if (parts[1] === "opportunities" && parts[2] && parts[3] === "form" && parts.length === 4) {
     if (request.method !== "POST") return methodNotAllowed(["POST"]);
     await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.TABLE_FORMATION);
-    return json(await formTableMatch(user, parts[2], await readJson(request)));
+    return json(await formAcceptedTableMatch(user, parts[2], await readJson(request)));
   }
   return notFound();
 }
