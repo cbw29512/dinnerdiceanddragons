@@ -10,6 +10,7 @@ const SOURCE_AUTH_ROUTE = "/api/v1/auth/";
 const DEPLOYED_AUTH_ROUTE = "/auth-api/v1/auth/";
 const SUPABASE_MARKERS = ["supabase.co", "sb_publishable_", "SUPABASE_SECRET_KEY"];
 const DEMO_GAME_MARKERS = ["Shadows Over Florence", "The Lighthouse at Blackwater", "Trouble Below the Old Road"];
+const LEGACY_ONBOARDING_LINKS = ["join.html#player", "join.html#gm", "venues.html#signup"];
 const REQUIRED_FILES = [
   "index.html", "play.html", "dm.html", "host.html", "signin.html", "my-ddd.html",
   "notifications.html", "opportunity.html", "game-hub.html",
@@ -94,10 +95,12 @@ async function assertProductionArtifact(deployUrl) {
       if (entry.isDirectory()) { await scan(filePath); continue; }
       if (!TEXT_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) continue;
       const text = await readFile(filePath, "utf8");
-      if (text.includes(OLD_API_ORIGIN)) throw new Error(`Legacy Vercel origin remains in ${path.relative(OUT, filePath)}`);
-      for (const marker of SUPABASE_MARKERS) if (text.includes(marker)) throw new Error(`Supabase production dependency remains in ${path.relative(OUT, filePath)}`);
-      for (const marker of DEMO_GAME_MARKERS) if (text.includes(marker)) throw new Error(`Demo game content remains in production artifact: ${marker} in ${path.relative(OUT, filePath)}`);
-      if (deployUrl && text.includes(OLD_SITE_ORIGIN)) throw new Error(`Legacy GitHub Pages origin remains in ${path.relative(OUT, filePath)}`);
+      const relative = path.relative(OUT, filePath);
+      if (text.includes(OLD_API_ORIGIN)) throw new Error(`Legacy Vercel origin remains in ${relative}`);
+      for (const marker of SUPABASE_MARKERS) if (text.includes(marker)) throw new Error(`Supabase production dependency remains in ${relative}`);
+      for (const marker of DEMO_GAME_MARKERS) if (text.includes(marker)) throw new Error(`Demo game content remains in production artifact: ${marker} in ${relative}`);
+      for (const legacyLink of LEGACY_ONBOARDING_LINKS) if (text.includes(legacyLink)) throw new Error(`Legacy onboarding link remains in ${relative}: ${legacyLink}`);
+      if (deployUrl && text.includes(OLD_SITE_ORIGIN)) throw new Error(`Legacy GitHub Pages origin remains in ${relative}`);
     }
   }
   await scan(OUT);
