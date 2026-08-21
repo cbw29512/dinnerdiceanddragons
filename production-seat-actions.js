@@ -9,6 +9,7 @@
   }
 
   function area(card) {
+    if (card.matches?.("[data-opportunity-actions]")) return card;
     let node = card.querySelector("[data-opportunity-actions]");
     if (!node) {
       node = element("div", "cta-row");
