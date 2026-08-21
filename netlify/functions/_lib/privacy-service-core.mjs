@@ -33,6 +33,9 @@ export function createPrivacyService(repository, clock = () => new Date().toISOS
     try {
       const values = parsePreferenceUpdate(raw);
       const row = await repository.upsertPreferences(userId, { ...values, updated_at: clock() });
+      if (typeof repository.syncMatchingPause === "function") {
+        await repository.syncMatchingPause(userId, values.matching_paused);
+      }
       return Object.freeze(row || values);
     } catch (error) {
       console.error("[DDD Privacy] Unable to save preferences", { error_type: String(error?.name || "Error") });
