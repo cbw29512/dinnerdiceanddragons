@@ -96,8 +96,15 @@ def check_page(page: Path) -> list[str]:
         if kind == "button" and not (attrs.get("id") or attrs.get("class") or any(key.startswith("data-") for key in attrs)): errors.append(f"{page.name}: type=button {descriptor!r} has no JS hook")
     for attrs in parser.button_links:
         if attrs.get("href", "").strip() in {"", "#"}: errors.append(f"{page.name}: button-style link has no destination")
-    for required in PAGE_SCRIPTS.get(page.name, ()):
-        if required not in parser.scripts: errors.append(f"{page.name}: required script missing: {required}")
+    required_scripts = PAGE_SCRIPTS.get(page.name, ())
+    positions: list[int] = []
+    for required in required_scripts:
+        if required not in parser.scripts:
+            errors.append(f"{page.name}: required script missing: {required}")
+        else:
+            positions.append(parser.scripts.index(required))
+    if len(positions) == len(required_scripts) and positions != sorted(positions):
+        errors.append(f"{page.name}: required scripts are not loaded in the declared dependency order")
     return errors
 
 
