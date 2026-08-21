@@ -1,0 +1,76 @@
+name: Privacy Matching Contract
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "*.mjs"
+      - "production-api-client.js"
+      - "production-config.js"
+      - "notifications.*"
+      - "opportunity.*"
+      - "game-hub*"
+      - "netlify/functions/**"
+      - "netlify/database/migrations/**"
+      - "tests/privacy-*"
+      - "e2e/privacy-*"
+      - ".github/workflows/privacy-matching-contract.yml"
+  push:
+    branches: [main]
+    paths:
+      - "*.mjs"
+      - "production-api-client.js"
+      - "production-config.js"
+      - "notifications.*"
+      - "opportunity.*"
+      - "game-hub*"
+      - "netlify/functions/**"
+      - "netlify/database/migrations/**"
+      - "tests/privacy-*"
+      - "e2e/privacy-*"
+      - ".github/workflows/privacy-matching-contract.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  privacy-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "22"
+
+      - name: Check privacy and calendar module syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            echo "Checking $file"
+            node --check "$file"
+          done < <(find . -maxdepth 1 -type f -name '*.mjs' -print0)
+          while IFS= read -r -d '' file; do
+            echo "Checking $file"
+            node --check "$file"
+          done < <(find netlify/functions/_lib -type f -name '*.mjs' -print0)
+          node --check e2e/privacy-three-way.spec.js
+
+      - name: Run privacy matching state tests
+        run: node tests/privacy-matching-tests.mjs
+
+      - name: Run privacy browser API client tests
+        run: node tests/privacy-api-client-tests.js
+
+      - name: Verify direct messaging is not in the public browser boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e game-hub-messages.js
+          ! grep -q 'getHubMessages\|postHubMessage' production-api-client.js
+          ! grep -q 'message-channel-grid\|venue-question-form\|game-hub-messages.js' game-hub.html
+          ! grep -q 'parts\[2\] === "messages"' netlify/functions/api.mjs
