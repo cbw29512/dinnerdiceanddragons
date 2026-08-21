@@ -19,7 +19,7 @@ test("homepage header keeps the primary choices simple", async ({ page }) => {
   const header = page.locator("header");
   await expect(header.getByRole("link", { name: "How it works" })).toBeVisible();
   await expect(header.getByRole("link", { name: "Safety" })).toBeVisible();
-  await expect(header.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "signin.html");
+  await expect(header.getByRole("link", { name: "Sign in", exact: true })).toHaveAttribute("href", "signin.html");
   await expect(header.getByRole("button", { name: "Sign In" })).toHaveCount(0);
 });
 
@@ -47,7 +47,7 @@ test("homepage remains usable at a phone-sized viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/index.html");
 
-  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Play D&D" })).toBeVisible();
   await expect(page.getByRole("link", { name: "DM a Game" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Host Games" })).toBeVisible();
