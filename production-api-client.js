@@ -52,7 +52,6 @@
   const eventPath = (eventId, suffix = "") => `/api/v1/events/${encodeURIComponent(String(eventId || ""))}${suffix}`;
   const opportunityPath = (tableMatchId, suffix = "") => `/api/v1/matching/opportunities/${encodeURIComponent(String(tableMatchId || ""))}${suffix}`;
   const venueWindowPath = (venueId) => `/api/v1/matching/venues/${encodeURIComponent(String(venueId || ""))}/table-windows`;
-  const venueOnboardingPath = (venueId, suffix = "") => `/api/v1/onboarding/venues/${encodeURIComponent(String(venueId || ""))}${suffix}`;
 
   window.DDDProductionAPI = Object.freeze({
     ProductionApiError, configure, isConfigured,
@@ -69,7 +68,6 @@
     putGMOnboarding: (payload) => request("PUT", "/api/v1/onboarding/gm", payload),
     postVenueOnboarding: (payload) => request("POST", "/api/v1/onboarding/venue", payload),
     getManagedVenues: () => request("GET", "/api/v1/onboarding/venues"),
-    putVenueLocationKind: (venueId, locationKind) => request("PUT", venueOnboardingPath(venueId, "/location-kind"), { location_kind: locationKind }),
     getPlayerDemands: () => request("GET", "/api/v1/matching/player-demands"),
     postPlayerDemand: (payload) => request("POST", "/api/v1/matching/player-demands", payload),
     getGMSupplies: () => request("GET", "/api/v1/matching/gm-supplies"),
