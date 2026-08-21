@@ -25,7 +25,7 @@ test("homepage presents four obvious first actions", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Play D&D" })).toHaveAttribute("href", "play.html");
   await expect(page.getByRole("link", { name: "DM a Game" })).toHaveAttribute("href", "dm.html");
   await expect(page.getByRole("link", { name: "Host Games" })).toHaveAttribute("href", "host.html");
-  await expect(page.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "signin.html");
+  await expect(page.getByRole("link", { name: "Sign in", exact: true })).toHaveAttribute("href", "signin.html");
 });
 
 test("homepage consumes an account confirmation link and continues to My DDD", async ({ page }) => {
@@ -44,7 +44,7 @@ test("homepage consumes an account confirmation link and continues to My DDD", a
   });
 
   await page.goto("/index.html#confirmation_token=one-time-token");
-  await expect(page).toHaveURL(/my-ddd\.html\?confirmed=1/);
+  await expect(page).toHaveURL(/my-ddd\.html$/);
   expect(confirmationBody).toEqual({ token: "one-time-token" });
 });
 
@@ -90,7 +90,7 @@ test("DM and Venue entry pages use the same guided language", async ({ page }) =
   await expect(page.getByRole("heading", { name: "Tell us what you can run." })).toBeVisible();
   await expect(page.getByText("Step 1 of 5")).toBeVisible();
   await page.goto("/host.html");
-  await expect(page.getByRole("heading", { name: "Tell us when you have tables open." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tell us when your public venue has tables open." })).toBeVisible();
   await expect(page.getByText(/Step 1 of/)).toBeVisible();
 });
 
@@ -141,9 +141,14 @@ test("returning Venue Manager is not pushed into duplicate Venue creation", asyn
       ddd_user_id: "venue-user", email: "venue@example.test", status: "active", roles: ["venue_manager"]
     }) });
   });
+  await page.route("**/api/v1/onboarding/venues", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{
+      id: "venue-1", name: "Returning Test Cafe", city: "Florence", state_region: "SC", verified: true
+    }]) });
+  });
 
   await page.goto("/host.html");
-  await expect(page.getByRole("heading", { name: "Your account already manages a Venue in DDD." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Choose a Venue calendar to change." })).toBeVisible();
   await expect(page.getByRole("link", { name: "Add Another Venue" })).toHaveAttribute("href", "host.html?new=1");
   await expect(page.locator("#venue-start-form")).toBeHidden();
 });
@@ -159,6 +164,7 @@ test("My DDD answers Player, DM, alerts, and game-night status", async ({ page }
     if (url.pathname === "/api/v1/onboarding/gm") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(gm) });
     if (url.pathname === "/api/v1/notifications") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{ id: "n1", state: "pending" }]) });
     if (url.pathname === "/api/v1/game-hubs") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{ event_id: "e1" }]) });
+    if (url.pathname === "/api/v1/matching/opportunities") return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
     if (url.pathname === "/api/v1/notification-preferences") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(DEFAULT_PREFS) });
     return route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not found" }) });
   });
@@ -180,7 +186,7 @@ test("My DDD pause sends a complete preference update", async ({ page }) => {
     if (url.pathname === "/api/v1/onboarding/player" || url.pathname === "/api/v1/onboarding/gm") {
       return route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not configured" }) });
     }
-    if (url.pathname === "/api/v1/notifications" || url.pathname === "/api/v1/game-hubs") {
+    if (url.pathname === "/api/v1/notifications" || url.pathname === "/api/v1/game-hubs" || url.pathname === "/api/v1/matching/opportunities") {
       return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
     }
     if (url.pathname === "/api/v1/notification-preferences" && method === "GET") {
