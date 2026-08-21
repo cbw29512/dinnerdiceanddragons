@@ -61,12 +61,12 @@ export function createPrivacyService(repository, clock = () => new Date().toISOS
     }
   }
 
-  async function respond(userId, matchId, decision) {
+  async function respond(userId, matchId, role, decision) {
     try {
-      const current = await repository.findResponse(userId, matchId);
+      const current = await repository.findResponse(userId, matchId, role);
       if (!current) throw Object.assign(new Error("Opportunity response not found."), { status: 404 });
       const next = applyUserDecision(current, decision, clock());
-      await repository.updateResponse(current.id, userId, next);
+      await repository.updateResponse(current.id, userId, role, next);
       const match = await repository.findMatch(matchId);
       if (!match) throw Object.assign(new Error("Table Match not found."), { status: 404 });
       const responses = await repository.listResponses(matchId);
@@ -76,7 +76,7 @@ export function createPrivacyService(repository, clock = () => new Date().toISOS
         tableStatus = "forming";
         await repository.updateMatchStatus(matchId, tableStatus, clock());
       }
-      return Object.freeze({ decision: next.decision, progress, table_status: tableStatus });
+      return Object.freeze({ role, decision: next.decision, progress, table_status: tableStatus });
     } catch (error) {
       console.error("[DDD Privacy] Unable to respond to opportunity", { error_type: String(error?.name || "Error") });
       throw error;
