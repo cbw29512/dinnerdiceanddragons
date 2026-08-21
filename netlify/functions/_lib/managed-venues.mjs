@@ -18,6 +18,7 @@ export async function listManagedVenues(user) {
       results.push({
         id: venue.id, name: venue.name, address_line1: venue.address_line1,
         city: venue.city, state_region: venue.state_region, postal_code: venue.postal_code,
+        location_kind: venue.location_kind || "business",
         verified: Boolean(venue.verified), active: Boolean(venue.active),
         manager_role: manager.role, manager_verified: Boolean(manager.verified_at)
       });
