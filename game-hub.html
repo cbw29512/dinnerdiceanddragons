@@ -10,6 +10,7 @@
   <meta name="description" content="Private live table logistics for confirmed Dinner, Dice & Dragons games.">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="global-auth-ui.css">
+  <link rel="stylesheet" href="notifications.css">
   <link rel="stylesheet" href="game-hub.css">
 </head>
 <body>
@@ -17,14 +18,14 @@
 <header class="site-header"><div class="shell nav-wrap">
   <a class="brand" href="index.html"><span aria-hidden="true">🎲</span><span>Dinner, Dice &amp; Dragons</span></a>
   <nav aria-label="Primary navigation">
-    <a href="index.html">Home</a><a href="join.html">Play or DM</a><a href="venues.html">Venues</a><a href="conduct.html">Safety</a>
+    <a href="index.html">Home</a><a href="join.html">Play or DM</a><a href="venues.html">Venues</a><a href="notifications.html">Notifications</a><a href="conduct.html">Safety</a>
     <button id="ddd-global-account-button" class="ddd-account-trigger" type="button" aria-haspopup="dialog" aria-controls="ddd-global-account-dialog">Sign In</button>
   </nav>
 </div></header>
 
 <main id="main" tabindex="-1">
 <section class="hero hub-app-hero"><div class="shell hero-grid">
-  <div><p class="eyebrow">PRIVATE LIVE GAME HUB</p><h1 id="hub-title">Your game nights, in one place.</h1><p class="lede" id="hub-lede">Confirmed Players, the Dungeon Master, and the verified Venue see only the logistics and communication intended for their role.</p><div id="hub-role-switch" class="role-switch" role="group" aria-label="Game Hub role view" hidden></div></div>
+  <div><p class="eyebrow">PRIVATE LIVE GAME HUB</p><h1 id="hub-title">Your game nights, in one place.</h1><p class="lede" id="hub-lede">Confirmed Players, the Dungeon Master, and the verified Venue see the logistics and structured actions intended for their role.</p><div id="hub-role-switch" class="role-switch" role="group" aria-label="Game Hub role view" hidden></div></div>
   <aside class="hero-card" aria-labelledby="hub-summary-heading"><p class="eyebrow" id="hub-summary-heading">CURRENT TABLE</p><div class="hub-metrics"><div><strong id="hub-status-value">—</strong><span>Status</span></div><div><strong id="hub-headcount">—</strong><span>Expected guests</span></div><div><strong id="hub-venue">—</strong><span>Venue</span></div><div><strong id="hub-time">—</strong><span>Start</span></div></div></aside>
 </div></section>
 
@@ -37,13 +38,15 @@
   <section id="hub-content" hidden>
     <div class="panel hub-summary" aria-labelledby="event-title"><div><p class="eyebrow" id="event-system">GAME</p><h2 id="event-title">Game Hub</h2><p id="event-description" class="microcopy"></p><p><strong id="event-venue-name"></strong><br><span id="event-venue-locality" class="microcopy"></span></p><p id="event-schedule" class="microcopy"></p></div><div><h3>Table expectations</h3><dl id="event-expectations" class="hub-definition-list"></dl></div></div>
 
+    <section class="panel" aria-labelledby="announcement-title"><p class="eyebrow">TABLE INFORMATION</p><h2 id="announcement-title">DM announcements</h2><div id="hub-announcements" aria-live="polite"></div><form id="hub-announcement-form" class="quick-message" hidden><label>Announcement<textarea name="body" rows="3" maxlength="2000" placeholder="Example: Bring a level 3 character." required></textarea></label><button class="button primary" type="submit">Post Announcement</button><p class="microcopy">Announcements are one-way table information. They do not open a conversation channel.</p></form></section>
+
     <section id="gm-view" class="hub-view" hidden aria-labelledby="gm-view-title"><h2 id="gm-view-title">Dungeon Master controls</h2><div class="hub-columns"><div class="panel"><h3>Player commitments</h3><div id="gm-registration-queue"></div></div><div class="panel"><h3>Venue booking</h3><div id="gm-booking-summary"></div></div></div></section>
 
-    <section id="player-view" class="hub-view" hidden aria-labelledby="player-view-title"><h2 id="player-view-title">Player view</h2><div class="hub-columns"><div class="panel"><h3>Your seat</h3><p id="player-seat-summary"></p><button id="cancel-seat" class="button secondary" type="button">Cancel My Seat</button></div><div class="panel"><h3>Venue question</h3><form id="venue-question-form" class="quick-message"><label>Category<select name="category" required><option value="accessibility">Accessibility</option><option value="food_allergies">Food / allergies</option><option value="parking">Parking</option><option value="seating">Seating</option><option value="venue_policy">Venue policy</option><option value="other">Other</option></select></label><label>Question<textarea name="body" rows="3" maxlength="4000" required></textarea></label><button class="button primary" type="submit">Ask Venue</button></form></div></div></section>
+    <section id="player-view" class="hub-view" hidden aria-labelledby="player-view-title"><h2 id="player-view-title">Player view</h2><div class="hub-columns"><div class="panel"><h3>Your seat</h3><p id="player-seat-summary"></p><button id="cancel-seat" class="button secondary" type="button">Cancel My Seat</button></div><div class="panel"><h3>Venue information</h3><p>The public Venue address and Event schedule are listed above. Accessibility and table expectations are listed with the Event information.</p></div></div></section>
 
-    <section id="venue-view" class="hub-view" hidden aria-labelledby="venue-view-title"><h2 id="venue-view-title">Venue Manager view</h2><div class="hub-columns"><div class="panel"><h3>Expected traffic</h3><p id="venue-headcount-summary"></p></div><div class="panel"><h3>Booking decision</h3><label for="venue-booking-message">Operational note</label><textarea id="venue-booking-message" rows="3" maxlength="2000" placeholder="Required when asking the DM a booking question."></textarea><div id="venue-booking-actions" class="cta-row"></div></div></div></section>
+    <section id="venue-view" class="hub-view" hidden aria-labelledby="venue-view-title"><h2 id="venue-view-title">Venue Manager view</h2><div class="hub-columns"><div class="panel"><h3>Expected traffic</h3><p id="venue-headcount-summary"></p></div><div class="panel"><h3>Booking decision</h3><p class="microcopy">Approve, decline, or cancel through DDD. Participant contact details are not shared.</p><div id="venue-booking-actions" class="cta-row"></div></div></div></section>
 
-    <section class="section hub-communication" aria-labelledby="communication-title"><div class="section-heading"><p class="eyebrow">TABLE COMMUNICATION</p><h2 id="communication-title">Live messages</h2><p>Channels are server-scoped by your role. Private Player conversations are not shared with other Players or the Venue.</p></div><div id="message-channel-grid" class="hub-message-grid"></div><button id="load-older-messages" class="button secondary" type="button" hidden>Load Older Messages</button></section>
+    <section class="panel" aria-labelledby="privacy-tools-title"><p class="eyebrow">SAFETY &amp; PRIVACY</p><h2 id="privacy-tools-title">Need help with the table?</h2><p>DDD does not provide direct user-to-user messaging. Use the safety process for problems that need attention.</p><div class="cta-row"><a class="button secondary" href="conduct.html">Report a Problem</a><a class="button secondary" href="notifications.html">My Notifications</a></div></section>
   </section>
 </div></section>
 </main>
@@ -54,8 +57,9 @@
 <script src="production-session-store.js"></script>
 <script src="production-auth.js"></script>
 <script src="global-auth-ui.js"></script>
+<script src="global-notifications-ui.js"></script>
 <script src="game-hub-core.js"></script>
-<script src="game-hub-messages.js"></script>
+<script src="game-hub-announcements.js"></script>
 <script src="game-hub-actions.js"></script>
 <script src="game-hub-role-views.js"></script>
 <script src="game-hub-render.js"></script>
