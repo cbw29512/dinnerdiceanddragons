@@ -42,6 +42,17 @@
     form().elements.password.autocomplete = signingIn ? "current-password" : "new-password";
     document.querySelector('[data-action="account"]').textContent = signingIn ? "Sign In & Continue" : "Create Account & Continue";
   }
+  function setLocationKind() {
+    try {
+      const selected = form().querySelector('[name="location_kind"]:checked');
+      document.querySelectorAll('[name="location_kind"]').forEach((input) => {
+        input.closest("label")?.classList.toggle("is-selected", input === selected);
+      });
+      const residence = selected?.value === "private_residence";
+      const purchase = form().elements.purchase_policy;
+      if (residence && purchase) purchase.value = "No minimum purchase";
+    } catch (error) { log("Unable to update location type controls", error); }
+  }
   function valid(name, message, statusId) {
     const field = form().elements[name];
     if (field?.checkValidity()) return true;
@@ -56,20 +67,20 @@
       document.querySelector(".start-progress").hidden = true;
       const ready = byId("venue-ready");
       ready.hidden = false;
-      ready.querySelector(".eyebrow").textContent = "VENUE MANAGER";
-      ready.querySelector("h2").textContent = "Your account already manages a Venue in DDD.";
-      ready.querySelector("p:not(.eyebrow)").textContent = "Open My DDD for your game-night status, or explicitly add another location if you manage more than one Venue.";
+      ready.querySelector(".eyebrow").textContent = "HOST ACCOUNT";
+      ready.querySelector("h2").textContent = "Your account already manages a game location in DDD.";
+      ready.querySelector("p:not(.eyebrow)").textContent = "Open My DDD for your game-night status, or explicitly add another location if you manage more than one place.";
       const actions = ready.querySelector(".step-actions");
       if (!actions.querySelector('[data-add-another-venue]')) {
         const add = document.createElement("a");
         add.className = "button secondary";
         add.href = "host.html?new=1";
         add.dataset.addAnotherVenue = "true";
-        add.textContent = "Add Another Venue";
+        add.textContent = "Add Another Location";
         actions.append(add);
       }
     } catch (error) {
-      log("Unable to show returning Venue manager state", error);
+      log("Unable to show returning host state", error);
       throw error;
     }
   }
@@ -90,12 +101,12 @@
     form().elements.contact_name.disabled = false;
     form().elements.contact_name.closest("label").hidden = false;
     if (form().elements.contact_name.value.trim()) showStep(2);
-    else { announce("auth-status", "Signed in. Add the manager name for this Venue, then continue.", true); form().elements.contact_name.focus(); }
+    else { announce("auth-status", "Signed in. Add the host or manager name for this location, then continue.", true); form().elements.contact_name.focus(); }
   }
   async function account() {
     try {
-      if (signedIn) { if (valid("contact_name", "Enter the Venue manager name.", "auth-status")) showStep(2); return; }
-      if (authMode === "signup" && !valid("contact_name", "Enter the Venue manager name.", "auth-status")) return;
+      if (signedIn) { if (valid("contact_name", "Enter the host or manager name.", "auth-status")) showStep(2); return; }
+      if (authMode === "signup" && !valid("contact_name", "Enter the host or manager name.", "auth-status")) return;
       if (!valid("email", "Enter a valid email address.", "auth-status")) return;
       if (!valid("password", "Use a password with at least 8 characters.", "auth-status")) return;
       announce("auth-status", authMode === "signin" ? "Signing in…" : "Creating your account…", true);
@@ -107,23 +118,34 @@
   }
   function venueReady() {
     const fields = [
-      ["business_name", "Enter the Venue name."], ["address", "Enter the public street address."],
+      ["business_name", "Enter a name for this game location."], ["address", "Enter the street address."],
       ["city", "Enter the city."], ["state", "Enter a two-letter state code."], ["postal_code", "Enter a five-digit ZIP code."]
     ];
+    if (!form().querySelector('[name="location_kind"]:checked')) {
+      announce("venue-details-status", "Choose whether this is a business/public place or a private residence.");
+      return false;
+    }
     for (const [name, message] of fields) if (!valid(name, message, "venue-details-status")) return false;
-    announce("venue-details-status", "Venue location looks good.", true);
+    const residence = form().elements.location_kind.value === "private_residence";
+    announce("venue-details-status", residence
+      ? "Private residence selected. The street address stays hidden until GAME ON."
+      : "Public/business location looks good.", true);
     return true;
   }
   function availabilityReady() {
     if (form().querySelectorAll('[name="availability_day[]"]').length) return true;
-    announce("availability-status", "Choose at least one time when the Venue can host a game."); return false;
+    announce("availability-status", "Choose at least one time when this location can host a game."); return false;
   }
   function renderReview() {
     const raw = values();
+    const residence = raw.location_kind === "private_residence";
     const rows = [
-      ["Venue", raw.business_name], ["Location", `${raw.address}, ${raw.city}, ${raw.state} ${raw.postal_code}`],
-      ["Available", (raw.availability_day || []).join(", ")], ["Capacity", `${raw.table_count} table(s) · ${raw.seats_per_table} seats each`],
-      ["Booking", raw.approval_required ? "Venue approval required" : "Automatic after match"]
+      ["Location type", residence ? "Private residence" : "Business / public place"],
+      ["Location", raw.business_name],
+      ["Address", residence ? `${raw.city}, ${raw.state} · exact street shown after GAME ON` : `${raw.address}, ${raw.city}, ${raw.state} ${raw.postal_code}`],
+      ["Available", (raw.availability_day || []).join(", ")],
+      ["Capacity", `${raw.table_count} table(s) · ${raw.seats_per_table} seats each`],
+      ["Booking", "Calendar times are pre-approved"]
     ];
     const review = byId("venue-review"); review.replaceChildren();
     rows.forEach(([label, value]) => {
@@ -136,16 +158,26 @@
   async function save(event) {
     event.preventDefault();
     try {
-      if (!byId("conduct-check").checked) { byId("conduct-check").focus(); return announce("save-status", "Please confirm the Code of Conduct and Venue authority first."); }
-      announce("save-status", "Saving your Venue and table availability…", true);
+      if (!byId("conduct-check").checked) { byId("conduct-check").focus(); return announce("save-status", "Please confirm the Code of Conduct and your authority to offer this location."); }
+      announce("save-status", "Saving your game location and calendar…", true);
       const saved = await window.DDDProductionOnboarding.save("Venue", values());
       form().hidden = true; document.querySelector(".start-progress").hidden = true; byId("venue-ready").hidden = false;
-      if (!saved.pendingVerification) byId("venue-ready").querySelector("h2").textContent = "Your Venue is ready for DDD table matching.";
-    } catch (error) { log("Unable to save Venue setup", error); announce("save-status", error?.message || "We could not submit your Venue."); }
+      const residence = form().elements.location_kind.value === "private_residence";
+      if (residence || !saved.pendingVerification) {
+        byId("venue-ready").querySelector("h2").textContent = residence
+          ? "Your private residence is ready for DDD matching."
+          : "Your game location is ready for DDD matching.";
+        byId("venue-ready").querySelector("p:not(.eyebrow)").textContent = residence
+          ? "Your calendar is active. Matching uses your ZIP area; the exact street address remains private until participants accept and GAME ON is confirmed."
+          : "Your calendar is active and DDD can use those openings to build tables.";
+      }
+    } catch (error) { log("Unable to save game location", error); announce("save-status", error?.message || "We could not save this game location."); }
   }
   async function init() {
     try {
       document.querySelectorAll("[data-auth-mode]").forEach((button) => button.addEventListener("click", () => setAuthMode(button.dataset.authMode)));
+      document.querySelectorAll('[name="location_kind"]').forEach((input) => input.addEventListener("change", setLocationKind));
+      setLocationKind();
       document.querySelector('[data-action="account"]').addEventListener("click", () => void account());
       document.querySelectorAll(".back-button").forEach((button) => button.addEventListener("click", () => showStep(step - 1)));
       document.querySelectorAll(".next-button:not([data-action])").forEach((button) => button.addEventListener("click", () => {
@@ -158,7 +190,7 @@
       await window.DDDProductionAuth.init();
       const session = await window.DDDProductionAuth.getSession();
       if (session) await afterAuth(session);
-    } catch (error) { log("Unable to initialize Venue setup", error); announce("auth-status", error?.message || "Account service is temporarily unavailable."); }
+    } catch (error) { log("Unable to initialize game-location setup", error); announce("auth-status", error?.message || "Account service is temporarily unavailable."); }
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true }); else void init();
