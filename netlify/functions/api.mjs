@@ -39,6 +39,7 @@ import {
 import { handleGameReminders } from "./_lib/reminder-route-handlers.mjs";
 import { enforceRateLimit, RATE_LIMIT_SCOPES } from "./_lib/rate-limit.mjs";
 import { SupabaseRestError } from "./_lib/supabase-rest.mjs";
+import { setVenueLocationKind } from "./_lib/venue-location-kind.mjs";
 import { verifyVenueClaim } from "./_lib/venue-verification.mjs";
 
 function activeUser(request) { return currentUser(request, { active: true }); }
@@ -125,6 +126,12 @@ async function onboarding(request, parts) {
   if (kind === "venues" && parts.length === 2) {
     if (request.method !== "GET") return methodNotAllowed(["GET"]);
     return json(await listManagedVenues(user));
+  }
+  if (kind === "venues" && parts[2] && parts[3] === "location-kind" && parts.length === 4) {
+    if (request.method !== "PUT") return methodNotAllowed(["PUT"]);
+    await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.ONBOARDING_MUTATION);
+    const payload = await readJson(request);
+    return json(await setVenueLocationKind(user, parts[2], payload?.location_kind));
   }
   return notFound();
 }
