@@ -7,7 +7,7 @@
 
   function configureEditUi(form, conductCheck) {
     try {
-      const tableSize = form.elements.minimum_players?.closest(".distance-choices");
+      const tableSize = form.elements.player_count?.closest("label");
       if (tableSize) tableSize.hidden = true;
       const conduct = conductCheck?.closest("label");
       if (conduct) conduct.hidden = true;
@@ -22,8 +22,8 @@
   function renderReview(root, raw, editMode) {
     try {
       const rows = editMode
-        ? [["DM settings", "Game, format, style, and table sizes unchanged"], ["Available", (raw.availability_day || []).join(", ")], ["Travel", `${raw.radius} miles from ${raw.postal_code}`]]
-        : [["Game", `${raw.gm_system?.[0]} · ${raw.gm_format?.[0]}`], ["Available", (raw.availability_day || []).join(", ")], ["Travel", `${raw.radius} miles from ${raw.postal_code}`], ["Table size", `${raw.minimum_players}–${raw.maximum_players} Players`]];
+        ? [["DM settings", "Game, format, style, and Player count unchanged"], ["Available", (raw.availability_day || []).join(", ")], ["Travel", `${raw.radius} miles from ${raw.postal_code}`]]
+        : [["Game", `${raw.gm_system?.[0]} · ${raw.gm_format?.[0]}`], ["Available", (raw.availability_day || []).join(", ")], ["Travel", `${raw.radius} miles from ${raw.postal_code}`], ["Player seats", `${raw.player_count} Players`]];
       root.replaceChildren();
       for (const [label, value] of rows) {
         const row = document.createElement("div");

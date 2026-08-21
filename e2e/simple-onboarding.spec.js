@@ -94,6 +94,15 @@ test("DM and Venue entry pages use the same guided language", async ({ page }) =
   await expect(page.getByText(/Step 1 of/)).toBeVisible();
 });
 
+test("DM Player seat count starts at one and has no arbitrary product maximum", async ({ page }) => {
+  await page.goto("/dm.html");
+  const playerCount = page.locator('input[name="player_count"]');
+  await expect(playerCount).toHaveAttribute("type", "number");
+  await expect(playerCount).toHaveAttribute("min", "1");
+  await expect(playerCount).not.toHaveAttribute("max", /.+/);
+  await expect(playerCount).toHaveAttribute("step", "1");
+});
+
 test("returning DM can edit availability without reopening advanced setup", async ({ page }) => {
   await installAuthenticatedSession(page, { email: "returningdm@example.test" });
   const gm = {
@@ -130,7 +139,7 @@ test("returning DM can edit availability without reopening advanced setup", asyn
   await page.goto("/dm.html?edit=1");
   await expect(page.getByRole("heading", { name: "When can you DM?" })).toBeVisible();
   await expect(page.getByText("Update 1 of 3")).toBeVisible();
-  await expect(page.getByLabel("Minimum Players")).toBeHidden();
+  await expect(page.locator('input[name="player_count"]')).toBeHidden();
   await expect(page.locator('[name="availability_day[]"]')).toHaveValue("Saturday");
 });
 

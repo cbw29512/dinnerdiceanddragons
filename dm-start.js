@@ -23,6 +23,10 @@
       const key = array ? rawKey.slice(0, -2) : rawKey;
       if (array) (output[key] ||= []).push(value); else output[key] = value;
     }
+    if (output.player_count !== undefined) {
+      output.minimum_players = output.player_count;
+      output.maximum_players = output.player_count;
+    }
     return output;
   }
   function showReady() {
@@ -93,14 +97,18 @@
     }
     zip.setCustomValidity("");
     if (editMode) { announce("table-status", "Travel area looks good.", true); return true; }
-    const minimum = Number(form().elements.minimum_players.value);
-    const maximum = Number(form().elements.maximum_players.value);
-    if (maximum < minimum) {
-      form().elements.maximum_players.focus();
-      announce("table-status", "Maximum Players must be at least the minimum Player count.");
+    const playerCount = form().elements.player_count;
+    const count = Number(playerCount.value);
+    if (!Number.isInteger(count) || count < 1) {
+      playerCount.setCustomValidity("Enter at least 1 Player.");
+      playerCount.setAttribute("aria-invalid", "true");
+      playerCount.focus();
+      announce("table-status", "Enter a whole number of Players, starting at 1.");
       return false;
     }
-    announce("table-status", "Table size and travel area look good.", true);
+    playerCount.setCustomValidity("");
+    playerCount.removeAttribute("aria-invalid");
+    announce("table-status", "Player count and travel area look good.", true);
     return true;
   }
   async function save(event) {

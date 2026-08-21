@@ -130,8 +130,8 @@ export async function createGMSupply(user, payload) {
   await requireRole(user.id, "gm");
   const profile = await gmProfile(user.id);
   const system = await activeGameSystem(payload?.system_slug);
-  const minimum = asInteger(payload.minimum_players, "minimum_players", { min: 1, max: 20 });
-  const maximum = asInteger(payload.maximum_players, "maximum_players", { min: 1, max: 20 });
+  const minimum = asInteger(payload.minimum_players, "minimum_players", { min: 1 });
+  const maximum = asInteger(payload.maximum_players, "maximum_players", { min: 1 });
   if (maximum < minimum) throw new SupabaseRestError("maximum_players cannot be below minimum_players.", 422);
   const id = crypto.randomUUID();
   const status = await matchingSignalStatus(user.id);

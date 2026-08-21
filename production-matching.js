@@ -16,8 +16,8 @@
 
   function asPositiveInteger(value, fieldName) {
     const parsed = Number(value);
-    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 20) {
-      throw new ProductionMatchingError(`${fieldName} must be between 1 and 20.`);
+    if (!Number.isSafeInteger(parsed) || parsed < 1) {
+      throw new ProductionMatchingError(`${fieldName} must be a whole number of 1 or more.`);
     }
     return parsed;
   }
@@ -74,8 +74,9 @@
   }
 
   function gmPayloads(mapped, rawValues) {
-    const minimumPlayers = asPositiveInteger(rawValues.minimum_players, "Minimum Players");
-    const maximumPlayers = asPositiveInteger(rawValues.maximum_players, "Maximum Players");
+    const requestedPlayers = rawValues.player_count;
+    const minimumPlayers = asPositiveInteger(requestedPlayers ?? rawValues.minimum_players, "Player count");
+    const maximumPlayers = asPositiveInteger(requestedPlayers ?? rawValues.maximum_players, "Player count");
     if (maximumPlayers < minimumPlayers) {
       throw new ProductionMatchingError("Maximum Players cannot be below Minimum Players.");
     }
