@@ -1,6 +1,5 @@
 (() => {
   "use strict";
-
   let step = 1;
   let authMode = "signup";
   let signedIn = false;
@@ -11,14 +10,12 @@
   const form = () => document.getElementById("dm-start-form");
   const byId = (id) => document.getElementById(id);
   const log = (message, error) => console.error(`[DDD DM Start] ${message}`, error);
-
   function announce(id, message, success = false) {
     const node = byId(id);
     if (!node) return;
     node.className = `form-status ${success ? "success-message" : "error-message"}`;
     node.textContent = message;
   }
-
   function values() {
     const output = {};
     for (const [rawKey, value] of new FormData(form()).entries()) {
@@ -28,11 +25,9 @@
     }
     return output;
   }
-
   function showReady() {
     window.DDDDMStartSave.showReady(form(), document.querySelector(".start-progress"), byId("dm-ready"));
   }
-
   function showStep(next) {
     try {
       step = Math.max(editMode ? 3 : 1, Math.min(5, next));
@@ -43,18 +38,15 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) { log("Unable to change DM step", error); }
   }
-
   function fieldReady(name, message) {
     const result = window.DDDDMStartAccount.valid(form(), name, message);
     if (!result.ok) announce("auth-status", result.message);
     return result.ok;
   }
-
   function setAuthMode(mode) {
     authMode = mode;
     window.DDDDMStartAccount.setMode(form(), mode);
   }
-
   async function afterAuth(session) {
     signedIn = true;
     window.DDDDMStartAccount.lockSignedIn(form(), session);
@@ -72,13 +64,9 @@
     announce("auth-status", "Signed in. Add the display name Players should see, then continue.", true);
     form().elements.display_name.focus();
   }
-
   async function account() {
     try {
-      if (signedIn) {
-        if (fieldReady("display_name", "Enter the name Players should see.")) showStep(2);
-        return;
-      }
+      if (signedIn) { if (fieldReady("display_name", "Enter the name Players should see.")) showStep(2); return; }
       announce("auth-status", authMode === "signin" ? "Signing in…" : "Creating your account…", true);
       const result = await window.DDDDMStartAccount.authenticate(form(), authMode);
       if (result.error) return announce("auth-status", result.error);
@@ -89,13 +77,11 @@
       announce("auth-status", error?.message || "We could not complete the account step.");
     }
   }
-
   function availabilityReady() {
     if (form().querySelectorAll('[name="availability_day[]"]').length) return true;
     announce("availability-status", "Choose at least one time when you can DM.");
     return false;
   }
-
   function tableReady() {
     const zip = form().elements.postal_code;
     if (!/^\d{5}$/.test(zip.value.trim())) {
@@ -117,14 +103,10 @@
     announce("table-status", "Table size and travel area look good.", true);
     return true;
   }
-
   async function save(event) {
     event.preventDefault();
     try {
-      if (!editMode && !byId("conduct-check").checked) {
-        byId("conduct-check").focus();
-        return announce("save-status", "Please agree to the Code of Conduct first.");
-      }
+      if (!editMode && !byId("conduct-check").checked) { byId("conduct-check").focus(); return announce("save-status", "Please agree to the Code of Conduct first."); }
       announce("save-status", editMode ? "Updating your DM availability…" : "Saving your DM availability and looking for a table…", true);
       const saved = await window.DDDDMStartSave.persist({ editMode, existingProfile, existingSupplies, values: values() });
       if (saved?.matchingError) return announce("save-status", `Your DM profile saved, but table search could not start: ${saved.matchingError.message}`);
@@ -134,7 +116,6 @@
       announce("save-status", error?.message || "We could not save your DM setup.");
     }
   }
-
   async function init() {
     try {
       document.querySelectorAll("[data-auth-mode]").forEach((button) => button.addEventListener("click", () => setAuthMode(button.dataset.authMode)));
@@ -155,7 +136,6 @@
       announce("auth-status", error?.message || "Account service is temporarily unavailable.");
     }
   }
-
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
   else void init();
 })();
