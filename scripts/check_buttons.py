@@ -35,7 +35,9 @@ PAGE_SCRIPTS = {
     "game-hub.html": ("production-auth.js", "game-hub-core.js", "game-hub-actions.js", "game-hub-render.js", "game-hub.js"),
 }
 SOURCE_WIRING = {
-    "production-auth.js": ("confirmation_token", 'credentials: "same-origin"', "DDDProductionAPI.configure"),
+    "production-auth.js": ("confirmation_token", 'credentials: "same-origin"', "DDDProductionAPI.configure", "didConfirmEmail"),
+    "auth-confirm.js": ("DDDProductionAuth.didConfirmEmail", "signin.html?confirmed=1"),
+    "signin.js": ('params.get("confirmed") === "1"', "Email confirmed. Sign in to continue."),
     "availability-calendar-init.mjs": ("AvailabilityCalendar", "enhanceAvailabilityPresets", ".availability-builder"),
     "availability-presets.mjs": ("Weeknights 6–10 PM", "Saturday 6–10 PM", "calendar.addBlock"),
     "player-start-account.js": ("DDDProductionAuth.signIn", "DDDProductionAuth.signUp", "lockSignedIn"),
