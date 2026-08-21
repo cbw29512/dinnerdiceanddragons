@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Build Your Matched RPG Table | Dinner, Dice &amp; Dragons</title>
   <meta name="description" content="Dungeon Masters can turn a verified three-way Table Match into the real scheduled Event Players and venues can confirm.">
   <link rel="stylesheet" href="styles.css">
@@ -16,10 +17,9 @@
   <div class="shell nav-wrap">
     <a class="brand" href="index.html"><span aria-hidden="true">🎲</span><span>Dinner, Dice &amp; Dragons</span></a>
     <nav aria-label="Primary navigation">
-      <a href="index.html">Home</a>
-      <a href="join.html#player">Players</a>
-      <a aria-current="page" href="join.html#gm">DMs</a>
-      <a href="venues.html">Venues</a>
+      <a href="my-ddd.html">My DDD</a>
+      <a href="notifications.html">My Alerts</a>
+      <a href="game-hub.html">Game Nights</a>
       <a href="conduct.html">Safety</a>
       <button id="ddd-global-account-button" class="ddd-account-trigger" type="button" aria-haspopup="dialog" aria-controls="ddd-global-account-dialog">Sign In</button>
     </nav>
@@ -33,7 +33,7 @@
         <p class="eyebrow">FOR DUNGEON MASTERS · FORM THE EVENT</p>
         <h1>Turn this matched Table into the game night.</h1>
         <p class="lede">The game system, time, venue, and Player capacity already passed hard-fit matching. Add the game pitch and table expectations, then create the real Event.</p>
-        <div class="cta-row"><a class="button secondary" href="join.html#gm">← Back to My Matches</a></div>
+        <div class="cta-row"><a class="button secondary" href="notifications.html">← Back to My Alerts</a></div>
       </div>
       <aside class="hero-card" aria-labelledby="selected-match-title">
         <p class="eyebrow">MATCHED GAME NIGHT</p>
@@ -62,7 +62,7 @@
         <label>Venue<input id="game-venue" readonly required></label>
         <label>Minimum Players<input id="min-players" readonly required></label>
         <label>Maximum Player seats<input id="max-players" readonly required></label>
-        <p class="microcopy">These facts come from the verified Table Match and cannot be changed here. Return to your matches if you need a different combination.</p>
+        <p class="microcopy">These facts come from the verified Table Match and cannot be changed here. Return to your alerts if you need a different combination.</p>
 
         <h3 class="form-section-title">3. Commitment rules</h3>
         <label>Expected sessions<input type="number" min="1" max="52" name="expected_sessions" value="1" required></label>
@@ -84,13 +84,13 @@
         <p class="eyebrow">EVENT CREATED</p>
         <h2 id="game-created-title">The Table can move toward confirmation.</h2>
         <p id="game-created-copy">Matched Players can now request seats and the Venue can review its booking request.</p>
-        <div class="cta-row"><a class="button primary" id="game-hub-link" href="game-hub.html">Open Game Hub</a><a class="button secondary" href="join.html#gm">Back to My Matches</a></div>
+        <div class="cta-row"><a class="button primary" id="game-hub-link" href="game-hub.html">Open Game Hub</a><a class="button secondary" href="notifications.html">Back to My Alerts</a></div>
       </section>
     </div>
   </section>
 </main>
 
-<footer class="site-footer"><div class="shell footer-grid"><div><strong>Dinner, Dice & Dragons</strong><p>Find the fit. Form the Event. Confirm the group. Play.</p></div><div><a href="index.html">Home</a> · <a href="join.html#player">Players</a> · <a href="join.html#gm">DMs</a> · <a href="venues.html">Venues</a> · <a href="conduct.html">Safety</a></div></div></footer>
+<footer class="site-footer"><div class="shell footer-grid"><div><strong>Dinner, Dice & Dragons</strong><p>Find the fit. Form the Event. Confirm the group. Play.</p></div><div><a href="my-ddd.html">My DDD</a> · <a href="notifications.html">My Alerts</a> · <a href="game-hub.html">Game Nights</a> · <a href="conduct.html">Safety</a></div></div></footer>
 <script src="production-config.js"></script>
 <script src="production-api-client.js"></script>
 <script src="production-session-store.js"></script>
