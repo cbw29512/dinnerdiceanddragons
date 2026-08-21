@@ -4,6 +4,7 @@ import { getDatabase } from "@netlify/database";
 const IDENTIFIER = /^[a-z_][a-z0-9_]*$/;
 const RESERVED_QUERY_KEYS = new Set(["select", "order", "limit", "offset"]);
 const transactionScope = new AsyncLocalStorage();
+let databaseClient = null;
 
 export class DataAccessError extends Error {
   constructor(message, status = 500, detail = null) {
@@ -19,7 +20,8 @@ export class DataAccessError extends Error {
 export const SupabaseRestError = DataAccessError;
 
 function database() {
-  return getDatabase();
+  if (!databaseClient) databaseClient = getDatabase();
+  return databaseClient;
 }
 
 function identifier(value) {
