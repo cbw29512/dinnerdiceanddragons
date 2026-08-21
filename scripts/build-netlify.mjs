@@ -15,8 +15,8 @@ const REQUIRED_FILES = [
   "index.html", "play.html", "dm.html", "host.html", "signin.html", "my-ddd.html",
   "notifications.html", "opportunity.html", "create-game.html", "create-game.js", "game-hub.html",
   "player-start.js", "player-start-profile.js", "dm-start.js", "dm-start-profile.js",
-  "host-start.js", "signin.js", "my-ddd.js", "auth-confirm.js",
-  "availability-calendar-init.mjs", "calendar-state.mjs", "calendar-ui.mjs",
+  "host-start.js", "signin.js", "my-ddd.js", "auth-confirm.js", "venue-window-payloads.js",
+  "availability-calendar-init.mjs", "availability-presets.mjs", "calendar-state.mjs", "calendar-ui.mjs",
   "production-config.js", "production-api-client.js", "production-auth.js",
   "deploy-meta.json", "sitemap.xml"
 ];
@@ -87,6 +87,9 @@ async function assertProductionArtifact(deployUrl) {
   if (gameHub.includes("game-hub-messages.js") || gameHub.includes("message-channel-grid") || gameHub.includes("venue-question-form")) throw new Error("Direct Game Hub communication controls remain in the production artifact.");
   const oldJoin = await readFile(path.join(OUT, "join.html"), "utf8").catch(() => "");
   if (oldJoin.includes("id=\"player-form\"") || oldJoin.includes("id=\"gm-form\"")) throw new Error("Legacy giant onboarding forms remain in the production artifact.");
+  const hostHtml = await readFile(path.join(OUT, "host.html"), "utf8");
+  const hostScript = await readFile(path.join(OUT, "host-start.js"), "utf8");
+  if (hostHtml.includes("private_residence") || hostScript.includes("private_residence")) throw new Error("Private-residence hosting leaked into production.");
   const forbiddenNames = [
     "backend", ".github", "e2e", "games", "tests", "supabase", "apps-script", "dashboard-prototype.html",
     "dashboard.js", "shared-games.js", "form-series.html", "discovery.js", "series-commitments.html",
