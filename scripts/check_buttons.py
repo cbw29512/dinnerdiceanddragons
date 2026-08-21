@@ -158,7 +158,7 @@ SOURCE_WIRING: dict[str, tuple[str, ...]] = {
     "production-opportunity-actions.js": ('respondToOpportunity', 'Accept Match', "I'm Interested", 'Finish Event Setup'),
     "production-seat-actions.js": ('postRegistration', 'Request My Seat', 'game-hub.html?event='),
     "global-notifications-ui.js": ('getNotifications', 'ddd-notifications-link', 'Notifications'),
-    "notifications.js": ('getNotifications', 'getNotificationPreferences', 'putNotificationPreferences', 'opportunity.html?match='),
+    "notifications.js": ('getNotifications', 'getNotificationPreferences', 'putNotificationPreferences', 'opportunity.html?${params}'),
     "opportunity-review.js": ('getMatchingOpportunity', 'respondToOpportunity', 'Not This One'),
     "create-game.js": ('table_match_id', 'getMatchingOpportunity', 'formTableMatch', 'game-hub.html?event='),
     "table-match-ui.js": ('#table-match-form', 'addEventListener("click"', 'Start Forming This Table'),
