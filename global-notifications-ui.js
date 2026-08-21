@@ -28,7 +28,11 @@
       if (!link || !window.DDDProductionAuth || !window.DDDProductionAPI) return;
       const session = await window.DDDProductionAuth.getSession();
       link.hidden = !session;
-      if (!session) return;
+      if (!session) {
+        link.textContent = "🔔";
+        link.setAttribute("aria-label", "Notifications");
+        return;
+      }
       const items = await window.DDDProductionAPI.getNotifications();
       const unread = (items || []).filter((item) => !["read", "acted", "expired", "cancelled"].includes(item.state)).length;
       link.textContent = unread ? `🔔 ${unread}` : "🔔";
@@ -39,10 +43,14 @@
   }
 
   function init() {
-    ensureLink();
-    window.setTimeout(() => { void refresh(); }, 0);
-    window.addEventListener("ddd:auth-change", () => { void refresh(); });
-    window.addEventListener("ddd:notifications-changed", () => { void refresh(); });
+    try {
+      ensureLink();
+      window.setTimeout(() => { void refresh(); }, 0);
+      window.DDDProductionAuth?.onAuthStateChange?.(() => { void refresh(); });
+      window.addEventListener("ddd:notifications-changed", () => { void refresh(); });
+    } catch (error) {
+      console.error("[DDD Notifications] Unable to initialize notification badge", error);
+    }
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
