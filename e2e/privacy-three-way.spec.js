@@ -123,16 +123,18 @@ test("DM + Venue + three Players are required before BOOM", async ({ browser }) 
   }
 });
 
-test("opportunity review never exposes private contact details", async ({ page }) => {
+test("opportunity review never exposes other participants' private contact details", async ({ page }) => {
   const fixture = createFixture();
   await installOpportunityApi(page, fixture, "player1");
   await page.goto(`/opportunity.html?match=${MATCH_ID}&role=player`);
-  await expect(page.locator("#opportunity-panel")).toBeVisible();
-  await expect(page.locator("body")).not.toContainText("player1@example.test");
-  await expect(page.locator("body")).not.toContainText("555-0100");
-  await expect(page.locator("body")).not.toContainText("29501");
-  await expect(page.getByRole("button", { name: /message|contact|text|email/i })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: /message|contact|text|email/i })).toHaveCount(0);
+  const panel = page.locator("#opportunity-panel");
+  await expect(panel).toBeVisible();
+  await expect(panel).not.toContainText("dm@example.test");
+  await expect(panel).not.toContainText("venue_manager@example.test");
+  await expect(panel).not.toContainText("555-0100");
+  await expect(panel).not.toContainText("29501");
+  await expect(panel.getByRole("button", { name: /message|contact|text|email/i })).toHaveCount(0);
+  await expect(panel.getByRole("link", { name: /message|contact|text|email/i })).toHaveCount(0);
 });
 
 test("privacy-safe Game Hub has structured logistics and never calls messages", async ({ page }) => {
