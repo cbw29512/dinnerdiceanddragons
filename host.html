@@ -21,20 +21,18 @@
         <label>Manager name<input name="contact_name" autocomplete="name" placeholder="Your name" required></label><label>Email<input type="email" name="email" autocomplete="email" required></label><label>Password<input type="password" name="password" autocomplete="new-password" minlength="8" required></label>
         <p id="auth-status" class="form-status" role="status" aria-live="polite"></p><button type="button" class="button primary next-button" data-action="account">Create Account &amp; Continue</button>
       </section>
-
       <section class="start-step" data-step="2" hidden><p class="eyebrow">YOUR VENUE</p><h2>Where will games be hosted?</h2><p class="step-copy">Players see this public business location only after a table is confirmed.</p>
         <label>Business / Venue name<input name="business_name" autocomplete="organization" required></label><label>Street address<input name="address" autocomplete="street-address" required></label>
-        <div class="distance-choices"><label>City<input name="city" autocomplete="address-level2" required></label><label>State<input name="state" autocomplete="address-level1" maxlength="2" placeholder="SC" required></label></div>
+        <div class="distance-choices"><label>City<input name="city" autocomplete="address-level2" required></label><label>State<input name="state" autocomplete="address-level1" maxlength="2" pattern="[A-Za-z]{2}" placeholder="SC" required></label></div>
         <label>ZIP code<input name="postal_code" inputmode="numeric" autocomplete="postal-code" pattern="[0-9]{5}" maxlength="5" placeholder="29501" required></label>
+        <p id="venue-details-status" class="form-status" role="status" aria-live="polite"></p>
         <div class="step-actions"><button type="button" class="button secondary back-button">Back</button><button type="button" class="button primary next-button">Continue</button></div>
       </section>
-
-      <section class="start-step" data-step="3" hidden><p class="eyebrow">TABLE AVAILABILITY</p><h2>When can you host a game?</h2><p class="step-copy">Tap or drag over the times when a table can realistically be reserved for play.</p>
+      <section class="start-step" data-step="3" hidden><p class="eyebrow">TABLE AVAILABILITY</p><h2>When can you host a game?</h2><p class="step-copy">Tap a quick option or choose your own times on the calendar.</p>
         <div class="availability-builder"><div class="availability-list" aria-live="polite"></div></div><p id="availability-status" class="form-status" role="status" aria-live="polite"></p>
         <div class="distance-choices"><label>Tables available<select name="table_count"><option value="1" selected>1 table</option><option value="2">2 tables</option><option value="3">3 tables</option><option value="4">4 tables</option></select></label><label>Seats per table<select name="seats_per_table"><option value="4">4 seats</option><option value="6" selected>6 seats</option><option value="8">8 seats</option><option value="10">10 seats</option></select></label></div>
         <div class="step-actions"><button type="button" class="button secondary back-button">Back</button><button type="button" class="button primary next-button">Continue</button></div>
       </section>
-
       <section class="start-step" data-step="4" hidden><p class="eyebrow">BASIC POLICIES</p><h2>What should DDD know up front?</h2><p class="step-copy">Keep it simple. These details help avoid bad-fit bookings.</p>
         <label>Purchase policy<select name="purchase_policy"><option value="No minimum purchase" selected>No minimum purchase</option><option value="Each guest should purchase food or drink">Each guest should purchase food or drink</option><option value="Table minimum applies">Table minimum applies</option></select></label>
         <label>Age policy<select name="age_policy"><option value="All ages" selected>All ages</option><option value="18+">18+</option><option value="21+">21+</option></select></label>
@@ -42,13 +40,11 @@
         <label class="check-label"><input type="checkbox" name="approval_required" checked><span>I want to approve each table booking before it is confirmed.</span></label>
         <div class="step-actions"><button type="button" class="button secondary back-button">Back</button><button type="button" class="button primary next-button">Review</button></div>
       </section>
-
       <section class="start-step" data-step="5" hidden><p class="eyebrow">REVIEW</p><h2>Ready to submit your Venue?</h2><div id="venue-review" class="review-card"></div>
         <label class="check-label"><input type="checkbox" id="conduct-check" required><span>I agree to the <a href="conduct.html">Code of Conduct</a> and confirm I can represent this Venue.</span></label><p id="save-status" class="form-status" role="status" aria-live="polite"></p>
         <div class="step-actions"><button type="button" class="button secondary back-button">Back</button><button type="submit" class="button primary">Submit Venue for Verification</button></div>
       </section>
     </form>
-
     <section id="venue-ready" class="ready-state" hidden aria-live="polite"><div class="ready-icon" aria-hidden="true">✓</div><p class="eyebrow">VENUE SUBMITTED</p><h2>Your Venue is waiting for verification.</h2><p>Your table availability is saved. After verification, those openings can enter DDD matching and you’ll receive structured booking alerts.</p><div class="step-actions"><a class="button primary" href="my-ddd.html">My DDD</a><a class="button secondary" href="notifications.html">My Alerts</a></div></section>
   </section>
 </div></main>
