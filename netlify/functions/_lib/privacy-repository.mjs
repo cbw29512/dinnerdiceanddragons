@@ -1,6 +1,6 @@
 import { seedDefaultGameReminders } from "./game-reminders.mjs";
 import { syncMatchingPause } from "./matching-participation.mjs";
-import { eq, insertRows, selectMany, selectOne, updateRows, withTransaction } from "./supabase-rest.mjs";
+import { eq, insertRows, selectMany, selectOne, selectOneForUpdate, updateRows, withTransaction } from "./supabase-rest.mjs";
 
 export const privacyRepository = Object.freeze({
   transaction: withTransaction,
@@ -35,6 +35,7 @@ export const privacyRepository = Object.freeze({
     responded_at: values.responded_at,
     updated_at: values.updated_at
   }, { returning: false }),
+  lockMatch: (matchId) => selectOneForUpdate("table_matches", { id: eq(matchId) }),
   findMatch: (matchId) => selectOne("table_matches", { id: eq(matchId) }),
   listResponses: (matchId) => selectMany("opportunity_responses", { table_match_id: eq(matchId), order: "offered_at.asc" }),
   updateMatchStatus: (matchId, status, updatedAt) => updateRows("table_matches", { id: eq(matchId) }, {

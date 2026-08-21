@@ -1,7 +1,7 @@
 import { requireRole } from "./auth.mjs";
 import { confirmAcceptedPlayers } from "./accepted-player-commitments.mjs";
 import { formationProgress } from "./opportunity-response-state.mjs";
-import { SupabaseRestError, eq, insertRows, selectMany, selectOne, updateRows, withTransaction } from "./supabase-rest.mjs";
+import { SupabaseRestError, eq, insertRows, selectMany, selectOne, selectOneForUpdate, updateRows, withTransaction } from "./supabase-rest.mjs";
 import { asBoolean, asInteger, asString, requireUuid } from "./http.mjs";
 
 const EVENT_TYPES = new Set(["one_shot", "campaign_session", "new_campaign", "learn_to_play", "organized_play"]);
@@ -32,7 +32,7 @@ async function capacityAvailable(window, start, end) {
 async function parents(match) {
   const supply = await selectOne("gm_supply_signals", { id: eq(match.gm_supply_signal_id) });
   const gm = supply ? await selectOne("gm_profiles", { id: eq(supply.gm_profile_id) }) : null;
-  const window = await selectOne("venue_table_windows", { id: eq(match.venue_table_window_id), active: "is.true" });
+  const window = await selectOneForUpdate("venue_table_windows", { id: eq(match.venue_table_window_id), active: "is.true" });
   if (!gm || !window) throw new SupabaseRestError("Matched table state is no longer available.", 409);
   return { gm, window };
 }
@@ -42,7 +42,7 @@ export async function formAcceptedTableMatch(user, matchId, payload) {
     return await withTransaction(async () => {
       await requireRole(user.id, "gm");
       const id = requireUuid(matchId, "table_match_id");
-      const match = await selectOne("table_matches", { id: eq(id) });
+      const match = await selectOneForUpdate("table_matches", { id: eq(id) });
       if (!match) throw new SupabaseRestError("Opportunity not found.", 404);
       const parent = await parents(match);
       if (parent.gm.user_id !== user.id) throw new SupabaseRestError("Not permitted for this opportunity.", 403);

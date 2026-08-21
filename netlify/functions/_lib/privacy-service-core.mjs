@@ -100,11 +100,17 @@ export function createPrivacyService(repository, clock = () => new Date().toISOS
   async function respond(userId, matchId, role, decision) {
     try {
       return await transaction(async () => {
+        const lockedMatch = typeof repository.lockMatch === "function"
+          ? await repository.lockMatch(matchId)
+          : null;
+        if (typeof repository.lockMatch === "function" && !lockedMatch) {
+          throw Object.assign(new Error("Table Match not found."), { status: 404 });
+        }
         const current = await repository.findResponse(userId, matchId, role);
         if (!current) throw Object.assign(new Error("Opportunity response not found."), { status: 404 });
         const next = applyUserDecision(current, decision, clock());
         await repository.updateResponse(current.id, userId, role, next);
-        const match = await repository.findMatch(matchId);
+        const match = lockedMatch || await repository.findMatch(matchId);
         if (!match) throw Object.assign(new Error("Table Match not found."), { status: 404 });
         const responses = await repository.listResponses(matchId);
         const progress = formationProgress(responses, Number(match.minimum_players));
