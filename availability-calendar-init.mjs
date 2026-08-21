@@ -1,6 +1,7 @@
 import { legacyFieldsToBlocks, blocksToLegacyFields } from "./availability-adapter.mjs";
 import { collectLegacyFields, syncLegacyInputs } from "./availability-form-bridge.mjs";
 import { AvailabilityCalendar } from "./calendar-ui.mjs";
+import { enhanceAvailabilityPresets } from "./availability-presets.mjs";
 
 function labelFor(builder) {
   const form = builder.closest("form");
@@ -55,6 +56,7 @@ function bootstrapStepper() {
 function init() {
   try {
     document.querySelectorAll(".availability-builder").forEach(enhance);
+    enhanceAvailabilityPresets(document);
     bootstrapStepper();
   } catch (error) {
     console.error("[DDD Calendar] Unable to initialize availability calendars", error);
