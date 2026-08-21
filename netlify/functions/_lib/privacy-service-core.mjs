@@ -1,3 +1,4 @@
+import { deliveryChannels } from "./notification-contract.mjs";
 import { applyUserDecision, formationProgress } from "./opportunity-response-state.mjs";
 import { parsePreferenceUpdate, publicNotification } from "./privacy-api-contract.mjs";
 
@@ -61,6 +62,28 @@ export function createPrivacyService(repository, clock = () => new Date().toISOS
     }
   }
 
+  async function notifyFormed(matchId, responses) {
+    const accepted = responses.filter((row) => row.decision === "accepted");
+    const unique = new Map(accepted.map((row) => [`${row.user_id}:${row.role}`, row]));
+    for (const response of unique.values()) {
+      const prefs = await repository.preferences(response.user_id) || DEFAULT_PREFERENCES;
+      const plan = deliveryChannels("table_formed", prefs);
+      for (const channel of plan.channels) {
+        await repository.createNotification({
+          id: crypto.randomUUID(),
+          user_id: response.user_id,
+          table_match_id: matchId,
+          event_id: null,
+          type: "table_formed",
+          state: "queued",
+          channel,
+          payload: { match_id: matchId, role: response.role, status: "forming" },
+          expires_at: null
+        });
+      }
+    }
+  }
+
   async function respond(userId, matchId, role, decision) {
     try {
       const current = await repository.findResponse(userId, matchId, role);
@@ -75,6 +98,7 @@ export function createPrivacyService(repository, clock = () => new Date().toISOS
       if (progress.formed && ["potential", "invited"].includes(match.status)) {
         tableStatus = "forming";
         await repository.updateMatchStatus(matchId, tableStatus, clock());
+        await notifyFormed(matchId, responses);
       }
       return Object.freeze({ role, decision: next.decision, progress, table_status: tableStatus });
     } catch (error) {
