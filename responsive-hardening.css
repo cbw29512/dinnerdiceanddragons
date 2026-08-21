@@ -1,13 +1,17 @@
 [hidden]{display:none!important}
-html,body{max-width:100%}
+html,body{max-width:100%;overflow-x:clip}
 body{overflow-wrap:break-word}
 img,svg,video{max-width:100%;height:auto}
 .shell,.home-shell,.simple-shell,.start-layout,.start-card,.start-step,.panel,.hero-grid,.split,main,section,article,aside,nav{min-width:0}
-.brand{min-width:0}.brand span:last-child{min-width:0;overflow-wrap:anywhere}
+.brand{min-width:0;max-width:100%}.brand span{min-width:0}.brand span:last-child{overflow-wrap:anywhere}
+.availability-builder,.availability-calendar-mount,.availability-presets,.availability-preset-buttons,.calendar-heading,.day-tabs,.calendar-grid{min-width:0;max-width:100%}
 @media(max-width:850px){
   .site-header nav{width:100%;min-width:0;gap:.55rem}
   .site-header nav>*{min-width:0;max-width:100%}
   .site-header nav a{overflow-wrap:anywhere}
+}
+@media(max-width:720px){
+  .day-tabs{width:100%}
 }
 @media(max-width:520px){
   .home-nav{gap:.5rem}
