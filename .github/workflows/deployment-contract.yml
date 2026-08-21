@@ -47,6 +47,8 @@ jobs:
             netlify/database/migrations/0002_privacy_notifications.sql netlify/database/migrations/0003_game_reminders.sql \
             dist/index.html dist/play.html dist/dm.html dist/host.html dist/signin.html dist/my-ddd.html \
             dist/notifications.html dist/opportunity.html dist/create-game.html dist/game-hub.html \
+            dist/game-hub-core.js dist/game-hub-announcements.js dist/game-hub-actions.js \
+            dist/game-hub-role-views.js dist/game-hub-render.js dist/game-hub.js \
             dist/player-start.js dist/player-start-account.js dist/player-start-profile.js dist/player-start-save.js \
             dist/dm-start.js dist/dm-start-account.js dist/dm-start-profile.js dist/dm-start-save.js \
             dist/host-start.js dist/host-start-account.js dist/host-managed-venues.js dist/auth-confirm.js \
@@ -61,6 +63,8 @@ jobs:
           done
           grep -q 'apiBaseUrl: window.location.origin' dist/production-config.js
           grep -q '/auth-api/v1/auth/' dist/production-auth.js
+          grep -q 'didConfirmEmail' dist/production-auth.js
+          grep -q 'signin.html?confirmed=1' dist/auth-confirm.js
           grep -q 'https://ddd-contract.netlify.app' dist/sitemap.xml
           grep -q 'Sitemap: https://ddd-contract.netlify.app/sitemap.xml' dist/robots.txt
           grep -q '"@netlify/database"' package.json
@@ -71,6 +75,8 @@ jobs:
           grep -q 'DDDDMStartSave' dist/dm-start-save.js
           grep -q 'DDDHostStartAccount' dist/host-start-account.js
           grep -q 'DDDHostManagedVenues' dist/host-managed-venues.js
+          grep -q 'can_post_announcement' dist/game-hub-announcements.js
+          ! grep -q 'post_channels\|table_discussion\|gm_venue\|player_gm\|player_venue_question' dist/game-hub-core.js
           ! grep -q 'private_residence' dist/host.html dist/host-start.js
           ! grep -q 'getHubMessages\|postHubMessage\|/messages"' dist/production-api-client.js
           ! grep -q 'game-hub-messages.js\|message-channel-grid\|venue-question-form' dist/game-hub.html
@@ -127,6 +133,7 @@ jobs:
           set -euo pipefail
           curl --fail --silent --show-error --location --retry 24 --retry-delay 10 --retry-all-errors "$PREVIEW_URL/" -o /tmp/home.html
           for asset in play.html dm.html host.html signin.html my-ddd.html notifications.html opportunity.html create-game.html game-hub.html \
+            game-hub-core.js game-hub-announcements.js game-hub-actions.js game-hub-role-views.js game-hub-render.js game-hub.js \
             player-start.js player-start-account.js player-start-profile.js player-start-save.js \
             dm-start.js dm-start-account.js dm-start-profile.js dm-start-save.js \
             host-start.js host-start-account.js host-managed-venues.js auth-confirm.js \
@@ -136,6 +143,8 @@ jobs:
           done
           grep -q 'apiBaseUrl: window.location.origin' /tmp/production-config.js
           grep -q '/auth-api/v1/auth/' /tmp/production-auth.js
+          grep -q 'didConfirmEmail' /tmp/production-auth.js
+          grep -q 'signin.html?confirmed=1' /tmp/auth-confirm.js
           grep -q 'What do you want to do?' /tmp/home.html
           grep -q 'DDDPlayerStartAccount' /tmp/player-start-account.js
           grep -q 'DDDPlayerStartSave' /tmp/player-start-save.js
@@ -143,6 +152,8 @@ jobs:
           grep -q 'DDDDMStartSave' /tmp/dm-start-save.js
           grep -q 'DDDHostStartAccount' /tmp/host-start-account.js
           grep -q 'DDDHostManagedVenues' /tmp/host-managed-venues.js
+          grep -q 'can_post_announcement' /tmp/game-hub-announcements.js
+          ! grep -q 'post_channels\|table_discussion\|gm_venue\|player_gm\|player_venue_question' /tmp/game-hub-core.js
           ! grep -q 'private_residence' /tmp/host.html /tmp/host-start.js
           ! grep -q 'game-hub-messages.js\|message-channel-grid\|venue-question-form' /tmp/game-hub.html
 
