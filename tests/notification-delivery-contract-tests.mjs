@@ -14,9 +14,8 @@ function test(name, callback) {
   }
 }
 
-test("in-app is always deliverable while outbound channels default off", () => {
-  const capabilities = deliveryCapabilities({});
-  assert.deepEqual(capabilities, {
+test("in-app is the only implemented delivery capability", () => {
+  assert.deepEqual(deliveryCapabilities(), {
     in_app: true,
     email: false,
     browser_push: false
@@ -26,40 +25,47 @@ test("in-app is always deliverable while outbound channels default off", () => {
     email_match_alerts: true,
     browser_push: true,
     digest_mode: "immediate"
-  }, capabilities);
+  });
   assert.deepEqual(plan.channels, ["in_app"]);
 });
 
-test("email is only added when the runtime capability is explicitly enabled", () => {
-  const capabilities = deliveryCapabilities({ DDD_EMAIL_DELIVERY_ENABLED: "true" });
-  const enabled = deliveryChannels("attendance_reminder", {
-    email_event_updates: true,
-    browser_push: false,
-    digest_mode: "immediate"
-  }, capabilities);
-  assert.deepEqual(enabled.channels, ["in_app", "email"]);
-
-  const optedOut = deliveryChannels("attendance_reminder", {
-    email_event_updates: false,
-    digest_mode: "immediate"
-  }, capabilities);
-  assert.deepEqual(optedOut.channels, ["in_app"]);
+test("environment flags cannot enable unimplemented outbound senders", () => {
+  const originalEmail = process.env.DDD_EMAIL_DELIVERY_ENABLED;
+  const originalPush = process.env.DDD_BROWSER_PUSH_DELIVERY_ENABLED;
+  try {
+    process.env.DDD_EMAIL_DELIVERY_ENABLED = "true";
+    process.env.DDD_BROWSER_PUSH_DELIVERY_ENABLED = "true";
+    const capabilities = deliveryCapabilities();
+    assert.equal(capabilities.email, false);
+    assert.equal(capabilities.browser_push, false);
+    const plan = deliveryChannels("attendance_reminder", {
+      email_event_updates: true,
+      browser_push: true,
+      digest_mode: "immediate"
+    });
+    assert.deepEqual(plan.channels, ["in_app"]);
+  } finally {
+    if (originalEmail === undefined) delete process.env.DDD_EMAIL_DELIVERY_ENABLED;
+    else process.env.DDD_EMAIL_DELIVERY_ENABLED = originalEmail;
+    if (originalPush === undefined) delete process.env.DDD_BROWSER_PUSH_DELIVERY_ENABLED;
+    else process.env.DDD_BROWSER_PUSH_DELIVERY_ENABLED = originalPush;
+  }
 });
 
-test("browser push also requires both runtime capability and user opt-in", () => {
-  const capabilities = deliveryCapabilities({ DDD_BROWSER_PUSH_DELIVERY_ENABLED: "TRUE" });
+test("future channel selection still requires capability plus user preference", () => {
+  const futureCapabilities = { in_app: true, email: true, browser_push: true };
   const enabled = deliveryChannels("event_changed", {
-    email_event_updates: false,
+    email_event_updates: true,
     browser_push: true,
     digest_mode: "immediate"
-  }, capabilities);
-  assert.deepEqual(enabled.channels, ["in_app", "browser_push"]);
+  }, futureCapabilities);
+  assert.deepEqual(enabled.channels, ["in_app", "email", "browser_push"]);
 
   const optedOut = deliveryChannels("event_changed", {
     email_event_updates: false,
     browser_push: false,
     digest_mode: "immediate"
-  }, capabilities);
+  }, futureCapabilities);
   assert.deepEqual(optedOut.channels, ["in_app"]);
 });
 
