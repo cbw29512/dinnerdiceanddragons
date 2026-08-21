@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin"><meta name="robots" content="noindex,nofollow,noarchive">
+  <title>DM a Game | Dinner, Dice &amp; Dragons</title>
+  <meta name="description" content="Create your Dinner, Dice & Dragons DM profile, choose what you can run, mark when you are free, and become available to form a table.">
+  <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="availability-calendar.css"><link rel="stylesheet" href="player-start.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="simple-header"><div class="simple-shell"><a class="brand" href="index.html"><span aria-hidden="true">🎲</span><span>Dinner, Dice &amp; Dragons</span></a><a href="index.html" class="quiet-link">Back home</a></div></header>
+<main id="main" class="simple-main" tabindex="-1"><div class="simple-shell start-layout">
+  <aside class="start-intro"><p class="eyebrow">DM A GAME</p><h1>Tell us what you can run.</h1><p>Set the game, format, times, travel range, and table size. DDD watches for compatible Players and a public Venue.</p><div class="privacy-note"><strong>You stay in control.</strong><span>DDD sends structured match offers. You accept or pass without exchanging private contact details.</span></div></aside>
+  <section class="start-card" aria-labelledby="dm-step-title">
+    <div class="start-progress" aria-live="polite"><span id="step-count">Step 1 of 5</span><div class="progress-track"><span id="progress-bar"></span></div></div>
+    <form id="dm-start-form" novalidate>
+      <section class="start-step" data-step="1"><p class="eyebrow">YOUR ACCOUNT</p><h2 id="dm-step-title">Create your free account.</h2><p class="step-copy">Already use DDD? Sign in instead.</p>
+        <div class="auth-toggle" role="group" aria-label="Account action"><button type="button" class="choice-button is-selected" data-auth-mode="signup">Create account</button><button type="button" class="choice-button" data-auth-mode="signin">Sign in</button></div>
+        <label>Display name<input name="display_name" autocomplete="nickname" placeholder="What Players will see" required></label>
+        <label>Email<input type="email" name="email" autocomplete="email" required></label><label>Password<input type="password" name="password" autocomplete="new-password" minlength="8" required></label>
+        <p id="auth-status" class="form-status" role="status" aria-live="polite"></p><button type="button" class="button primary next-button" data-action="account">Create Account &amp; Continue</button>
+      </section>
+
+      <section class="start-step" data-step="2" hidden><p class="eyebrow">YOUR GAME</p><h2>What do you want to run?</h2><p class="step-copy">Choose one starting offering. You can add more later.</p>
+        <div class="big-choices">
+          <label class="game-choice"><input type="radio" name="gm_system[]" value="D&amp;D 5e (2024)" checked><span><strong>D&amp;D 5e (2024)</strong><small>Current rules</small></span></label>
+          <label class="game-choice"><input type="radio" name="gm_system[]" value="D&amp;D 5e (2014)"><span><strong>D&amp;D 5e (2014)</strong><small>Legacy 5e rules</small></span></label>
+          <label class="game-choice"><input type="radio" name="gm_system[]" value="Pathfinder 2e"><span><strong>Pathfinder 2e</strong><small>Run Pathfinder instead</small></span></label>
+        </div>
+        <label>Game format<select name="gm_format[]" required><option value="One-shot" selected>One-shot</option><option value="Learn-to-play">Learn-to-play</option><option value="Short campaign">Short campaign</option><option value="Long campaign">Long campaign</option><option value="Organized play">Organized play</option></select></label>
+        <label>Your table style<select name="style" required><option value="Balanced mix of roleplay and combat" selected>Balanced roleplay + combat</option><option value="Roleplay-forward story-focused table">Roleplay-forward</option><option value="Tactical combat-forward table">Tactical combat</option><option value="Beginner-friendly patient teaching table">Beginner-friendly</option></select></label>
+        <label class="check-label"><input type="checkbox" name="beginner_friendly" value="yes"><span>Beginners are welcome at my table.</span></label>
+        <input type="hidden" name="gm_play_years[]" value="0"><input type="hidden" name="gm_run_years[]" value="0"><input type="hidden" name="gm_comfort[]" value="Comfortable"><input type="hidden" name="gm_system_notes[]" value="">
+        <input type="hidden" name="cadence" value="Weekly"><input type="hidden" name="welcome" value=""><input type="hidden" name="expectations" value="">
+        <div class="step-actions"><button type="button" class="button secondary back-button">Back</button><button type="button" class="button primary next-button">Continue</button></div>
+      </section>
+
+      <section class="start-step" data-step="3" hidden><p class="eyebrow">YOUR AVAILABILITY</p><h2>When can you DM?</h2><p class="step-copy">Tap or drag over the times you could realistically run a game.</p>
+        <div class="availability-builder"><div class="availability-list" aria-live="polite"></div></div><p id="availability-status" class="form-status" role="status" aria-live="polite"></p>
+        <div class="step-actions"><button type="button" class="button secondary back-button">Back</button><button type="button" class="button primary next-button">Continue</button></div>
+      </section>
+
+      <section class="start-step" data-step="4" hidden><p class="eyebrow">YOUR TABLE</p><h2>Where and how big?</h2><p class="step-copy">Your ZIP is private. We use it only to find public Venues within range.</p>
+        <label>Home ZIP code<input name="postal_code" inputmode="numeric" autocomplete="postal-code" pattern="[0-9]{5}" maxlength="5" placeholder="29501" required></label>
+        <fieldset class="distance-field"><legend>Maximum travel distance</legend><div class="distance-choices"><label><input type="radio" name="radius" value="10"><span>10 mi</span></label><label><input type="radio" name="radius" value="25" checked><span>25 mi</span></label><label><input type="radio" name="radius" value="50"><span>50 mi</span></label></div></fieldset>
+        <div class="distance-choices"><label>Minimum Players<select name="minimum_players"><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option></select></label><label>Maximum Players<select name="maximum_players"><option value="4">4</option><option value="5" selected>5</option><option value="6">6</option></select></label></div>
+        <div class="step-actions"><button type="button" class="button secondary back-button">Back</button><button type="button" class="button primary next-button">Review</button></div>
+      </section>
+
+      <section class="start-step" data-step="5" hidden><p class="eyebrow">READY</p><h2>Here’s the table DDD will look for.</h2><div id="dm-review" class="review-card"></div>
+        <label class="check-label"><input type="checkbox" id="conduct-check" required><span>I agree to the <a href="conduct.html">Code of Conduct</a>.</span></label><p id="save-status" class="form-status" role="status" aria-live="polite"></p>
+        <div class="step-actions"><button type="button" class="button secondary back-button">Back</button><button type="submit" class="button primary">Start Looking for a Table</button></div>
+      </section>
+    </form>
+
+    <section id="dm-ready" class="ready-state" hidden aria-live="polite"><div class="ready-icon" aria-hidden="true">✓</div><p class="eyebrow">YOU’RE AVAILABLE TO DM</p><h2>DDD is looking for a table that fits.</h2><p>When compatible Players, a public Venue, and your schedule line up, DDD will alert you.</p><div class="step-actions"><a class="button primary" href="my-ddd.html">My DDD</a><a class="button secondary" href="notifications.html">My Alerts</a></div></section>
+  </section>
+</div></main>
+<script src="production-config.js"></script><script src="production-api-client.js"></script><script src="production-onboarding-adapters.js"></script><script src="production-session-store.js"></script><script src="production-auth.js"></script><script src="production-matching.js"></script><script src="production-onboarding.js"></script><script type="module" src="availability-calendar-init.mjs"></script><script src="dm-start.js"></script>
+</body>
+</html>
