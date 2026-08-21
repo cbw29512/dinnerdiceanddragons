@@ -4,18 +4,15 @@ const TYPES = new Set([
 ]);
 const CHANNELS = new Set(["in_app", "email", "browser_push"]);
 const CRITICAL = new Set(["table_formed", "event_disrupted", "event_cancelled", "event_changed"]);
+const IMPLEMENTED_DELIVERY = Object.freeze({
+  in_app: true,
+  email: false,
+  browser_push: false
+});
 
-function enabled(value) {
-  return String(value || "").trim().toLowerCase() === "true";
-}
-
-export function deliveryCapabilities(env = process.env) {
+export function deliveryCapabilities() {
   try {
-    return Object.freeze({
-      in_app: true,
-      email: enabled(env?.DDD_EMAIL_DELIVERY_ENABLED),
-      browser_push: enabled(env?.DDD_BROWSER_PUSH_DELIVERY_ENABLED)
-    });
+    return IMPLEMENTED_DELIVERY;
   } catch (error) {
     console.error("[DDD Notifications] Unable to resolve delivery capabilities", {
       error_type: String(error?.name || "Error")
