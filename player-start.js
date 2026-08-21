@@ -18,10 +18,10 @@
   }
   function showStep(next) {
     try {
-      step = Math.max(1, Math.min(5, next));
+      step = Math.max(editMode ? 3 : 1, Math.min(5, next));
       document.querySelectorAll(".start-step").forEach((node) => { node.hidden = Number(node.dataset.step) !== step; });
-      byId("step-count").textContent = `Step ${step} of 5`;
-      byId("progress-bar").style.width = `${step * 20}%`;
+      byId("step-count").textContent = editMode ? `Update ${step - 2} of 3` : `Step ${step} of 5`;
+      byId("progress-bar").style.width = editMode ? `${(step - 2) * 33.34}%` : `${step * 20}%`;
       if (step === 5) renderReview();
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) { log("Unable to change step", error); }
@@ -33,7 +33,7 @@
       const key = array ? rawKey.slice(0, -2) : rawKey;
       if (array) (output[key] ||= []).push(value); else output[key] = value;
     }
-    return existingProfile && editMode ? window.DDDPlayerStartProfile.preserve(existingProfile, output) : output;
+    return output;
   }
   function displayNameLabel() { return form().elements.display_name.closest("label"); }
   function setAuthMode(mode) {
@@ -65,7 +65,11 @@
     existingProfile = await window.DDDProductionAPI.getPlayerOnboardingOptional();
     if (existingProfile) {
       if (!editMode) return showReady();
-      if (window.DDDPlayerStartProfile.hydrate(form(), existingProfile)) return showStep(3);
+      if (window.DDDPlayerStartProfile.hydrate(form(), existingProfile)) {
+        byId("conduct-check").checked = true;
+        byId("conduct-check").closest("label").hidden = true;
+        return showStep(3);
+      }
     }
     displayNameLabel().hidden = false;
     form().elements.display_name.disabled = false;
@@ -75,15 +79,11 @@
   }
   async function handleAccount() {
     try {
-      if (signedIn) {
-        if (!fieldReady("display_name", "Enter the name your table should see.")) return;
-        return showStep(2);
-      }
+      if (signedIn) { if (fieldReady("display_name", "Enter the name your table should see.")) showStep(2); return; }
       if (authMode === "signup" && !fieldReady("display_name", "Enter the name your table should see.")) return;
       if (!fieldReady("email", "Enter a valid email address.")) return;
       if (!fieldReady("password", "Use a password with at least 8 characters.")) return;
-      const email = form().elements.email.value.trim();
-      const password = form().elements.password.value;
+      const email = form().elements.email.value.trim(); const password = form().elements.password.value;
       announce("auth-status", authMode === "signin" ? "Signing in…" : "Creating your account…", true);
       const result = authMode === "signin" ? { session: await window.DDDProductionAuth.signIn(email, password) } : await window.DDDProductionAuth.signUp(email, password);
       if (!result.session) return announce("auth-status", "Check your email to confirm your account. Then come back and choose Sign in.");
@@ -105,7 +105,8 @@
   }
   function renderReview() {
     const values = rawValues();
-    const rows = [["Game", values.player_system?.[0] || "D&D 5e (2024)"], ["Available", formatWindows(values) || "No times selected"], ["Travel", `${values.radius || 25} miles from ${values.postal_code || "your ZIP"}`]];
+    const game = editMode ? "Game preferences unchanged" : (values.player_system?.[0] || "D&D 5e (2024)");
+    const rows = [["Game", game], ["Available", formatWindows(values) || "No times selected"], ["Travel", `${values.radius || 25} miles from ${values.postal_code || "your ZIP"}`]];
     const review = byId("player-review"); review.replaceChildren();
     for (const [label, value] of rows) {
       const row = document.createElement("div"); row.className = "review-row";
@@ -121,11 +122,18 @@
     event.preventDefault();
     try {
       if (!byId("conduct-check").checked) { byId("conduct-check").focus(); return announce("save-status", "Please agree to the Code of Conduct first."); }
-      announce("save-status", "Saving your availability and starting your game search…", true);
-      const saved = await window.DDDProductionOnboarding.save("Player", rawValues());
-      if (saved.matchingError) return announce("save-status", `Your profile saved, but game search could not start: ${saved.matchingError.message}`);
+      announce("save-status", editMode ? "Updating your availability…" : "Saving your availability and starting your game search…", true);
+      if (editMode && existingProfile) {
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const payload = window.DDDPlayerStartProfile.updatePayload(existingProfile, rawValues(), timezone);
+        await window.DDDProductionAPI.putPlayerOnboarding(payload);
+        await window.DDDProductionMatching.syncAndFind("Player", { payload, deferred: { table_style_preference: null } }, rawValues());
+      } else {
+        const saved = await window.DDDProductionOnboarding.save("Player", rawValues());
+        if (saved.matchingError) return announce("save-status", `Your profile saved, but game search could not start: ${saved.matchingError.message}`);
+      }
       showReady();
-    } catch (error) { log("Unable to activate Player search", error); announce("save-status", error?.message || "We could not save your game search."); }
+    } catch (error) { log("Unable to save Player availability", error); announce("save-status", error?.message || "We could not save your availability."); }
   }
   function bind() {
     document.querySelectorAll("[data-auth-mode]").forEach((button) => button.addEventListener("click", () => setAuthMode(button.dataset.authMode)));
