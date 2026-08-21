@@ -14,6 +14,7 @@ on:
       - "tests/privacy-*"
       - "tests/venue-pending-*"
       - "tests/signal-replacement-*"
+      - "tests/matching-pause-*"
       - "e2e/privacy-*"
       - "e2e/simple-*"
       - ".github/workflows/privacy-matching-contract.yml"
@@ -30,6 +31,7 @@ on:
       - "tests/privacy-*"
       - "tests/venue-pending-*"
       - "tests/signal-replacement-*"
+      - "tests/matching-pause-*"
       - "e2e/privacy-*"
       - "e2e/simple-*"
       - ".github/workflows/privacy-matching-contract.yml"
@@ -73,6 +75,9 @@ jobs:
 
       - name: Run stale signal replacement contract
         run: node tests/signal-replacement-contract-tests.mjs
+
+      - name: Run matching pause contract
+        run: node tests/matching-pause-contract-tests.mjs
 
       - name: Run privacy browser API client tests
         run: node tests/privacy-api-client-tests.js
