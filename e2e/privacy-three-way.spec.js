@@ -57,6 +57,7 @@ async function installOpportunityApi(page, fixture, actor) {
   await page.route("**/api/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
+    if (url.pathname === "/api/v1/auth/session") return route.fallback();
     fixture.requests.push(`${request.method()} ${url.pathname}`);
     if (url.pathname === "/api/v1/me") {
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ display_name: actor, roles: [roleName(actor)] }) });
@@ -140,6 +141,7 @@ test("privacy-safe Game Hub has structured logistics and never calls messages", 
   await page.route("**/api/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
+    if (url.pathname === "/api/v1/auth/session") return route.fallback();
     requests.push(`${request.method()} ${url.pathname}`);
     if (url.pathname === "/api/v1/me") {
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ display_name: "Browser Player", roles: ["player"] }) });
