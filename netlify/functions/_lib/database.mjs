@@ -1,7 +1,9 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { getDatabase } from "@netlify/database";
 
 const IDENTIFIER = /^[a-z_][a-z0-9_]*$/;
 const RESERVED_QUERY_KEYS = new Set(["select", "order", "limit", "offset"]);
+const transactionScope = new AsyncLocalStorage();
 
 export class DataAccessError extends Error {
   constructor(message, status = 500, detail = null) {
@@ -122,23 +124,93 @@ function compileSelect(value) {
   return columns.map(identifier).join(", ");
 }
 
-function mapDatabaseError(error) {
-  if (error instanceof DataAccessError) return error;
-  const code = String(error?.code || "");
-  if (code === "23505") return new DataAccessError("A record with those values already exists.", 409, { code });
-  if (code === "23503") return new DataAccessError("The requested change conflicts with related records.", 409, { code });
-  if (["23502", "23514", "22P02", "22001"].includes(code)) {
-    return new DataAccessError("The submitted data could not be stored.", 422, { code });
+export function databaseErrorCode(error) {
+  let current = error;
+  for (let depth = 0; current && depth < 8; depth += 1) {
+    const code = String(current?.code || "").trim();
+    if (code) return code;
+    current = current?.cause;
   }
-  console.error("[Dinner Dice & Dragons] Netlify Database operation failed", error);
-  return new DataAccessError("The database operation could not be completed.", 500, { code: code || null });
+  return "";
+}
+
+function databaseErrorText(error) {
+  const parts = [];
+  let current = error;
+  for (let depth = 0; current && depth < 8; depth += 1) {
+    if (typeof current?.message === "string") parts.push(current.message);
+    current = current?.cause;
+  }
+  return parts.join(" ").toLowerCase();
+}
+
+export function classifyDatabaseError(error) {
+  if (error instanceof DataAccessError) return error;
+  const code = databaseErrorCode(error);
+  const detail = { code: code || null };
+
+  if (code === "23505") return new DataAccessError("A record with those values already exists.", 409, detail);
+  if (code === "23503") return new DataAccessError("The requested change conflicts with related records.", 409, detail);
+  if (["23502", "23514", "22P02", "22001"].includes(code)) {
+    return new DataAccessError("The submitted data could not be stored.", 422, detail);
+  }
+  if (["42P01", "42703", "42P07"].includes(code)) {
+    return new DataAccessError("The database schema is not ready for this operation.", 503, detail);
+  }
+  if (code.startsWith("08") || ["57P01", "57P03", "53300", "ECONNRESET", "ECONNREFUSED", "ETIMEDOUT", "EPIPE"].includes(code)) {
+    return new DataAccessError("The database is temporarily unavailable.", 503, detail);
+  }
+
+  const text = databaseErrorText(error);
+  if (/environment has not been configured|database not found|connection.+(?:closed|failed|refused|reset|timeout)/.test(text)) {
+    return new DataAccessError("The database is temporarily unavailable.", 503, detail);
+  }
+
+  console.error("[Dinner Dice & Dragons] Netlify Database operation failed", {
+    code: code || null,
+    name: String(error?.name || "DatabaseError")
+  });
+  return new DataAccessError("The database operation could not be completed.", 500, detail);
 }
 
 async function execute(sql, params = []) {
   try {
-    return await database().sql.unsafe(sql, params.map(normalizeParameter));
+    const normalized = params.map(normalizeParameter);
+    const transactionClient = transactionScope.getStore();
+    if (transactionClient) {
+      const result = await transactionClient.query(sql, normalized);
+      return Array.isArray(result?.rows) ? result.rows : [];
+    }
+    return await database().sql.unsafe(sql, normalized);
   } catch (error) {
-    throw mapDatabaseError(error);
+    throw classifyDatabaseError(error);
+  }
+}
+
+export async function withTransaction(callback) {
+  if (typeof callback !== "function") throw new DataAccessError("Database transaction callback is required.", 500);
+  if (transactionScope.getStore()) return callback();
+
+  let client;
+  try {
+    client = await database().pool.connect();
+    await client.query("BEGIN");
+    try {
+      const result = await transactionScope.run(client, callback);
+      await client.query("COMMIT");
+      return result;
+    } catch (error) {
+      try {
+        await client.query("ROLLBACK");
+      } catch (rollbackError) {
+        console.warn("[Dinner Dice & Dragons] Database rollback failed", { code: databaseErrorCode(rollbackError) || null });
+      }
+      throw error;
+    }
+  } catch (error) {
+    throw classifyDatabaseError(error);
+  } finally {
+    client?.release?.();
   }
 }
 
