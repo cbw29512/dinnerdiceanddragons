@@ -14,12 +14,12 @@ GUIDED_CONTROLLERS = ("player-start.js", "dm-start.js", "host-start.js")
 PAGE_SCRIPTS = {
     "index.html": ("production-config.js", "production-api-client.js", "production-auth.js", "auth-confirm.js"),
     "play.html": (
-        "production-auth.js", "production-onboarding.js", "production-matching.js",
+        "production-auth.js", "production-matching.js", "production-onboarding.js",
         "availability-calendar-init.mjs", "player-start-profile.js", "player-start-account.js",
         "player-start-save.js", "player-start.js",
     ),
     "dm.html": (
-        "production-auth.js", "production-onboarding.js", "production-matching.js",
+        "production-auth.js", "production-matching.js", "production-onboarding.js",
         "availability-calendar-init.mjs", "dm-start-profile.js", "dm-start-account.js",
         "dm-start-save.js", "dm-start.js",
     ),
@@ -28,7 +28,7 @@ PAGE_SCRIPTS = {
         "availability-calendar-init.mjs", "host-managed-venues.js", "host-start-account.js", "host-start.js",
     ),
     "signin.html": ("production-auth.js", "signin.js"),
-    "my-ddd.html": ("production-auth.js", "my-ddd.js", "my-ddd-games.js", "my-ddd-reminders.js"),
+    "my-ddd.html": ("production-auth.js", "my-ddd-reminders.js", "my-ddd-games.js", "my-ddd.js"),
     "notifications.html": ("production-auth.js", "notifications.js"),
     "opportunity.html": ("production-auth.js", "production-seat-actions.js", "opportunity-review.js"),
     "create-game.html": ("production-auth.js", "create-game.js"),
@@ -59,7 +59,7 @@ SOURCE_WIRING = {
     "opportunity-review.js": ("respondToOpportunity", "Not This One", "create-game.html?table_match_id="),
     "production-seat-actions.js": ("Request My Seat", "postRegistration", "game-hub.html?event="),
     "create-game.js": ("getMatchingOpportunity", "formTableMatch", "game-hub.html?event="),
-    "game-hub-announcements.js": ("can_post_announcement", "postAnnouncement", "one-way table information"),
+    "game-hub-announcements.js": ("can_post_announcement", "postAnnouncement", "getAnnouncements"),
     "game-hub-actions.js": ("getGameHub", "decideVenueBooking"),
     "netlify/functions/_lib/event-location-view.mjs": ("publicCapabilities", "can_post_announcement", "can_manage_registrations", "can_manage_booking"),
 }
