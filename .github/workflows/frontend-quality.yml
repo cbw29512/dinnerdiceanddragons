@@ -12,6 +12,7 @@ on:
       - "css/**"
       - "js/**"
       - "e2e/**"
+      - "netlify/**"
       - "scripts/check_site.py"
       - "scripts/check_buttons.py"
       - "tests/**"
@@ -21,6 +22,7 @@ on:
       - "playwright.config.js"
       - "lighthouserc.cjs"
       - ".github/workflows/frontend-quality.yml"
+      - ".github/workflows/deployment-contract.yml"
   pull_request:
     branches: [main]
     paths:
@@ -32,6 +34,7 @@ on:
       - "css/**"
       - "js/**"
       - "e2e/**"
+      - "netlify/**"
       - "scripts/check_site.py"
       - "scripts/check_buttons.py"
       - "tests/**"
@@ -41,6 +44,7 @@ on:
       - "playwright.config.js"
       - "lighthouserc.cjs"
       - ".github/workflows/frontend-quality.yml"
+      - ".github/workflows/deployment-contract.yml"
 
 permissions:
   contents: read
