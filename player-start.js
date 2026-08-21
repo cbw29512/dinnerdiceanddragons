@@ -98,7 +98,11 @@
     const zip = form().elements.postal_code;
     const good = /^\d{5}$/.test(zip.value.trim());
     zip.setCustomValidity(good ? "" : "Enter a five-digit ZIP code.");
-    if (good) return true; zip.focus(); return false;
+    if (good) { announce("area-status", "Travel area looks good.", true); return true; }
+    zip.setAttribute("aria-invalid", "true");
+    zip.focus();
+    announce("area-status", "Enter a five-digit ZIP code.");
+    return false;
   }
   function formatWindows(values) {
     return (values.availability_day || []).map((day, i) => `${day} ${values.availability_start?.[i] || ""}–${values.availability_end?.[i] || ""}`).join(" · ");
