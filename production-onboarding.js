@@ -62,7 +62,7 @@
         table_count: Number(deferred.table_count),
         max_people_per_table: Number(deferred.seats_per_table),
         purchase_policy: deferred.purchase_policy || null,
-        approval_required: Boolean(deferred.approval_required),
+        approval_required: false,
         special_support_offerings: [],
         special_support_notes: null,
         environment_notes: environmentNotes || null
@@ -96,6 +96,14 @@
       console.error("[Dinner Dice & Dragons] Unable to persist Venue table availability", error);
       throw error;
     }
+  }
+
+  function locationKind(rawValues) {
+    const value = String(rawValues?.location_kind || "business").trim();
+    if (!["business", "private_residence"].includes(value)) {
+      throw new Error("Choose whether the game location is a business/public place or a private residence.");
+    }
+    return value;
   }
 
   async function activateMatching(type, mapped, rawValues) {
@@ -134,6 +142,7 @@
       } else {
         mapped = window.DDDProductionOnboardingAdapters.venue(rawValues, options);
         result = await window.DDDProductionAPI.postVenueOnboarding(mapped.payload);
+        await window.DDDProductionAPI.putVenueLocationKind(result.venue_id, locationKind(rawValues));
         pendingVerification = !result.manager_verified || !result.venue_verified;
         venueWindows = await saveVenueWindows(
           result.venue_id,
