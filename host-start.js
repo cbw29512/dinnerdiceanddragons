@@ -1,6 +1,5 @@
 (() => {
   "use strict";
-
   let step = 1;
   let authMode = "signup";
   let signedIn = false;
@@ -11,14 +10,12 @@
   const form = () => document.getElementById("venue-start-form");
   const byId = (id) => document.getElementById(id);
   const log = (message, error) => console.error(`[DDD Venue Start] ${message}`, error);
-
   function announce(id, message, success = false) {
     const node = byId(id);
     if (!node) return;
     node.className = `form-status ${success ? "success-message" : "error-message"}`;
     node.textContent = message;
   }
-
   function showStep(next) {
     try {
       step = Math.max(editMode ? 3 : 1, Math.min(5, next));
@@ -29,7 +26,6 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) { log("Unable to change Venue step", error); }
   }
-
   function values() {
     const output = {};
     for (const [rawKey, value] of new FormData(form()).entries()) {
@@ -39,26 +35,22 @@
     }
     return output;
   }
-
   function valid(name, message, statusId) {
     const result = window.DDDHostStartAccount.valid(form(), name, message);
     if (!result.ok) announce(statusId, result.message);
     return result.ok;
   }
-
   function venueReady() {
     const fields = [["business_name", "Enter the public venue name."], ["address", "Enter the public street address."], ["city", "Enter the city."], ["state", "Enter a two-letter state code."], ["postal_code", "Enter a five-digit ZIP code."]];
     for (const [name, message] of fields) if (!valid(name, message, "venue-details-status")) return false;
     announce("venue-details-status", "Public venue location looks good.", true);
     return true;
   }
-
   function availabilityReady() {
     if (form().querySelectorAll('[name="availability_day[]"]').length) return true;
     announce("availability-status", "Choose at least one time when this venue can host a game.");
     return false;
   }
-
   function renderReview() {
     const raw = values();
     const rows = [["Venue", raw.business_name], ["Address", `${raw.address}, ${raw.city}, ${raw.state} ${raw.postal_code}`], ["Available", (raw.availability_day || []).join(", ")], ["Capacity", `${raw.table_count} table(s) · ${raw.seats_per_table} seats each`], ["Status", editMode ? "Replace this Venue calendar" : "Saved now; matching begins after verification"]];
@@ -71,7 +63,6 @@
       row.append(name, strong); review.append(row);
     }
   }
-
   function showManagedVenues(venues) {
     form().hidden = true;
     document.querySelector(".start-progress").hidden = true;
@@ -86,7 +77,6 @@
       const add = document.createElement("a"); add.className = "button secondary"; add.href = "host.html?new=1"; add.dataset.addAnotherVenue = "true"; add.textContent = "Add Another Venue"; actions.append(add);
     }
   }
-
   async function openVenueEdit() {
     const venues = await window.DDDProductionAPI.getManagedVenues();
     const venue = (venues || []).find((item) => item.id === editVenueId);
@@ -99,7 +89,6 @@
     byId("conduct-check").checked = true;
     showStep(3);
   }
-
   async function afterAuth(session) {
     signedIn = true;
     window.DDDHostStartAccount.lockSignedIn(form(), session);
@@ -115,12 +104,8 @@
     announce("auth-status", "Signed in. Add the host or manager name for this venue, then continue.", true);
     form().elements.contact_name.focus();
   }
-
   async function account() {
-    if (signedIn) {
-      if (valid("contact_name", "Enter the host or manager name.", "auth-status")) showStep(2);
-      return;
-    }
+    if (signedIn) { if (valid("contact_name", "Enter the host or manager name.", "auth-status")) showStep(2); return; }
     if (authMode === "signup" && !valid("contact_name", "Enter the host or manager name.", "auth-status")) return;
     announce("auth-status", authMode === "signin" ? "Signing in…" : "Creating your account…", true);
     const result = await window.DDDHostStartAccount.authenticate(form(), authMode);
@@ -128,7 +113,6 @@
     if (!result.session) return announce("auth-status", "Check your email to confirm the account, then return and sign in.");
     await afterAuth(result.session);
   }
-
   async function save(event) {
     event.preventDefault();
     try {
@@ -142,7 +126,6 @@
       byId("venue-ready").querySelector("h2").textContent = editMode ? "Your Venue calendar is updated." : "Your venue and table times are saved.";
     } catch (error) { log("Unable to save Venue", error); announce("save-status", error?.message || "We could not save this Venue."); }
   }
-
   async function init() {
     try {
       document.querySelectorAll("[data-auth-mode]").forEach((button) => button.addEventListener("click", () => { authMode = button.dataset.authMode; window.DDDHostStartAccount.setMode(form(), authMode); }));
@@ -156,6 +139,5 @@
       if (session) await afterAuth(session);
     } catch (error) { log("Unable to initialize Venue setup", error); announce("auth-status", error?.message || "Account service is temporarily unavailable."); }
   }
-
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true }); else void init();
 })();
