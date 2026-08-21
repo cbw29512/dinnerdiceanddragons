@@ -119,6 +119,8 @@
     getMatchingOpportunities: () => request("GET", "/api/v1/matching/opportunities"),
     getMatchingOpportunity: (tableMatchId) => request("GET", opportunityPath(tableMatchId)),
     respondToOpportunity: (tableMatchId, role, decision) => request("POST", opportunityPath(tableMatchId, "/respond"), { role, decision }),
+    getGameReminders: (tableMatchId) => request("GET", opportunityPath(tableMatchId, "/reminders")),
+    putGameReminders: (tableMatchId, minutesBefore) => request("PUT", opportunityPath(tableMatchId, "/reminders"), { minutes_before: minutesBefore }),
     formTableMatch: (tableMatchId, payload) => request("POST", opportunityPath(tableMatchId, "/form"), payload),
     getGameHubs: () => request("GET", "/api/v1/game-hubs"),
     getEvent: (eventId) => request("GET", eventPath(eventId)),
