@@ -9,7 +9,7 @@ function createFixture() {
     status: "potential",
     responses: {
       gm: "pending",
-      venue_manager: "pending",
+      venue_manager: "accepted",
       player1: "pending",
       player2: "pending",
       player3: "pending"
@@ -24,7 +24,6 @@ function acceptedPlayers(fixture) {
 
 function recompute(fixture) {
   fixture.status = fixture.responses.gm === "accepted" &&
-    fixture.responses.venue_manager === "accepted" &&
     acceptedPlayers(fixture) >= 3 ? "forming" : "potential";
 }
 
@@ -97,27 +96,27 @@ async function accept(browser, fixture, actor) {
   const page = await context.newPage();
   await installOpportunityApi(page, fixture, actor);
   await page.goto(`/opportunity.html?match=${MATCH_ID}&role=${roleName(actor)}`);
-  const button = page.getByRole("button", { name: roleName(actor) === "player" ? "I'm Interested" : "Accept Match" });
+  const button = page.getByRole("button", { name: "Accept Game" });
   await expect(button).toBeVisible();
   await button.click();
   return { page, context };
 }
 
-test("DM + Venue + three Players are required before BOOM", async ({ browser }) => {
+test("preapproved Venue + DM + three Players are required before GAME ON", async ({ browser }) => {
   const fixture = createFixture();
   const sessions = [];
   try {
+    expect(fixture.responses.venue_manager).toBe("accepted");
     sessions.push(await accept(browser, fixture, "gm"));
-    sessions.push(await accept(browser, fixture, "venue_manager"));
     sessions.push(await accept(browser, fixture, "player1"));
     sessions.push(await accept(browser, fixture, "player2"));
     expect(fixture.status).toBe("potential");
-    await expect(sessions.at(-1).page.getByText(/waiting for the DM, Venue, and enough Players/i)).toBeVisible();
+    await expect(sessions.at(-1).page.getByText(/Venue time is already reserved.*waiting for the DM and enough Players/i)).toBeVisible();
 
     const finalPlayer = await accept(browser, fixture, "player3");
     sessions.push(finalPlayer);
     expect(fixture.status).toBe("forming");
-    await expect(finalPlayer.page.getByText(/table formed/i)).toBeVisible();
+    await expect(finalPlayer.page.getByText(/GAME ON/i)).toBeVisible();
   } finally {
     await Promise.all(sessions.map(({ context }) => context.close()));
   }
