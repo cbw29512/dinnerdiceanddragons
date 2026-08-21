@@ -84,7 +84,9 @@
     const windows = await window.DDDProductionAPI.getVenueTableWindows(editVenueId);
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     if (!window.DDDHostManagedVenues.hydrate(form(), venue, windows)) throw new Error("The saved Venue calendar could not be loaded.");
-    byId("venue-review-title").textContent = "Ready to update this Venue calendar?";
+    const incomplete = !(windows || []).some((item) => item.active !== false);
+    byId("venue-review-title").textContent = incomplete ? "Ready to finish this Venue calendar?" : "Ready to update this Venue calendar?";
+    if (incomplete) announce("availability-status", "Your Venue is saved. Add at least one table time to finish setup.", true);
     byId("venue-submit").textContent = "Save Calendar";
     byId("conduct-check").checked = true;
     showStep(3);
@@ -96,7 +98,12 @@
     if (editMode) return openVenueEdit();
     if (!addingAnotherVenue) {
       const me = await window.DDDProductionAPI.getMe();
-      if ((me?.roles || []).includes("venue_manager")) return showManagedVenues(await window.DDDProductionAPI.getManagedVenues());
+      if ((me?.roles || []).includes("venue_manager")) {
+        const venues = await window.DDDProductionAPI.getManagedVenues();
+        const recovery = window.DDDHostManagedVenues.calendarRecoveryTarget(venues);
+        if (recovery) return window.location.replace(`host.html?edit=${encodeURIComponent(recovery.id)}`);
+        return showManagedVenues(venues);
+      }
     }
     form().elements.contact_name.disabled = false;
     form().elements.contact_name.closest("label").hidden = false;

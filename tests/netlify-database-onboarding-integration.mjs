@@ -119,3 +119,7 @@ assert.equal(rolledBackUser.display_name, null);
 assert.equal(rolledBackUser.display_name_normalized, null);
 
 console.log("GM onboarding Netlify Database integration and rollback checks passed.");
+
+await import("./netlify-database-player-integration.mjs");
+await import("./netlify-database-venue-onboarding-integration.mjs");
+await import("./netlify-database-venue-calendar-integration.mjs");

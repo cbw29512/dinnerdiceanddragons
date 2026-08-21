@@ -79,6 +79,16 @@
     }
   }
 
+  function calendarRecoveryTarget(venues) {
+    try {
+      const active = (venues || []).filter((venue) => venue.active !== false);
+      return active.length === 1 && active[0].calendar_ready === false ? active[0] : null;
+    } catch (error) {
+      console.error("[DDD Venue Edit] Unable to resolve incomplete Venue calendar", error);
+      return null;
+    }
+  }
+
   function renderManagedList(root, venues) {
     try {
       root.replaceChildren();
@@ -86,11 +96,13 @@
         const card = document.createElement("div");
         card.className = "review-row managed-venue-row";
         const copy = document.createElement("span");
-        copy.textContent = `${venue.name} · ${venue.city}, ${venue.state_region} · ${venue.verified ? "Verified" : "Verification pending"}`;
+        const verification = venue.verified ? "Verified" : "Verification pending";
+        const calendar = venue.calendar_ready === false ? "Calendar incomplete" : "Calendar saved";
+        copy.textContent = `${venue.name} · ${venue.city}, ${venue.state_region} · ${verification} · ${calendar}`;
         const link = document.createElement("a");
         link.className = "button secondary";
         link.href = `host.html?edit=${encodeURIComponent(venue.id)}`;
-        link.textContent = "Change Calendar";
+        link.textContent = venue.calendar_ready === false ? "Finish Calendar" : "Change Calendar";
         card.append(copy, link);
         root.append(card);
       }
@@ -100,5 +112,11 @@
     }
   }
 
-  window.DDDHostManagedVenues = Object.freeze({ blocks, hydrate, replacementPayload, renderManagedList });
+  window.DDDHostManagedVenues = Object.freeze({
+    blocks,
+    calendarRecoveryTarget,
+    hydrate,
+    replacementPayload,
+    renderManagedList
+  });
 })();
