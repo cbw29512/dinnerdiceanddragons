@@ -3,6 +3,7 @@
 
   const listeners = new Set();
   let redirectConsumed = false;
+  let confirmationCompleted = false;
   let validatedConfig = null;
   let cachedSession = null;
 
@@ -40,8 +41,6 @@
   function browserSession(user) {
     if (!user?.id || !user?.email) return null;
     return {
-      // Existing UI treats access_token as a signed-in sentinel. Authentication is
-      // actually carried by secure same-origin Netlify Identity cookies.
       access_token: "netlify-identity-cookie",
       user: { id: user.id, email: user.email }
     };
@@ -82,23 +81,24 @@
   }
 
   async function consumeRedirectSession() {
-    if (redirectConsumed) return cachedSession;
+    if (redirectConsumed) return confirmationCompleted;
     redirectConsumed = true;
 
     const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : "";
-    if (!hash) return cachedSession;
+    if (!hash) return false;
     const params = new URLSearchParams(hash);
     const confirmationToken = params.get("confirmation_token");
-    if (!confirmationToken) return cachedSession;
+    if (!confirmationToken) return false;
 
-    // Remove one-time credentials from the visible URL before exchanging them.
     history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
     try {
       await authRequest("confirm", { method: "POST", body: { token: confirmationToken } });
-      const session = await fetchSession();
-      notify(session);
-      return session;
+      confirmationCompleted = true;
+      cachedSession = null;
+      notify(null);
+      return true;
     } catch (error) {
+      confirmationCompleted = false;
       cachedSession = null;
       notify(null);
       throw error;
@@ -112,12 +112,11 @@
   }
 
   async function getSession() {
-    await consumeRedirectSession();
+    if (await consumeRedirectSession()) return null;
     return fetchSession();
   }
 
   async function getAccessToken() {
-    // Netlify Identity's nf_jwt/nf_refresh cookies are sent automatically.
     return "";
   }
 
@@ -160,18 +159,23 @@
     return () => listeners.delete(listener);
   }
 
+  function didConfirmEmail() {
+    return confirmationCompleted;
+  }
+
   async function init() {
     const config = productionConfig();
     if (!window.DDDProductionAPI?.configure) {
       throw new ProductionAuthError("Production API client is unavailable.");
     }
     window.DDDProductionAPI.configure({ baseUrl: config.apiBaseUrl });
-    await consumeRedirectSession();
+    if (await consumeRedirectSession()) return null;
     return fetchSession();
   }
 
   window.DDDProductionAuth = Object.freeze({
     ProductionAuthError,
+    didConfirmEmail,
     getAccessToken,
     getSession,
     init,
