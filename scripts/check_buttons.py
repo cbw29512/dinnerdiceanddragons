@@ -32,7 +32,10 @@ PAGE_SCRIPTS = {
     "notifications.html": ("production-auth.js", "notifications.js"),
     "opportunity.html": ("production-auth.js", "production-seat-actions.js", "opportunity-review.js"),
     "create-game.html": ("production-auth.js", "create-game.js"),
-    "game-hub.html": ("production-auth.js", "game-hub-core.js", "game-hub-actions.js", "game-hub-render.js", "game-hub.js"),
+    "game-hub.html": (
+        "production-auth.js", "game-hub-core.js", "game-hub-announcements.js", "game-hub-actions.js",
+        "game-hub-role-views.js", "game-hub-render.js", "game-hub.js",
+    ),
 }
 SOURCE_WIRING = {
     "production-auth.js": ("confirmation_token", 'credentials: "same-origin"', "DDDProductionAPI.configure", "didConfirmEmail"),
@@ -56,7 +59,9 @@ SOURCE_WIRING = {
     "opportunity-review.js": ("respondToOpportunity", "Not This One", "create-game.html?table_match_id="),
     "production-seat-actions.js": ("Request My Seat", "postRegistration", "game-hub.html?event="),
     "create-game.js": ("getMatchingOpportunity", "formTableMatch", "game-hub.html?event="),
+    "game-hub-announcements.js": ("can_post_announcement", "postAnnouncement", "one-way table information"),
     "game-hub-actions.js": ("getGameHub", "decideVenueBooking"),
+    "netlify/functions/_lib/event-location-view.mjs": ("publicCapabilities", "can_post_announcement", "can_manage_registrations", "can_manage_booking"),
 }
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 LOGGER = logging.getLogger("button-checks")
@@ -126,6 +131,11 @@ def check_sources() -> list[str]:
     for forbidden in ("getHubMessages", "postHubMessage", '/messages"'):
         if forbidden in api: errors.append(f"production-api-client.js: direct messaging wiring remains: {forbidden}")
     if (ROOT / "game-hub-messages.js").exists(): errors.append("game-hub-messages.js must not exist")
+    legacy_channels = ("post_channels", "table_discussion", "gm_venue", "player_gm", "player_venue_question")
+    for name in ("game-hub-core.js", "netlify/functions/_lib/event-location-view.mjs"):
+        text = (ROOT / name).read_text(encoding="utf-8")
+        for forbidden in legacy_channels:
+            if forbidden in text: errors.append(f"{name}: legacy direct-message capability remains: {forbidden}")
     for name in ("host.html", "host-start.js", "production-onboarding.js", "production-api-client.js"):
         if "private_residence" in (ROOT / name).read_text(encoding="utf-8"): errors.append(f"{name}: private-residence hosting must not be exposed")
     privacy_repo = (ROOT / "netlify/functions/_lib/privacy-repository.mjs").read_text(encoding="utf-8")
