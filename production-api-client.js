@@ -41,15 +41,14 @@
   async function parseResponse(response) {
     const text = await response.text();
     if (!text) return null;
-    try {
-      return JSON.parse(text);
-    } catch (error) {
+    try { return JSON.parse(text); }
+    catch (error) {
       logError("Production API returned invalid JSON", error);
       throw new ProductionApiError("Production API returned an invalid response.", response.status);
     }
   }
 
-  async function request(method, path, payload = undefined) {
+  async function request(method, path, payload = undefined, options = {}) {
     try {
       if (!isConfigured()) throw new ProductionApiError("Production API client is not configured.");
       const token = accessTokenProvider ? String(await accessTokenProvider() || "").trim() : "";
@@ -74,9 +73,14 @@
       }
       return body;
     } catch (error) {
-      logError(`${method} ${path} failed`, error);
+      if (!(options.silentStatuses || []).includes(Number(error?.status))) logError(`${method} ${path} failed`, error);
       throw error;
     }
+  }
+
+  async function optionalPlayerOnboarding() {
+    try { return await request("GET", "/api/v1/onboarding/player", undefined, { silentStatuses: [404] }); }
+    catch (error) { if (error?.status === 404) return null; throw error; }
   }
 
   function eventPath(eventId, suffix = "") {
@@ -99,6 +103,7 @@
     getNotificationPreferences: () => request("GET", "/api/v1/notification-preferences"),
     putNotificationPreferences: (payload) => request("PUT", "/api/v1/notification-preferences", payload),
     getPlayerOnboarding: () => request("GET", "/api/v1/onboarding/player"),
+    getPlayerOnboardingOptional: optionalPlayerOnboarding,
     putPlayerOnboarding: (payload) => request("PUT", "/api/v1/onboarding/player", payload),
     getGMOnboarding: () => request("GET", "/api/v1/onboarding/gm"),
     putGMOnboarding: (payload) => request("PUT", "/api/v1/onboarding/gm", payload),
