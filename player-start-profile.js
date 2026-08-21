@@ -2,20 +2,9 @@
   "use strict";
 
   const SYSTEM_LABELS = Object.freeze({
-    "dnd-5e-2024": "D&D 5e (2024)",
-    "dnd-5e-2014": "D&D 5e (2014)",
-    "pathfinder-2e": "Pathfinder 2e",
-    "call-of-cthulhu": "Call of Cthulhu",
-    "cyberpunk-red": "Cyberpunk RED",
-    shadowrun: "Shadowrun",
-    "other-rpg": "Other"
-  });
-  const COMFORT_LABELS = Object.freeze({
-    new: "New", learning: "Learning", comfortable: "Comfortable", very_experienced: "Very Experienced"
-  });
-  const FORMAT_LABELS = Object.freeze({
-    any: "Any format", learn_to_play: "Learn-to-play", one_shot: "One-shot",
-    short_campaign: "Short campaign", long_campaign: "Long campaign", organized_play: "Organized play"
+    "dnd-5e-2024": "D&D 5e (2024)", "dnd-5e-2014": "D&D 5e (2014)",
+    "pathfinder-2e": "Pathfinder 2e", "call-of-cthulhu": "Call of Cthulhu",
+    "cyberpunk-red": "Cyberpunk RED", shadowrun: "Shadowrun", "other-rpg": "Other"
   });
   const titleCase = (value) => String(value || "").replace(/\b\w/g, (letter) => letter.toUpperCase());
 
@@ -60,23 +49,31 @@
     }
   }
 
-  function preserve(profile, raw) {
+  function updatePayload(profile, raw, timezone) {
     try {
-      const systems = profile?.systems || [];
+      const availability = window.DDDProductionOnboardingAdapters.availabilityWindows(raw, timezone);
       return {
-        ...raw,
-        player_system: systems.map((item) => SYSTEM_LABELS[item.system_slug] || "Other"),
-        player_years: systems.map((item) => String(item.years_playing ?? 0)),
-        player_comfort: systems.map((item) => COMFORT_LABELS[item.comfort_level] || "New"),
-        player_system_notes: systems.map((item) => item.experience_notes || ""),
-        preferred_format: FORMAT_LABELS[profile.preferred_format] || "Any format",
-        willing_to_learn: profile.willing_to_learn_new_system === false ? "No" : "Yes"
+        display_name: profile.display_name,
+        bio: profile.bio || null,
+        postal_code: String(raw.postal_code || profile.postal_code || "").trim(),
+        travel_radius_miles: Number(raw.radius || profile.travel_radius_miles),
+        preferred_format: profile.preferred_format,
+        willing_to_learn_new_system: Boolean(profile.willing_to_learn_new_system),
+        environment_preferences: profile.environment_preferences || [],
+        accessibility_notes_private: profile.accessibility_notes_private || null,
+        systems: (profile.systems || []).map((item) => ({
+          system_slug: item.system_slug,
+          years_playing: Number(item.years_playing || 0),
+          comfort_level: item.comfort_level,
+          experience_notes: item.experience_notes || null
+        })),
+        availability
       };
     } catch (error) {
-      console.error("[DDD Player Start] Unable to preserve saved Player systems", error);
+      console.error("[DDD Player Start] Unable to prepare safe availability update", error);
       throw error;
     }
   }
 
-  window.DDDPlayerStartProfile = Object.freeze({ hydrate, preserve });
+  window.DDDPlayerStartProfile = Object.freeze({ hydrate, updatePayload });
 })();
