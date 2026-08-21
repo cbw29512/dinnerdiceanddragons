@@ -36,9 +36,7 @@
     }
   }
 
-  function isConfigured() {
-    return Boolean(baseUrl);
-  }
+  function isConfigured() { return Boolean(baseUrl); }
 
   async function parseResponse(response) {
     const text = await response.text();
@@ -84,11 +82,9 @@
   function eventPath(eventId, suffix = "") {
     return `/api/v1/events/${encodeURIComponent(String(eventId || ""))}${suffix}`;
   }
-
   function opportunityPath(tableMatchId, suffix = "") {
     return `/api/v1/matching/opportunities/${encodeURIComponent(String(tableMatchId || ""))}${suffix}`;
   }
-
   function venueWindowPath(venueId) {
     return `/api/v1/matching/venues/${encodeURIComponent(String(venueId || ""))}/table-windows`;
   }
@@ -99,11 +95,7 @@
     isConfigured,
     getMe: () => request("GET", "/api/v1/me"),
     getNotifications: () => request("GET", "/api/v1/notifications"),
-    markNotification: (notificationId, action) => request(
-      "PATCH",
-      `/api/v1/notifications/${encodeURIComponent(String(notificationId || ""))}`,
-      { action }
-    ),
+    markNotification: (notificationId, action) => request("PATCH", `/api/v1/notifications/${encodeURIComponent(String(notificationId || ""))}`, { action }),
     getNotificationPreferences: () => request("GET", "/api/v1/notification-preferences"),
     putNotificationPreferences: (payload) => request("PUT", "/api/v1/notification-preferences", payload),
     getPlayerOnboarding: () => request("GET", "/api/v1/onboarding/player"),
@@ -120,21 +112,16 @@
     findMyTable: (horizonDays = 60) => request("POST", "/api/v1/matching/find-my-table", { horizon_days: horizonDays }),
     getMatchingOpportunities: () => request("GET", "/api/v1/matching/opportunities"),
     getMatchingOpportunity: (tableMatchId) => request("GET", opportunityPath(tableMatchId)),
-    respondToOpportunity: (tableMatchId, role, decision) => request(
-      "POST", opportunityPath(tableMatchId, "/respond"), { role, decision }
-    ),
+    respondToOpportunity: (tableMatchId, role, decision) => request("POST", opportunityPath(tableMatchId, "/respond"), { role, decision }),
     formTableMatch: (tableMatchId, payload) => request("POST", opportunityPath(tableMatchId, "/form"), payload),
     getGameHubs: () => request("GET", "/api/v1/game-hubs"),
     getEvent: (eventId) => request("GET", eventPath(eventId)),
     getGameHub: (eventId) => request("GET", eventPath(eventId, "/hub")),
+    getAnnouncements: (eventId) => request("GET", eventPath(eventId, "/announcements")),
+    postAnnouncement: (eventId, body) => request("POST", eventPath(eventId, "/announcements"), { body }),
     postRegistration: (eventId) => request("POST", eventPath(eventId, "/registrations"), { expectations_acknowledged: true }),
     cancelMyRegistration: (eventId) => request("PATCH", eventPath(eventId, "/registrations/me"), { action: "cancel" }),
-    decideRegistration: (eventId, registrationId, action) => request(
-      "PATCH", eventPath(eventId, `/registrations/${encodeURIComponent(String(registrationId || ""))}`), { action }
-    ),
-    decideVenueBooking: (bookingId, action, message = null) => request(
-      "PATCH", `/api/v1/venue-bookings/${encodeURIComponent(String(bookingId || ""))}`,
-      { action, ...(message ? { message } : {}) }
-    )
+    decideRegistration: (eventId, registrationId, action) => request("PATCH", eventPath(eventId, `/registrations/${encodeURIComponent(String(registrationId || ""))}`), { action }),
+    decideVenueBooking: (bookingId, action) => request("PATCH", `/api/v1/venue-bookings/${encodeURIComponent(String(bookingId || ""))}`, { action })
   });
 })();
