@@ -28,13 +28,15 @@ async function venueParticipants(match) {
   return managers.map((manager) => ({
     user_id: manager.user_id,
     role: "venue_manager",
+    preapproved: true,
     payload: {
       match_id: match.id,
       role: "venue_manager",
       starts_at: match.proposed_start,
       ends_at: match.proposed_end,
       timezone: match.timezone,
-      expected_guests: 1 + Number(match.minimum_players)
+      expected_guests: 1 + Number(match.minimum_players),
+      venue_preapproved: true
     }
   }));
 }
