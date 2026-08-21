@@ -1,3 +1,4 @@
+import { seedDefaultGameReminders } from "./game-reminders.mjs";
 import { syncMatchingPause } from "./matching-participation.mjs";
 import { eq, insertRows, selectMany, selectOne, updateRows } from "./supabase-rest.mjs";
 
@@ -12,6 +13,7 @@ export const privacyRepository = Object.freeze({
     return rows[0] || null;
   },
   syncMatchingPause,
+  seedDefaultReminders: seedDefaultGameReminders,
   listNotifications: (userId, limit) => selectMany("notifications", { user_id: eq(userId), order: "created_at.desc", limit }),
   createNotification: (row) => insertRows("notifications", [row], { returning: false }),
   async updateNotification(userId, notificationId, values) {
