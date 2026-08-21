@@ -14,7 +14,8 @@ const LEGACY_ONBOARDING_LINKS = ["join.html#player", "join.html#gm", "venues.htm
 const REQUIRED_FILES = [
   "index.html", "play.html", "dm.html", "host.html", "signin.html", "my-ddd.html",
   "notifications.html", "opportunity.html", "create-game.html", "create-game.js", "game-hub.html",
-  "player-start.js", "player-start-profile.js", "dm-start.js", "dm-start-profile.js",
+  "player-start.js", "player-start-account.js", "player-start-profile.js", "player-start-save.js",
+  "dm-start.js", "dm-start-account.js", "dm-start-profile.js", "dm-start-save.js",
   "host-start.js", "host-start-account.js", "host-managed-venues.js",
   "signin.js", "my-ddd.js", "my-ddd-games.js", "my-ddd-reminders.js",
   "auth-confirm.js", "venue-window-payloads.js",
