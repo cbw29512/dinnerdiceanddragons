@@ -44,11 +44,12 @@ jobs:
           for file in \
             netlify.toml netlify/functions/api.mjs netlify/functions/auth-api.mjs \
             netlify/functions/_lib/database.mjs netlify/database/migrations/0001_initial_schema.sql \
-            netlify/database/migrations/0002_privacy_notifications.sql \
+            netlify/database/migrations/0002_privacy_notifications.sql netlify/database/migrations/0003_game_reminders.sql \
             dist/index.html dist/play.html dist/dm.html dist/host.html dist/signin.html dist/my-ddd.html \
             dist/notifications.html dist/opportunity.html dist/create-game.html dist/game-hub.html \
             dist/player-start.js dist/player-start-profile.js dist/dm-start.js dist/dm-start-profile.js \
-            dist/host-start.js dist/auth-confirm.js dist/availability-calendar-init.mjs \
+            dist/host-start.js dist/auth-confirm.js dist/my-ddd-games.js dist/my-ddd-reminders.js \
+            dist/venue-window-payloads.js dist/availability-calendar-init.mjs dist/availability-presets.mjs \
             dist/calendar-state.mjs dist/calendar-ui.mjs dist/production-auth.js dist/sitemap.xml dist/robots.txt; do
             test -f "$file"
           done
@@ -80,6 +81,7 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U ddd -d ddd_contract -f netlify/database/migrations/0001_initial_schema.sql
           psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U ddd -d ddd_contract -f netlify/database/migrations/0002_privacy_notifications.sql
+          psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U ddd -d ddd_contract -f netlify/database/migrations/0003_game_reminders.sql
           psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U ddd -d ddd_contract <<'SQL'
           DO $$
           BEGIN
@@ -88,6 +90,11 @@ jobs:
             IF to_regclass('public.events') IS NULL OR to_regclass('public.notification_preferences') IS NULL OR to_regclass('public.opportunity_responses') IS NULL OR to_regclass('public.notifications') IS NULL THEN
               RAISE EXCEPTION 'Required lifecycle/privacy tables are missing';
             END IF;
+            IF to_regclass('public.game_reminders') IS NULL THEN RAISE EXCEPTION 'game_reminders is missing'; END IF;
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_schema = 'public' AND table_name = 'notification_preferences' AND column_name = 'default_reminder_minutes'
+            ) THEN RAISE EXCEPTION 'default_reminder_minutes is missing'; END IF;
           END
           $$;
           SQL
@@ -112,6 +119,7 @@ jobs:
           curl --fail --silent --show-error --location --retry 24 --retry-delay 10 --retry-all-errors "$PREVIEW_URL/" -o /tmp/home.html
           for asset in play.html dm.html host.html signin.html my-ddd.html notifications.html opportunity.html create-game.html game-hub.html \
             player-start.js player-start-profile.js dm-start.js dm-start-profile.js host-start.js auth-confirm.js \
+            my-ddd-games.js my-ddd-reminders.js venue-window-payloads.js availability-presets.mjs \
             production-config.js production-auth.js availability-calendar-init.mjs calendar-state.mjs calendar-ui.mjs; do
             curl --fail --silent --show-error --location "$PREVIEW_URL/$asset" -o "/tmp/${asset//\//_}"
           done
