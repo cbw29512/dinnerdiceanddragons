@@ -2,6 +2,7 @@ const DIGESTS = new Set(["immediate", "daily"]);
 const OPPORTUNITY_DECISIONS = new Set(["interested", "accepted", "declined"]);
 const OPPORTUNITY_ROLES = new Set(["player", "gm", "venue_manager"]);
 const NOTIFICATION_ACTIONS = new Set(["read", "act"]);
+const DEFAULT_REMINDERS = Object.freeze([1440, 60]);
 
 export class PrivacyApiContractError extends Error {
   constructor(message) {
@@ -15,6 +16,16 @@ function bool(value, name) {
   return value;
 }
 
+function reminderMinutes(value) {
+  const raw = value === undefined ? DEFAULT_REMINDERS : value;
+  if (!Array.isArray(raw) || raw.length > 5) throw new PrivacyApiContractError("default_reminder_minutes is invalid.");
+  const values = raw.map((item) => Number(item));
+  if (values.some((item) => !Number.isInteger(item) || item < 1 || item > 20160)) {
+    throw new PrivacyApiContractError("default_reminder_minutes is invalid.");
+  }
+  return [...new Set(values)].sort((a, b) => b - a);
+}
+
 export function parsePreferenceUpdate(raw) {
   try {
     const payload = raw && typeof raw === "object" ? raw : {};
@@ -25,7 +36,8 @@ export function parsePreferenceUpdate(raw) {
       email_event_updates: bool(payload.email_event_updates, "email_event_updates"),
       browser_push: bool(payload.browser_push, "browser_push"),
       digest_mode: digest,
-      matching_paused: bool(payload.matching_paused, "matching_paused")
+      matching_paused: bool(payload.matching_paused, "matching_paused"),
+      default_reminder_minutes: reminderMinutes(payload.default_reminder_minutes)
     });
   } catch (error) {
     if (error instanceof PrivacyApiContractError) throw error;
