@@ -33,12 +33,12 @@
     if (!confirmationTokenPresent()) return;
     showMessage("Confirming your Dinner, Dice & Dragons account…");
     try {
-      const session = await window.DDDProductionAuth.init();
-      if (!session) throw new Error("Account confirmation completed, but no signed-in session was created.");
-      window.location.replace("my-ddd.html?confirmed=1");
+      await window.DDDProductionAuth.init();
+      if (!window.DDDProductionAuth.didConfirmEmail()) throw new Error("Account confirmation did not complete.");
+      window.location.replace("signin.html?confirmed=1");
     } catch (error) {
       console.error("[DDD Auth] Account confirmation failed", error);
-      showMessage("We could not finish account confirmation. Open Sign In and try your confirmed email and password.", true);
+      showMessage("We could not finish account confirmation. Open Sign In and try again from your confirmation email.", true);
     }
   }
 
