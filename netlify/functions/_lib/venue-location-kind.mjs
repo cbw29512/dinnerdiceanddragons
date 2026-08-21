@@ -1,4 +1,5 @@
 import { managedVenue, requireRole } from "./auth.mjs";
+import { postalCentroid } from "./geo.mjs";
 import { SupabaseRestError, eq, selectOne, updateRows } from "./supabase-rest.mjs";
 
 const LOCATION_KINDS = new Set(["business", "private_residence"]);
@@ -11,6 +12,27 @@ function normalizeLocationKind(value) {
   return kind;
 }
 
+async function residenceEligibility(venue, userId, now) {
+  try {
+    const point = await postalCentroid(venue.postal_code);
+    await updateRows("venues", { id: eq(venue.id) }, {
+      location_kind: "private_residence",
+      latitude: Number(point.latitude),
+      longitude: Number(point.longitude),
+      verified: true,
+      updated_at: now
+    }, { returning: false });
+    await updateRows("venue_managers", { venue_id: eq(venue.id), user_id: eq(userId) }, {
+      verified_at: now
+    }, { returning: false });
+  } catch (error) {
+    console.error("[DDD Venue Location] Unable to enable residence matching", {
+      error_type: String(error?.name || "Error")
+    });
+    throw error;
+  }
+}
+
 export async function setVenueLocationKind(user, venueId, rawKind) {
   try {
     await requireRole(user.id, "venue_manager");
@@ -18,11 +40,20 @@ export async function setVenueLocationKind(user, venueId, rawKind) {
     const venue = await selectOne("venues", { id: eq(venueId) });
     if (!venue) throw new SupabaseRestError("Venue was not found.", 404);
     const locationKind = normalizeLocationKind(rawKind);
-    await updateRows("venues", { id: eq(venue.id) }, {
+    const now = new Date().toISOString();
+    if (locationKind === "private_residence") {
+      await residenceEligibility(venue, user.id, now);
+    } else {
+      await updateRows("venues", { id: eq(venue.id) }, {
+        location_kind: "business",
+        updated_at: now
+      }, { returning: false });
+    }
+    return {
+      venue_id: venue.id,
       location_kind: locationKind,
-      updated_at: new Date().toISOString()
-    }, { returning: false });
-    return { venue_id: venue.id, location_kind: locationKind };
+      matching_eligible: locationKind === "private_residence" ? true : Boolean(venue.verified)
+    };
   } catch (error) {
     console.error("[DDD Venue Location] Unable to save location kind", {
       error_type: String(error?.name || "Error")
