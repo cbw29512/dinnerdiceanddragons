@@ -42,9 +42,23 @@ function enhance(builder) {
   }
 }
 
+function bootstrapStepper() {
+  try {
+    if (!document.querySelector("form.prototype-form")) return;
+    if (document.querySelector('script[data-ddd-onboarding-stepper]')) return;
+    const script = document.createElement("script");
+    script.src = "onboarding-stepper.js";
+    script.dataset.dddOnboardingStepper = "true";
+    document.head.append(script);
+  } catch (error) {
+    console.error("[DDD Calendar] Unable to bootstrap onboarding stepper", error);
+  }
+}
+
 function init() {
   try {
     document.querySelectorAll(".availability-builder").forEach(enhance);
+    bootstrapStepper();
   } catch (error) {
     console.error("[DDD Calendar] Unable to initialize availability calendars", error);
   }
