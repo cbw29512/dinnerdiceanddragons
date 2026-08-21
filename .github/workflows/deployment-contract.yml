@@ -47,7 +47,8 @@ jobs:
             netlify/database/migrations/0002_privacy_notifications.sql netlify/database/migrations/0003_game_reminders.sql \
             dist/index.html dist/play.html dist/dm.html dist/host.html dist/signin.html dist/my-ddd.html \
             dist/notifications.html dist/opportunity.html dist/create-game.html dist/game-hub.html \
-            dist/player-start.js dist/player-start-profile.js dist/dm-start.js dist/dm-start-profile.js \
+            dist/player-start.js dist/player-start-account.js dist/player-start-profile.js dist/player-start-save.js \
+            dist/dm-start.js dist/dm-start-account.js dist/dm-start-profile.js dist/dm-start-save.js \
             dist/host-start.js dist/host-start-account.js dist/host-managed-venues.js dist/auth-confirm.js \
             dist/my-ddd-games.js dist/my-ddd-reminders.js dist/venue-window-payloads.js \
             dist/availability-calendar-init.mjs dist/availability-presets.mjs \
@@ -64,6 +65,12 @@ jobs:
           grep -q 'Sitemap: https://ddd-contract.netlify.app/sitemap.xml' dist/robots.txt
           grep -q '"@netlify/database"' package.json
           grep -q '"@netlify/identity"' package.json
+          grep -q 'DDDPlayerStartAccount' dist/player-start-account.js
+          grep -q 'DDDPlayerStartSave' dist/player-start-save.js
+          grep -q 'DDDDMStartAccount' dist/dm-start-account.js
+          grep -q 'DDDDMStartSave' dist/dm-start-save.js
+          grep -q 'DDDHostStartAccount' dist/host-start-account.js
+          grep -q 'DDDHostManagedVenues' dist/host-managed-venues.js
           ! grep -q 'private_residence' dist/host.html dist/host-start.js
           ! grep -q 'getHubMessages\|postHubMessage\|/messages"' dist/production-api-client.js
           ! grep -q 'game-hub-messages.js\|message-channel-grid\|venue-question-form' dist/game-hub.html
@@ -120,7 +127,8 @@ jobs:
           set -euo pipefail
           curl --fail --silent --show-error --location --retry 24 --retry-delay 10 --retry-all-errors "$PREVIEW_URL/" -o /tmp/home.html
           for asset in play.html dm.html host.html signin.html my-ddd.html notifications.html opportunity.html create-game.html game-hub.html \
-            player-start.js player-start-profile.js dm-start.js dm-start-profile.js \
+            player-start.js player-start-account.js player-start-profile.js player-start-save.js \
+            dm-start.js dm-start-account.js dm-start-profile.js dm-start-save.js \
             host-start.js host-start-account.js host-managed-venues.js auth-confirm.js \
             my-ddd-games.js my-ddd-reminders.js venue-window-payloads.js availability-presets.mjs \
             production-config.js production-auth.js availability-calendar-init.mjs calendar-state.mjs calendar-ui.mjs; do
@@ -129,6 +137,10 @@ jobs:
           grep -q 'apiBaseUrl: window.location.origin' /tmp/production-config.js
           grep -q '/auth-api/v1/auth/' /tmp/production-auth.js
           grep -q 'What do you want to do?' /tmp/home.html
+          grep -q 'DDDPlayerStartAccount' /tmp/player-start-account.js
+          grep -q 'DDDPlayerStartSave' /tmp/player-start-save.js
+          grep -q 'DDDDMStartAccount' /tmp/dm-start-account.js
+          grep -q 'DDDDMStartSave' /tmp/dm-start-save.js
           grep -q 'DDDHostStartAccount' /tmp/host-start-account.js
           grep -q 'DDDHostManagedVenues' /tmp/host-managed-venues.js
           ! grep -q 'private_residence' /tmp/host.html /tmp/host-start.js
