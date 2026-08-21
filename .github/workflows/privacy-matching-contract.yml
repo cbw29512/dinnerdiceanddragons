@@ -12,6 +12,7 @@ on:
       - "netlify/functions/**"
       - "netlify/database/migrations/**"
       - "tests/privacy-*"
+      - "tests/private-residence-*"
       - "tests/venue-pending-*"
       - "tests/venue-preapproval-*"
       - "tests/signal-replacement-*"
@@ -30,6 +31,7 @@ on:
       - "netlify/functions/**"
       - "netlify/database/migrations/**"
       - "tests/privacy-*"
+      - "tests/private-residence-*"
       - "tests/venue-pending-*"
       - "tests/venue-preapproval-*"
       - "tests/signal-replacement-*"
@@ -50,7 +52,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Set up Node
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        uses: actions/setup-node@249970729cb0ef3589644e89e685e5dc5ba9c38 # v6
         with:
           node-version: "22"
 
@@ -71,6 +73,9 @@ jobs:
 
       - name: Run privacy matching state tests
         run: node tests/privacy-matching-tests.mjs
+
+      - name: Run private residence privacy contract
+        run: node tests/private-residence-contract-tests.mjs
 
       - name: Run pending Venue persistence contract
         run: node tests/venue-pending-window-contract-tests.mjs
