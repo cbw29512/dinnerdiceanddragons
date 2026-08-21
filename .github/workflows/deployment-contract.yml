@@ -157,6 +157,12 @@ jobs:
           [[ "$login_status" =~ ^4[0-9][0-9]$ ]]
           node -e "JSON.parse(require('node:fs').readFileSync('/tmp/bad-login.json','utf8'))"
 
+          confirm_status="$(curl --silent --show-error --output /tmp/bad-confirm.json --write-out '%{http_code}' \
+            -H 'content-type: application/json' -d '{"token":""}' \
+            "$PREVIEW_URL/auth-api/v1/auth/confirm")"
+          [[ "$confirm_status" == "422" ]]
+          node -e "const b=JSON.parse(require('node:fs').readFileSync('/tmp/bad-confirm.json','utf8')); if(!b.detail) process.exit(1)"
+
           status="$(curl --silent --show-error --output /tmp/me.json --write-out '%{http_code}' "$PREVIEW_URL/api/v1/me")"
           [[ "$status" == "401" || "$status" == "403" ]]
           message_status="$(curl --silent --show-error --output /tmp/messages.json --write-out '%{http_code}' "$PREVIEW_URL/api/v1/events/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/messages")"
