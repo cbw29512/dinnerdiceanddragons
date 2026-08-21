@@ -10,11 +10,23 @@ PRODUCTION_PAGES = (
     "index.html", "play.html", "dm.html", "host.html", "signin.html", "my-ddd.html",
     "notifications.html", "opportunity.html", "create-game.html", "game-hub.html",
 )
+GUIDED_CONTROLLERS = ("player-start.js", "dm-start.js", "host-start.js")
 PAGE_SCRIPTS = {
     "index.html": ("production-config.js", "production-api-client.js", "production-auth.js", "auth-confirm.js"),
-    "play.html": ("production-auth.js", "production-onboarding.js", "production-matching.js", "availability-calendar-init.mjs", "player-start-profile.js", "player-start.js"),
-    "dm.html": ("production-auth.js", "production-onboarding.js", "production-matching.js", "availability-calendar-init.mjs", "dm-start-profile.js", "dm-start.js"),
-    "host.html": ("production-auth.js", "venue-window-payloads.js", "production-onboarding.js", "availability-calendar-init.mjs", "host-managed-venues.js", "host-start-account.js", "host-start.js"),
+    "play.html": (
+        "production-auth.js", "production-onboarding.js", "production-matching.js",
+        "availability-calendar-init.mjs", "player-start-profile.js", "player-start-account.js",
+        "player-start-save.js", "player-start.js",
+    ),
+    "dm.html": (
+        "production-auth.js", "production-onboarding.js", "production-matching.js",
+        "availability-calendar-init.mjs", "dm-start-profile.js", "dm-start-account.js",
+        "dm-start-save.js", "dm-start.js",
+    ),
+    "host.html": (
+        "production-auth.js", "venue-window-payloads.js", "production-onboarding.js",
+        "availability-calendar-init.mjs", "host-managed-venues.js", "host-start-account.js", "host-start.js",
+    ),
     "signin.html": ("production-auth.js", "signin.js"),
     "my-ddd.html": ("production-auth.js", "my-ddd.js", "my-ddd-games.js", "my-ddd-reminders.js"),
     "notifications.html": ("production-auth.js", "notifications.js"),
@@ -23,13 +35,17 @@ PAGE_SCRIPTS = {
     "game-hub.html": ("production-auth.js", "game-hub-core.js", "game-hub-actions.js", "game-hub-render.js", "game-hub.js"),
 }
 SOURCE_WIRING = {
-    "production-auth.js": ("confirmation_token", "credentials: \"same-origin\"", "DDDProductionAPI.configure"),
+    "production-auth.js": ("confirmation_token", 'credentials: "same-origin"', "DDDProductionAPI.configure"),
     "availability-calendar-init.mjs": ("AvailabilityCalendar", "enhanceAvailabilityPresets", ".availability-builder"),
     "availability-presets.mjs": ("Weeknights 6–10 PM", "Saturday 6–10 PM", "calendar.addBlock"),
-    "player-start.js": ("availabilityReady", 'DDDProductionOnboarding.save("Player"', "getPlayerOnboardingOptional"),
+    "player-start-account.js": ("DDDProductionAuth.signIn", "DDDProductionAuth.signUp", "lockSignedIn"),
     "player-start-profile.js": ("calendar.loadBlocks", "updatePayload", "accessibility_notes_private"),
-    "dm-start.js": ("availabilityReady", 'DDDProductionOnboarding.save("Game Master"', "getGMOnboardingOptional"),
+    "player-start-save.js": ('DDDProductionOnboarding.save("Player"', "syncAndFind", "renderReview"),
+    "player-start.js": ("availabilityReady", "DDDPlayerStartSave.persist", "getPlayerOnboardingOptional"),
+    "dm-start-account.js": ("DDDProductionAuth.signIn", "DDDProductionAuth.signUp", "lockSignedIn"),
     "dm-start-profile.js": ("calendar.loadBlocks", "refreshSupplies", "updatePayload"),
+    "dm-start-save.js": ('DDDProductionOnboarding.save("Game Master"', "refreshSupplies", "renderReview"),
+    "dm-start.js": ("availabilityReady", "DDDDMStartSave.persist", "getGMOnboardingOptional"),
     "host-start-account.js": ("DDDProductionAuth.signIn", "DDDProductionAuth.signUp", "lockSignedIn"),
     "host-managed-venues.js": ("calendar.loadBlocks", "replacementPayload", "Change Calendar"),
     "host-start.js": ("getManagedVenues", "getVenueTableWindows", "putVenueTableWindows", 'DDDProductionOnboarding.save("Venue"'),
@@ -94,12 +110,17 @@ def check_sources() -> list[str]:
             continue
         for snippet in snippets:
             if snippet not in text: errors.append(f"{name}: expected wiring missing: {snippet}")
+    for name in GUIDED_CONTROLLERS:
+        line_count = len((ROOT / name).read_text(encoding="utf-8").splitlines())
+        if line_count > 150: errors.append(f"{name}: guided controller exceeds 150 lines ({line_count})")
     api = (ROOT / "production-api-client.js").read_text(encoding="utf-8")
     for forbidden in ("getHubMessages", "postHubMessage", '/messages"'):
         if forbidden in api: errors.append(f"production-api-client.js: direct messaging wiring remains: {forbidden}")
     if (ROOT / "game-hub-messages.js").exists(): errors.append("game-hub-messages.js must not exist")
     for name in ("host.html", "host-start.js", "production-onboarding.js", "production-api-client.js"):
         if "private_residence" in (ROOT / name).read_text(encoding="utf-8"): errors.append(f"{name}: private-residence hosting must not be exposed")
+    privacy_repo = (ROOT / "netlify/functions/_lib/privacy-repository.mjs").read_text(encoding="utf-8")
+    if 'channel: eq("in_app")' not in privacy_repo: errors.append("privacy-repository.mjs: My Alerts must be constrained to in_app notifications")
     return errors
 
 
