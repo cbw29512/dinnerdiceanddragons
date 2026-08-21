@@ -1,6 +1,14 @@
 const { test, expect } = require("@playwright/test");
 const { expectNoHorizontalOverflow, installAuthenticatedSession } = require("./helpers");
 
+const DEFAULT_PREFS = Object.freeze({
+  email_match_alerts: true,
+  email_event_updates: true,
+  browser_push: false,
+  digest_mode: "immediate",
+  matching_paused: false
+});
+
 async function firstTimePlayerApi(page) {
   await installAuthenticatedSession(page, { email: "newplayer@example.test" });
   await page.route("**/api/v1/onboarding/player", async (route) => {
@@ -18,6 +26,26 @@ test("homepage presents four obvious first actions", async ({ page }) => {
   await expect(page.getByRole("link", { name: "DM a Game" })).toHaveAttribute("href", "dm.html");
   await expect(page.getByRole("link", { name: "Host Games" })).toHaveAttribute("href", "host.html");
   await expect(page.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "signin.html");
+});
+
+test("homepage consumes an account confirmation link and continues to My DDD", async ({ page }) => {
+  let confirmationBody = null;
+  await page.route("**/api/v1/auth/confirm", async (route) => {
+    confirmationBody = route.request().postDataJSON();
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ confirmed: true, id: "confirmed-user", email: "confirmed@example.test" }) });
+  });
+  await page.route("**/api/v1/auth/session", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ authenticated: true, id: "confirmed-user", email: "confirmed@example.test" }) });
+  });
+  await page.route("**/api/v1/**", async (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname.startsWith("/api/v1/auth/")) return route.fallback();
+    await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not found" }) });
+  });
+
+  await page.goto("/index.html#confirmation_token=one-time-token");
+  await expect(page).toHaveURL(/my-ddd\.html\?confirmed=1/);
+  expect(confirmationBody).toEqual({ token: "one-time-token" });
 });
 
 test("legacy join URL can no longer expose giant onboarding forms", async ({ page }) => {
@@ -62,7 +90,7 @@ test("DM and Venue entry pages use the same guided language", async ({ page }) =
   await expect(page.getByRole("heading", { name: "Tell us what you can run." })).toBeVisible();
   await expect(page.getByText("Step 1 of 5")).toBeVisible();
   await page.goto("/host.html");
-  await expect(page.getByRole("heading", { name: "Tell us when your tables are open." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Tell us when you have tables open." })).toBeVisible();
   await expect(page.getByText(/Step 1 of/)).toBeVisible();
 });
 
@@ -77,7 +105,7 @@ test("My DDD answers Player, DM, alerts, and game-night status", async ({ page }
     if (url.pathname === "/api/v1/onboarding/gm") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(gm) });
     if (url.pathname === "/api/v1/notifications") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{ id: "n1", state: "pending" }]) });
     if (url.pathname === "/api/v1/game-hubs") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{ event_id: "e1" }]) });
-    if (url.pathname === "/api/v1/notification-preferences") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ matching_paused: false }) });
+    if (url.pathname === "/api/v1/notification-preferences") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(DEFAULT_PREFS) });
     return route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not found" }) });
   });
   await page.goto("/my-ddd.html");
@@ -85,4 +113,33 @@ test("My DDD answers Player, DM, alerts, and game-night status", async ({ page }
   await expect(page.getByText("You’re available to DM.")).toBeVisible();
   await expect(page.locator("#alert-count")).toHaveText("1");
   await expect(page.locator("#hub-count")).toHaveText("1");
+});
+
+test("My DDD pause sends a complete preference update", async ({ page }) => {
+  await installAuthenticatedSession(page, { email: "pause@example.test" });
+  let savedPreferences = null;
+  await page.route("**/api/v1/**", async (route) => {
+    const url = new URL(route.request().url());
+    const method = route.request().method();
+    if (url.pathname === "/api/v1/auth/session") return route.fallback();
+    if (url.pathname === "/api/v1/onboarding/player" || url.pathname === "/api/v1/onboarding/gm") {
+      return route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not configured" }) });
+    }
+    if (url.pathname === "/api/v1/notifications" || url.pathname === "/api/v1/game-hubs") {
+      return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    }
+    if (url.pathname === "/api/v1/notification-preferences" && method === "GET") {
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(DEFAULT_PREFS) });
+    }
+    if (url.pathname === "/api/v1/notification-preferences" && method === "PUT") {
+      savedPreferences = route.request().postDataJSON();
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(savedPreferences) });
+    }
+    return route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not found" }) });
+  });
+
+  await page.goto("/my-ddd.html");
+  await page.locator("#matching-paused").check();
+  await expect(page.locator("#pause-status")).toContainText("paused");
+  expect(savedPreferences).toEqual({ ...DEFAULT_PREFS, matching_paused: true });
 });
