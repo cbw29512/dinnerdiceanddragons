@@ -61,7 +61,6 @@ def script_text(path: str) -> str:
 def check_generic_controls(page: Path, parser: InteractionParser) -> list[str]:
     errors: list[str] = []
     relative = page.relative_to(ROOT)
-
     for button in parser.buttons:
         kind = button.attrs.get("type", "").lower()
         descriptor = button.attrs.get("id") or button.attrs.get("class") or "<button>"
@@ -73,28 +72,15 @@ def check_generic_controls(page: Path, parser: InteractionParser) -> list[str]:
         if kind in {"submit", "reset"} and not button.in_form:
             errors.append(f"{relative}: {kind} button {descriptor!r} is not inside a form")
         if kind == "button":
-            classes = set(button.attrs.get("class", "").split()) - {
-                "button",
-                "primary",
-                "secondary",
-                "interested",
-            }
-            has_identity = bool(
-                button.attrs.get("id")
-                or classes
-                or any(key.startswith("data-") for key in button.attrs)
-            )
+            classes = set(button.attrs.get("class", "").split()) - {"button", "primary", "secondary", "interested"}
+            has_identity = bool(button.attrs.get("id") or classes or any(key.startswith("data-") for key in button.attrs))
             if not has_identity:
-                errors.append(
-                    f"{relative}: type=button {descriptor!r} has no id/class/data hook for JavaScript wiring"
-                )
-
+                errors.append(f"{relative}: type=button {descriptor!r} has no id/class/data hook for JavaScript wiring")
     for link in parser.button_links:
         href = link.get("href", "").strip()
         descriptor = link.get("id") or link.get("class") or "button link"
         if not href or href == "#":
             errors.append(f"{relative}: button-style link {descriptor!r} has no real destination")
-
     return errors
 
 
@@ -110,12 +96,15 @@ PAGE_SCRIPT_REQUIREMENTS: dict[str, tuple[str, ...]] = {
     "dashboard-prototype.html": ("dashboard.js",),
     "join.html": (
         *AUTH_SCRIPT_REQUIREMENTS,
+        "global-auth-ui.js",
         "production-onboarding-adapters.js",
         "production-matching.js",
         "production-onboarding.js",
-        "global-auth-ui.js",
         "experience-profiles.js",
         "availability.js",
+        "availability-calendar-init.mjs",
+        "production-opportunity-actions.js",
+        "production-seat-actions.js",
         "production-match-results.js",
         "forms.js",
     ),
@@ -123,28 +112,26 @@ PAGE_SCRIPT_REQUIREMENTS: dict[str, tuple[str, ...]] = {
         *AUTH_SCRIPT_REQUIREMENTS,
         "global-auth-ui.js",
         "production-onboarding-adapters.js",
+        "venue-window-payloads.js",
         "production-onboarding.js",
+        "availability.js",
+        "availability-calendar-init.mjs",
         "forms.js",
     ),
+    "notifications.html": (*AUTH_SCRIPT_REQUIREMENTS, "global-auth-ui.js", "global-notifications-ui.js", "notifications.js"),
+    "opportunity.html": (*AUTH_SCRIPT_REQUIREMENTS, "global-auth-ui.js", "global-notifications-ui.js", "production-seat-actions.js", "opportunity-review.js"),
     "create-game.html": (*AUTH_SCRIPT_REQUIREMENTS, "global-auth-ui.js", "create-game.js"),
-    "find-venue.html": (
-        "table-match-profile.js",
-        "table-match-calculator.js",
-        "table-match-ui.js",
-    ),
+    "find-venue.html": ("table-match-profile.js", "table-match-calculator.js", "table-match-ui.js"),
     "recurring-match.html": ("recurring-match.js",),
     "form-series.html": ("form-series.js",),
     "series-commitments.html": ("series-commitments.js",),
-    "table-lifecycle.html": (
-        "shared-lifecycle-data.js",
-        "shared-lifecycle-view.js",
-        "shared-lifecycle.js",
-        "table-lifecycle.js",
-    ),
+    "table-lifecycle.html": ("shared-lifecycle-data.js", "shared-lifecycle-view.js", "shared-lifecycle.js", "table-lifecycle.js"),
     "game-hub.html": (
         *AUTH_SCRIPT_REQUIREMENTS,
+        "global-auth-ui.js",
+        "global-notifications-ui.js",
         "game-hub-core.js",
-        "game-hub-messages.js",
+        "game-hub-announcements.js",
         "game-hub-actions.js",
         "game-hub-role-views.js",
         "game-hub-render.js",
@@ -157,65 +144,35 @@ SOURCE_WIRING: dict[str, tuple[str, ...]] = {
     "dashboard.js": ('.role-btn', 'addEventListener("click"', '#role-select'),
     "experience-profiles.js": ('.add-experience', '.remove-experience', 'addEventListener("click"'),
     "availability.js": ('.add-availability', '.remove-availability', 'addEventListener("click"'),
+    "availability-calendar-init.mjs": ('AvailabilityCalendar', '.availability-builder', 'onboarding-stepper.js'),
+    "calendar-view-ui.mjs": ('pointerdown', 'pointerenter', 'keydown', 'availability-chip'),
+    "onboarding-stepper.js": ('ddd-step-status', 'aria-invalid', 'addEventListener("click"'),
     "forms.js": ('.prototype-form', 'addEventListener("submit"', 'ddd:save-success'),
     "form-pilot.js": ('player.save', 'gm.save', 'venue.save', 'game.save'),
-    "production-config.js": ('apiBaseUrl', 'window.location.origin'),
+    "production-config.js": ('apiBaseUrl', 'window.location.origin', 'global-notifications-ui.js'),
     "production-session-store.js": ('sessionStorage', 'localStorage.removeItem', 'DDDProductionSessionStore'),
-    "production-auth.js": (
-        'DDDProductionConfig',
-        '/api/v1/auth/',
-        'credentials: "same-origin"',
-        'confirmation_token',
-        'DDDProductionAPI.configure',
-    ),
-    "production-onboarding.js": (
-        'DDDProductionOnboardingAdapters',
-        'ProductionAuthRequiredError',
-        'putPlayerOnboarding',
-        'putGMOnboarding',
-        'postVenueOnboarding',
-    ),
-    "production-matching.js": (
-        'getPlayerDemands',
-        'postPlayerDemand',
-        'getGMSupplies',
-        'postGMSupply',
-        'findMyTable',
-        'getMatchingOpportunities',
-    ),
-    "production-match-results.js": (
-        'create-game.html?table_match_id=',
-        'postRegistration',
-        'game-hub.html?event=',
-        'ddd:save-success',
-    ),
-    "create-game.js": (
-        'table_match_id',
-        'getMatchingOpportunity',
-        'formTableMatch',
-        'game-hub.html?event=',
-    ),
+    "production-auth.js": ('DDDProductionConfig', '/api/v1/auth/', 'credentials: "same-origin"', 'confirmation_token', 'DDDProductionAPI.configure'),
+    "production-onboarding.js": ('DDDProductionOnboardingAdapters', 'ProductionAuthRequiredError', 'putPlayerOnboarding', 'putGMOnboarding', 'postVenueOnboarding'),
+    "production-matching.js": ('getPlayerDemands', 'postPlayerDemand', 'getGMSupplies', 'postGMSupply', 'findMyTable', 'getMatchingOpportunities'),
+    "production-match-results.js": ('DDDOpportunityActions', 'ddd:save-success', 'compatible'),
+    "production-opportunity-actions.js": ('respondToOpportunity', 'Accept Match', "I'm Interested", 'Finish Event Setup'),
+    "production-seat-actions.js": ('postRegistration', 'Request My Seat', 'game-hub.html?event='),
+    "global-notifications-ui.js": ('getNotifications', 'ddd-notifications-link', 'Notifications'),
+    "notifications.js": ('getNotifications', 'getNotificationPreferences', 'putNotificationPreferences', 'opportunity.html?${params}'),
+    "opportunity-review.js": ('getMatchingOpportunity', 'respondToOpportunity', 'Not This One'),
+    "create-game.js": ('table_match_id', 'getMatchingOpportunity', 'formTableMatch', 'game-hub.html?event='),
     "table-match-ui.js": ('#table-match-form', 'addEventListener("click"', 'Start Forming This Table'),
     "recurring-match.js": ('#recurring-match-form', 'data-series-action', '.form-series-button'),
     "form-series.js": ('#series-form', 'addEventListener("submit"', 'series-commitments.html'),
     "series-commitments.js": ('#add-player-request', 'data-request-action', 'data-venue-action', 'data-remove-core'),
     "shared-lifecycle-view.js": ('actionButton', 'addEventListener("click"', 'Open Game Hub'),
     "shared-lifecycle.js": ('#shared-lifecycle-role', 'addEventListener("change"', 'gmManage', 'venueManage', 'playerCancel'),
-    "table-lifecycle.js": (
-        'game-hub-link',
-        'toggle-venue',
-        'add-player',
-        'cancel-player',
-        'cancel-gm',
-        'restore-gm',
-        'complete-game',
-        'reset-lifecycle',
-    ),
+    "table-lifecycle.js": ('game-hub-link', 'toggle-venue', 'add-player', 'cancel-player', 'cancel-gm', 'restore-gm', 'complete-game', 'reset-lifecycle'),
     "game-hub-core.js": ('DDDGameHubRuntime', 'hub-status', 'handleApiError', 'addEventListener("click"'),
-    "game-hub-messages.js": ('addEventListener("submit"', 'postHubMessage', 'DDDGameHubMessages'),
+    "game-hub-announcements.js": ('getAnnouncements', 'postAnnouncement', 'hub-announcement-form'),
     "game-hub-actions.js": ('DDDGameHubActions', 'getGameHubs', 'getGameHub', 'decideVenueBooking'),
-    "game-hub-role-views.js": ('venue-question-form', 'cancel-seat', 'mutateRegistration', 'mutateBooking'),
-    "game-hub-render.js": ('hub-role-button', 'addEventListener("click"', 'DDDGameHubMessages.renderChannels'),
+    "game-hub-role-views.js": ('cancel-seat', 'mutateRegistration', 'mutateBooking'),
+    "game-hub-render.js": ('hub-role-button', 'addEventListener("click"', 'DDDGameHubAnnouncements'),
     "game-hub.js": ('DDDGameHubActions.initialize',),
     "venue-feedback.js": ('#venue-feedback-form', 'addEventListener("submit"'),
 }
@@ -240,6 +197,12 @@ def check_source_wiring() -> list[str]:
         for snippet in snippets:
             if snippet not in text:
                 errors.append(f"{relative}: expected interaction wiring snippet is missing: {snippet}")
+    api_client = script_text("production-api-client.js")
+    for forbidden in ("getHubMessages", "postHubMessage"):
+        if forbidden in api_client:
+            errors.append(f"production-api-client.js: forbidden direct messaging API remains: {forbidden}")
+    if (ROOT / "game-hub-messages.js").exists():
+        errors.append("game-hub-messages.js: direct messaging client must not exist")
     return errors
 
 
@@ -252,13 +215,11 @@ def main() -> int:
         errors.extend(check_generic_controls(page, parser))
         errors.extend(check_required_scripts(page, parser))
     errors.extend(check_source_wiring())
-
     if errors:
         for error in errors:
             LOGGER.error(error)
         LOGGER.error("Button/security QA failed with %s issue(s).", len(errors))
         return 1
-
     LOGGER.info("Button/security QA passed.")
     return 0
 

@@ -9,6 +9,7 @@
   <meta name="description" content="Players can find D&D tables that fit their schedule and location. Dungeon Masters can find interested Players and a public place to run the game.">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="global-auth-ui.css">
+  <link rel="stylesheet" href="availability-calendar.css">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to main content</a>
@@ -45,7 +46,7 @@
           <div><strong>Less searching</strong><span>tell us what works once</span></div><b>+</b>
           <div><strong>Better fit</strong><span>game · schedule · distance · table needs</span></div><b>+</b>
           <div><strong>A public place to play</strong><span>when the table needs one</span></div><b>=</b>
-          <div class="match-result"><strong>More actual game nights</strong><span>not another abandoned group chat</span></div>
+          <div class="match-result"><strong>More actual game nights</strong><span>DDD alerts you when the pieces line up</span></div>
         </div>
       </aside>
     </div>
@@ -71,14 +72,14 @@
         <h3 class="form-section-title">3. When and how far can you play?</h3>
         <label>Home ZIP code<input name="postal_code" inputmode="numeric" autocomplete="postal-code" pattern="[0-9]{5}" maxlength="5" placeholder="29501" required></label>
         <label>Maximum travel distance<select name="radius" required><option value="5">5 miles</option><option value="10">10 miles</option><option value="25" selected>25 miles</option><option value="50">50 miles</option><option value="75">75 miles</option><option value="100">100 miles</option></select></label>
-        <div class="availability-builder"><p class="microcopy">Add every time window you could realistically play.</p><div class="availability-list" aria-live="polite"></div><button class="button secondary add-availability" type="button">+ Add Another Time Window</button></div>
+        <div class="availability-builder"><p class="microcopy">Drag across every time window when you could realistically play. Tap a saved block to edit recurrence.</p><div class="availability-list" aria-live="polite"></div><button class="button secondary add-availability" type="button">+ Add Another Time Window</button></div>
 
         <h3 class="form-section-title">4. Make the game comfortable</h3>
         <label>Anything we should consider when matching?<textarea name="notes" rows="3" placeholder="Accessibility needs, age/environment preference, content boundaries, quieter venue preferred..."></textarea></label>
         <label class="check-label"><input type="checkbox" required><span>I agree to the <a href="conduct.html">Code of Conduct</a>.</span></label>
-        <button class="button primary" type="submit">Find My Table</button>
+        <button class="button primary" type="submit">Activate Matching</button>
         <p class="form-status" role="status" aria-live="polite"></p>
-        <p class="microcopy">Your home address is never shown. We use your ZIP code and travel range only to decide which game locations could realistically work for you.</p>
+        <p class="microcopy">Your home address is never shown. We use your ZIP code and travel range only to decide which public game locations could realistically work for you. DDD coordinates match responses without exposing private contact information.</p>
       </form>
       <section id="player-production-results" class="panel" hidden aria-labelledby="player-production-results-title">
         <p class="eyebrow">YOUR MATCHES</p>
@@ -92,11 +93,11 @@
     <div class="shell">
       <div class="template-intro">
         <div><p class="eyebrow">🧙 FOR DUNGEON MASTERS</p><h2>Run more D&amp;D without doing all the searching yourself.</h2><p>Tell us exactly what you can run, when, and for how many Players. We check Player demand and verified venue capacity for the same time.</p></div>
-        <div class="template-summary"><strong>You stay in control:</strong><span>choose the game · review the match · form the Event · coordinate the table</span></div>
+        <div class="template-summary"><strong>You stay in control:</strong><span>choose the game · accept the match · form the Event · coordinate through structured actions</span></div>
       </div>
       <form class="panel form-grid prototype-form" id="gm-form" data-profile-type="Game Master" novalidate>
         <h3 class="form-section-title">1. When can you DM?</h3>
-        <div class="availability-builder"><p class="microcopy">Add the times when you could realistically run a game, including recurring patterns.</p><div class="availability-list" aria-live="polite"></div><button class="button secondary add-availability" type="button">+ Add Another Time Window</button></div>
+        <div class="availability-builder"><p class="microcopy">Drag across the times when you could realistically run a game. Tap a saved block to edit recurrence.</p><div class="availability-list" aria-live="polite"></div><button class="button secondary add-availability" type="button">+ Add Another Time Window</button></div>
         <label>Home ZIP code<input name="postal_code" inputmode="numeric" autocomplete="postal-code" pattern="[0-9]{5}" maxlength="5" placeholder="29501" required></label>
         <label>Maximum travel distance<select name="radius" required><option value="5">5 miles</option><option value="10">10 miles</option><option value="25" selected>25 miles</option><option value="50">50 miles</option><option value="75">75 miles</option><option value="100">100 miles</option></select></label>
         <label>Preferred cadence<select name="cadence"><option>One-shots when convenient</option><option selected>Weekly</option><option>Every other week</option><option>Monthly</option><option>Flexible / varies</option></select></label>
@@ -115,9 +116,9 @@
         <label>Players you especially welcome<textarea name="welcome" rows="3" placeholder="Beginners, experienced players, adults 18+, families"></textarea></label>
         <label>Game rules and expectations<textarea name="expectations" rows="4" placeholder="Punctual starts, no PvP, character restrictions, age limits, session zero for campaigns..." required></textarea></label>
         <label class="check-label"><input type="checkbox" required><span>I will accurately describe my games and follow the <a href="conduct.html">Code of Conduct</a>.</span></label>
-        <button class="button primary" type="submit">Find Players + Venue</button>
+        <button class="button primary" type="submit">Activate DM Matching</button>
         <p class="form-status" role="status" aria-live="polite"></p>
-        <p class="microcopy">Your home address is never published. A compatible opportunity must line up the game, Player demand, verified venue, schedule, capacity, and travel ranges.</p>
+        <p class="microcopy">Your home address is never published. DDD alerts compatible participants and collects structured accept/decline decisions without exposing private contact information.</p>
       </form>
       <section id="gm-production-results" class="panel" hidden aria-labelledby="gm-production-results-title">
         <p class="eyebrow">YOUR MATCHES</p>
@@ -139,6 +140,9 @@
 <script src="global-auth-ui.js"></script>
 <script src="experience-profiles.js"></script>
 <script src="availability.js"></script>
+<script type="module" src="availability-calendar-init.mjs"></script>
+<script src="production-seat-actions.js"></script>
+<script src="production-opportunity-actions.js"></script>
 <script src="production-match-results.js"></script>
 <script src="forms.js"></script>
 </body>

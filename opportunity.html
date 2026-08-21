@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>Review Table Match | Dinner, Dice &amp; Dragons</title>
+  <meta name="description" content="Review a privacy-safe Dinner, Dice & Dragons table opportunity and accept or pass without exchanging personal contact details.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="global-auth-ui.css">
+  <link rel="stylesheet" href="notifications.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site-header"><div class="shell nav-wrap">
+  <a class="brand" href="index.html"><span aria-hidden="true">🎲</span><span>Dinner, Dice &amp; Dragons</span></a>
+  <nav aria-label="Primary navigation">
+    <a href="index.html">Home</a><a href="join.html">Play or DM</a><a href="venues.html">Venues</a><a href="notifications.html">Notifications</a><a href="conduct.html">Safety</a>
+    <button id="ddd-global-account-button" class="ddd-account-trigger" type="button" aria-haspopup="dialog" aria-controls="ddd-global-account-dialog">Sign In</button>
+  </nav>
+</div></header>
+<main id="main" tabindex="-1">
+  <section class="hero"><div class="shell hero-grid">
+    <div><p class="eyebrow">TABLE MATCH</p><h1>Review the fit. DDD handles the coordination.</h1><p class="lede">Accept or pass without exchanging private email addresses, phone numbers, home locations, or direct messages.</p></div>
+    <aside class="hero-card"><p class="eyebrow">YOUR DECISION</p><p>Accepting says this match works for you. The table forms only after the DM, Venue, and minimum number of Players accept.</p></aside>
+  </div></section>
+  <section class="section"><div class="shell">
+    <p id="opportunity-status" class="form-status" role="status" aria-live="polite">Loading your match…</p>
+    <article id="opportunity-panel" class="panel" hidden>
+      <p class="eyebrow" id="opportunity-role"></p>
+      <h2 id="opportunity-title">Table opportunity</h2>
+      <dl class="hub-definition-list">
+        <dt>Game</dt><dd id="opportunity-system"></dd>
+        <dt>When</dt><dd id="opportunity-time"></dd>
+        <dt>Public Venue</dt><dd id="opportunity-venue"></dd>
+        <dt>Player fit</dt><dd id="opportunity-players"></dd>
+      </dl>
+      <p class="microcopy">Your own travel eligibility is already checked. Other participants' contact information and home location are never shown here.</p>
+      <div id="opportunity-actions" class="cta-row" data-opportunity-actions></div>
+    </article>
+  </div></section>
+</main>
+<footer class="site-footer"><div class="shell footer-grid"><div><strong>Dinner, Dice & Dragons</strong><p>DDD coordinates the match. Users do not need to contact strangers directly.</p></div><div><a href="notifications.html">Notifications</a> · <a href="conduct.html">Safety</a></div></div></footer>
+<script src="production-config.js"></script>
+<script src="production-api-client.js"></script>
+<script src="production-session-store.js"></script>
+<script src="production-auth.js"></script>
+<script src="global-auth-ui.js"></script>
+<script src="global-notifications-ui.js"></script>
+<script src="production-seat-actions.js"></script>
+<script src="opportunity-review.js"></script>
+</body>
+</html>
