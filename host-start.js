@@ -41,10 +41,13 @@
     form().elements.password.autocomplete = signingIn ? "current-password" : "new-password";
     document.querySelector('[data-action="account"]').textContent = signingIn ? "Sign In & Continue" : "Create Account & Continue";
   }
-  function valid(name, message, statusId = "auth-status") {
+  function valid(name, message, statusId) {
     const field = form().elements[name];
     if (field?.checkValidity()) return true;
-    field?.setAttribute("aria-invalid", "true"); field?.focus(); announce(statusId, message); return false;
+    field?.setAttribute("aria-invalid", "true");
+    field?.focus();
+    announce(statusId, message);
+    return false;
   }
   async function afterAuth(session) {
     signedIn = true;
@@ -61,10 +64,10 @@
   }
   async function account() {
     try {
-      if (signedIn) { if (valid("contact_name", "Enter the Venue manager name.")) showStep(2); return; }
-      if (authMode === "signup" && !valid("contact_name", "Enter the Venue manager name.")) return;
-      if (!valid("email", "Enter a valid email address.")) return;
-      if (!valid("password", "Use a password with at least 8 characters.")) return;
+      if (signedIn) { if (valid("contact_name", "Enter the Venue manager name.", "auth-status")) showStep(2); return; }
+      if (authMode === "signup" && !valid("contact_name", "Enter the Venue manager name.", "auth-status")) return;
+      if (!valid("email", "Enter a valid email address.", "auth-status")) return;
+      if (!valid("password", "Use a password with at least 8 characters.", "auth-status")) return;
       announce("auth-status", authMode === "signin" ? "Signing in…" : "Creating your account…", true);
       const email = form().elements.email.value.trim(); const password = form().elements.password.value;
       const result = authMode === "signin" ? { session: await window.DDDProductionAuth.signIn(email, password) } : await window.DDDProductionAuth.signUp(email, password);
@@ -73,10 +76,13 @@
     } catch (error) { log("Account step failed", error); announce("auth-status", error?.message || "We could not complete the account step."); }
   }
   function venueReady() {
-    for (const [name, message] of [["business_name", "Enter the Venue name."], ["address", "Enter the public street address."], ["city", "Enter the city."], ["state", "Enter the two-letter state."], ["postal_code", "Enter a five-digit ZIP code."]]) {
-      if (!valid(name, message, "save-status")) return false;
-    }
-    return /^[A-Za-z]{2}$/.test(form().elements.state.value.trim()) && /^\d{5}$/.test(form().elements.postal_code.value.trim());
+    const fields = [
+      ["business_name", "Enter the Venue name."], ["address", "Enter the public street address."],
+      ["city", "Enter the city."], ["state", "Enter a two-letter state code."], ["postal_code", "Enter a five-digit ZIP code."]
+    ];
+    for (const [name, message] of fields) if (!valid(name, message, "venue-details-status")) return false;
+    announce("venue-details-status", "Venue location looks good.", true);
+    return true;
   }
   function availabilityReady() {
     if (form().querySelectorAll('[name="availability_day[]"]').length) return true;
