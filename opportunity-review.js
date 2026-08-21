@@ -46,6 +46,8 @@
       const link = element("a", "button primary", "💥 GAME ON · Finish Event Setup");
       link.href = `create-game.html?table_match_id=${encodeURIComponent(opportunity.id)}`;
       actions.append(link);
+    } else if (role === "player" && opportunity.event_id && window.DDDSeatActions?.render) {
+      window.DDDSeatActions.render(opportunity, actions);
     } else if (opportunity.event_id) {
       actions.append(gameHubLink(opportunity.event_id));
     } else {
