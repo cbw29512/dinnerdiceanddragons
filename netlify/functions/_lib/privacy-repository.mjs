@@ -2,6 +2,7 @@ import { eq, insertRows, selectMany, selectOne, updateRows } from "./supabase-re
 
 export const privacyRepository = Object.freeze({
   findPreferences: (userId) => selectOne("notification_preferences", { user_id: eq(userId) }),
+  preferences: (userId) => selectOne("notification_preferences", { user_id: eq(userId) }),
   async upsertPreferences(userId, values) {
     const rows = await insertRows("notification_preferences", [{ user_id: userId, ...values }], {
       upsert: true,
@@ -10,6 +11,7 @@ export const privacyRepository = Object.freeze({
     return rows[0] || null;
   },
   listNotifications: (userId, limit) => selectMany("notifications", { user_id: eq(userId), order: "created_at.desc", limit }),
+  createNotification: (row) => insertRows("notifications", [row], { returning: false }),
   async updateNotification(userId, notificationId, values) {
     const rows = await updateRows("notifications", { id: eq(notificationId), user_id: eq(userId) }, values);
     return rows[0] || null;
