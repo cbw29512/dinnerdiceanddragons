@@ -15,6 +15,7 @@ const MIME_TYPES = Object.freeze({
   ".jpeg": "image/jpeg",
   ".jpg": "image/jpeg",
   ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".png": "image/png",
   ".svg": "image/svg+xml; charset=utf-8",
@@ -36,11 +37,8 @@ function sendJson(response, status, payload) {
 
 function safePath(pathname) {
   let decoded;
-  try {
-    decoded = decodeURIComponent(pathname);
-  } catch {
-    return null;
-  }
+  try { decoded = decodeURIComponent(pathname); }
+  catch { return null; }
   const relative = decoded.replace(/^\/+/, "") || "index.html";
   const candidate = resolve(ROOT, relative);
   if (candidate !== resolve(ROOT) && !candidate.startsWith(ROOT_PREFIX)) return null;
@@ -50,13 +48,10 @@ function safePath(pathname) {
 const server = createServer(async (request, response) => {
   const url = new URL(request.url || "/", `http://${request.headers.host || `${HOST}:${PORT}`}`);
 
-  // Netlify Identity is server-backed in production. Browser tests need the
-  // same clean anonymous-session contract instead of a Python static-server 404.
   if (url.pathname === "/api/v1/auth/session" && request.method === "GET") {
     sendJson(response, 200, { authenticated: false });
     return;
   }
-
   if (url.pathname.startsWith("/api/")) {
     sendJson(response, 404, { detail: "No browser-test API fixture is installed for this route." });
     return;
