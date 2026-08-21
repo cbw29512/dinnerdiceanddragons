@@ -7,8 +7,24 @@ export const DEFAULT_PREFERENCES = Object.freeze({
   email_event_updates: true,
   browser_push: false,
   digest_mode: "immediate",
-  matching_paused: false
+  matching_paused: false,
+  default_reminder_minutes: Object.freeze([1440, 60])
 });
+
+function publicPreferences(row) {
+  return Object.freeze({
+    email_match_alerts: Boolean(row?.email_match_alerts),
+    email_event_updates: Boolean(row?.email_event_updates),
+    browser_push: Boolean(row?.browser_push),
+    digest_mode: row?.digest_mode || "immediate",
+    matching_paused: Boolean(row?.matching_paused),
+    default_reminder_minutes: Object.freeze(
+      Array.isArray(row?.default_reminder_minutes)
+        ? row.default_reminder_minutes.map(Number)
+        : [...DEFAULT_PREFERENCES.default_reminder_minutes]
+    )
+  });
+}
 
 export function createPrivacyService(repository, clock = () => new Date().toISOString()) {
   if (!repository) throw new Error("Privacy repository is required.");
@@ -16,13 +32,7 @@ export function createPrivacyService(repository, clock = () => new Date().toISOS
   async function preferences(userId) {
     try {
       const row = await repository.findPreferences(userId);
-      return Object.freeze(row ? {
-        email_match_alerts: Boolean(row.email_match_alerts),
-        email_event_updates: Boolean(row.email_event_updates),
-        browser_push: Boolean(row.browser_push),
-        digest_mode: row.digest_mode,
-        matching_paused: Boolean(row.matching_paused)
-      } : { ...DEFAULT_PREFERENCES });
+      return row ? publicPreferences(row) : Object.freeze({ ...DEFAULT_PREFERENCES });
     } catch (error) {
       console.error("[DDD Privacy] Unable to load preferences", { error_type: String(error?.name || "Error") });
       throw error;
@@ -36,7 +46,7 @@ export function createPrivacyService(repository, clock = () => new Date().toISOS
       if (typeof repository.syncMatchingPause === "function") {
         await repository.syncMatchingPause(userId, values.matching_paused);
       }
-      return Object.freeze(row || values);
+      return publicPreferences(row || values);
     } catch (error) {
       console.error("[DDD Privacy] Unable to save preferences", { error_type: String(error?.name || "Error") });
       throw error;
@@ -73,17 +83,14 @@ export function createPrivacyService(repository, clock = () => new Date().toISOS
       const plan = deliveryChannels("table_formed", prefs);
       for (const channel of plan.channels) {
         await repository.createNotification({
-          id: crypto.randomUUID(),
-          user_id: response.user_id,
-          table_match_id: matchId,
-          event_id: null,
-          type: "table_formed",
-          state: "queued",
-          channel,
-          payload: { match_id: matchId, role: response.role, status: "forming" },
-          expires_at: null
+          id: crypto.randomUUID(), user_id: response.user_id, table_match_id: matchId, event_id: null,
+          type: "table_formed", state: "queued", channel,
+          payload: { match_id: matchId, role: response.role, status: "forming" }, expires_at: null
         });
       }
+    }
+    if (typeof repository.seedDefaultReminders === "function") {
+      await repository.seedDefaultReminders(matchId, responses);
     }
   }
 
