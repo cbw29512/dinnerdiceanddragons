@@ -25,7 +25,7 @@ const GM_COMFORT = new Set(["learning", "comfortable", "very_comfortable", "expe
 const GM_FORMATS = new Set([
   "learn_to_play", "one_shot", "short_campaign", "long_campaign", "organized_play"
 ]);
-const PLAYER_EXPERIENCE = new Set(["new", "some_experience", "experienced", "any"]);
+const PLAYER_EXPERIENCE = new Set(["new_players", "some_experience", "experienced", "any"]);
 
 async function clearGMSystems(profileId) {
   const existing = await selectMany("gm_system_experiences", { gm_profile_id: eq(profileId) });

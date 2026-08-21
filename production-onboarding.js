@@ -38,65 +38,28 @@
     );
   }
 
-  function venueWindowPayload(deferred, timezone) {
-    try {
-      const recurrence = String(deferred.recurrence || "Weekly").trim();
-      if (recurrence !== "Weekly") throw new Error("Production Venue table windows currently require a weekly opening.");
-      const environmentNotes = [deferred.age_policy, deferred.combined_environment_notes].filter(Boolean).join("\n");
-      return {
-        availability: {
-          day_of_week: String(deferred.window_day || "").trim().toLowerCase(),
-          start_time: String(deferred.window_start || "").trim(),
-          end_time: String(deferred.window_end || "").trim(),
-          pattern_type: "weekly_interval", week_interval: 1, anchor_date: null,
-          monthly_ordinal: null, month_interval: null, timezone, starts_on: null, ends_on: null
-        },
-        table_count: Number(deferred.table_count),
-        max_people_per_table: Number(deferred.seats_per_table),
-        purchase_policy: deferred.purchase_policy || null,
-        approval_required: false,
-        special_support_offerings: [], special_support_notes: null,
-        environment_notes: environmentNotes || null
-      };
-    } catch (error) {
-      console.error("[Dinner Dice & Dragons] Unable to build Venue table window", error);
-      throw error;
-    }
-  }
-
-  function venueWindowPayloads(rawValues, deferred, timezone) {
-    try {
-      if (window.DDDVenueWindowPayloads?.fromRaw && rawValues?.availability_day) {
-        return window.DDDVenueWindowPayloads.fromRaw(rawValues, deferred, timezone);
-      }
-      return [venueWindowPayload(deferred, timezone)];
-    } catch (error) {
-      console.error("[Dinner Dice & Dragons] Unable to build Venue table windows", error);
-      throw error;
-    }
-  }
-
-  async function saveVenueWindows(venueId, payloads) {
-    try {
-      const results = [];
-      for (const payload of payloads) results.push(await window.DDDProductionAPI.postVenueTableWindow(venueId, payload));
-      return results;
-    } catch (error) {
-      console.error("[Dinner Dice & Dragons] Unable to persist Venue table availability", error);
-      throw error;
-    }
-  }
-
   async function activateMatching(type, mapped, rawValues) {
     if (!window.DDDProductionMatching?.syncAndFind) {
-      return { matching: null, matchingError: new Error("Production matching bridge is unavailable on this page.") };
+      return {
+        matching: null,
+        matchingError: new Error("Production matching bridge is unavailable on this page.")
+      };
     }
     try {
-      return { matching: await window.DDDProductionMatching.syncAndFind(type, mapped, rawValues), matchingError: null };
+      return {
+        matching: await window.DDDProductionMatching.syncAndFind(type, mapped, rawValues),
+        matchingError: null
+      };
     } catch (error) {
       console.error(`[Dinner Dice & Dragons] Unable to activate ${type} matching`, error);
       return { matching: null, matchingError: error };
     }
+  }
+
+  function venueTools() {
+    const tools = window.DDDProductionVenueOnboarding;
+    if (!tools) throw new Error("Production Venue onboarding bridge is unavailable on this page.");
+    return tools;
   }
 
   async function save(type, rawValues) {
@@ -124,15 +87,23 @@
         mapped = window.DDDProductionOnboardingAdapters.venue(rawValues, options);
         result = await window.DDDProductionAPI.postVenueOnboarding(mapped.payload);
         pendingVerification = !result.manager_verified || !result.venue_verified;
-        venueWindows = await saveVenueWindows(
+        const tools = venueTools();
+        venueWindows = await tools.saveVenueWindows(
           result.venue_id,
-          venueWindowPayloads(rawValues, mapped.deferred, options.timezone)
+          tools.venueWindowPayloads(rawValues, mapped.deferred, options.timezone)
         );
       }
 
       return {
-        shared: true, production: true, result, deferred: mapped.deferred, payload: mapped.payload,
-        pendingVerification, venueWindows, matching, matchingError
+        shared: true,
+        production: true,
+        result,
+        deferred: mapped.deferred,
+        payload: mapped.payload,
+        pendingVerification,
+        venueWindows,
+        matching,
+        matchingError
       };
     } catch (error) {
       console.error(`[Dinner Dice & Dragons] Unable to save ${type} onboarding`, error);
@@ -149,8 +120,11 @@
   }
 
   window.DDDProductionOnboarding = Object.freeze({
-    ProductionAuthRequiredError, browserTimezone, init, isEnabled, save,
-    saveVenueWindows, venueWindowPayload, venueWindowPayloads
+    ProductionAuthRequiredError,
+    browserTimezone,
+    init,
+    isEnabled,
+    save
   });
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });

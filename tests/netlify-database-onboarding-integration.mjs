@@ -73,7 +73,7 @@ const validPayload = {
     years_playing: 0,
     years_gming: 0,
     comfort_level: "comfortable",
-    preferred_player_experience: "any",
+    preferred_player_experience: "new_players",
     formats: ["one_shot"],
     experience_notes: null
   }],
@@ -92,6 +92,7 @@ assert.equal(loaded.postal_code, "29501");
 assert.equal(loaded.travel_radius_miles, 50);
 assert.equal(loaded.systems.length, 1);
 assert.deepEqual(loaded.systems[0].formats, ["one_shot"]);
+assert.equal(loaded.systems[0].preferred_player_experience, "new_players");
 assert.equal(loaded.availability.length, 2);
 
 const invalidPayload = {
@@ -123,3 +124,4 @@ console.log("GM onboarding Netlify Database integration and rollback checks pass
 await import("./netlify-database-player-integration.mjs");
 await import("./netlify-database-venue-onboarding-integration.mjs");
 await import("./netlify-database-venue-calendar-integration.mjs");
+await import("./netlify-database-matching-inputs-integration.mjs");
