@@ -128,19 +128,20 @@ async function run() {
     assert.equal(calls[0].options.credentials, "same-origin");
   });
 
-  await test("confirmation token is removed from URL before exchange", async () => {
+  await test("confirmation is consumed without assuming a browser session", async () => {
     window.location.hash = "#confirmation_token=one-time-token";
     history.replaced = null;
     const calls = [];
     global.fetch = async (url, options) => {
       calls.push({ url, options });
       if (url.endsWith("/api/v1/auth/confirm")) return jsonResponse(200, { confirmed: true, id: "identity-2", email: "confirmed@example.com" });
-      if (url.endsWith("/api/v1/auth/session")) return jsonResponse(200, { authenticated: true, id: "identity-2", email: "confirmed@example.com" });
-      return jsonResponse(404, {});
+      throw new Error(`Unexpected auth request after confirmation: ${url}`);
     };
     const session = await DDDProductionAuth.getSession();
     assert.equal(history.replaced, "/play.html");
-    assert.equal(session.user.email, "confirmed@example.com");
+    assert.equal(session, null);
+    assert.equal(DDDProductionAuth.didConfirmEmail(), true);
+    assert.equal(calls.length, 1);
     assert.equal(calls[0].url, "https://dinnerdiceanddragons.netlify.app/api/v1/auth/confirm");
     assert.deepEqual(JSON.parse(calls[0].options.body), { token: "one-time-token" });
     window.location.hash = "";
