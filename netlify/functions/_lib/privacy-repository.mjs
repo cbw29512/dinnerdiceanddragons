@@ -14,8 +14,12 @@ export const privacyRepository = Object.freeze({
     const rows = await updateRows("notifications", { id: eq(notificationId), user_id: eq(userId) }, values);
     return rows[0] || null;
   },
-  findResponse: (userId, matchId) => selectOne("opportunity_responses", { table_match_id: eq(matchId), user_id: eq(userId) }),
-  updateResponse: (responseId, userId, values) => updateRows("opportunity_responses", { id: eq(responseId), user_id: eq(userId) }, {
+  findResponse: (userId, matchId, role) => selectOne("opportunity_responses", {
+    table_match_id: eq(matchId), user_id: eq(userId), role: eq(role)
+  }),
+  updateResponse: (responseId, userId, role, values) => updateRows("opportunity_responses", {
+    id: eq(responseId), user_id: eq(userId), role: eq(role)
+  }, {
     decision: values.decision,
     responded_at: values.responded_at,
     updated_at: values.updated_at
