@@ -18,7 +18,7 @@
         table_count: tableCount,
         max_people_per_table: seats,
         purchase_policy: deferred?.purchase_policy || null,
-        approval_required: Boolean(deferred?.approval_required),
+        approval_required: false,
         special_support_offerings: [],
         special_support_notes: null,
         environment_notes: environmentNotes || null
