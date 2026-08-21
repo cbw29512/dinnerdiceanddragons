@@ -9,7 +9,7 @@ ALTER TABLE notification_preferences
     ADD CONSTRAINT ck_notification_preferences_default_reminders_range
         CHECK (
             cardinality(default_reminder_minutes) = 0 OR
-            (0 < ALL(default_reminder_minutes) AND 20160 >= ALL(default_reminder_minutes))
+            (15 <= ALL(default_reminder_minutes) AND 20160 >= ALL(default_reminder_minutes))
         );
 
 CREATE TABLE game_reminders (
@@ -23,7 +23,7 @@ CREATE TABLE game_reminders (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     CONSTRAINT ck_game_reminders_minutes_before
-        CHECK (minutes_before BETWEEN 1 AND 20160),
+        CHECK (minutes_before BETWEEN 15 AND 20160),
     CONSTRAINT uq_game_reminders_user_match_offset
         UNIQUE (user_id, table_match_id, minutes_before)
 );
