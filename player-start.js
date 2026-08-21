@@ -12,10 +12,12 @@
   const log = (message, error) => console.error(`[DDD Player Start] ${message}`, error);
 
   function announce(id, message, success = false) {
-    const node = byId(id); if (!node) return;
+    const node = byId(id);
+    if (!node) return;
     node.className = `form-status ${success ? "success-message" : "error-message"}`;
     node.textContent = message;
   }
+
   function showStep(next) {
     try {
       step = Math.max(editMode ? 3 : 1, Math.min(5, next));
@@ -26,6 +28,7 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) { log("Unable to change step", error); }
   }
+
   function rawValues() {
     const output = {};
     for (const [rawKey, value] of new FormData(form()).entries()) {
@@ -35,33 +38,23 @@
     }
     return output;
   }
-  function displayNameLabel() { return form().elements.display_name.closest("label"); }
+
+  function fieldReady(name, message) {
+    const result = window.DDDPlayerStartAccount.valid(form(), name, message);
+    if (!result.ok) announce("auth-status", result.message);
+    return result.ok;
+  }
+
   function setAuthMode(mode) {
     authMode = mode;
-    const signingIn = mode === "signin";
-    document.querySelectorAll("[data-auth-mode]").forEach((button) => button.classList.toggle("is-selected", button.dataset.authMode === mode));
-    displayNameLabel().hidden = signingIn;
-    form().elements.display_name.disabled = signingIn;
-    form().elements.password.autocomplete = signingIn ? "current-password" : "new-password";
-    document.querySelector('[data-action="account"]').textContent = signingIn ? "Sign In & Continue" : "Create Account & Continue";
+    window.DDDPlayerStartAccount.setMode(form(), mode);
     announce("auth-status", "", true);
   }
-  function fieldReady(name, message) {
-    const field = form().elements[name];
-    if (field?.checkValidity()) return true;
-    field?.setAttribute("aria-invalid", "true"); field?.focus(); announce("auth-status", message); return false;
-  }
-  function signedInUi(session) {
-    signedIn = true;
-    form().elements.email.value = session.user.email;
-    form().elements.email.readOnly = true;
-    form().elements.password.disabled = true;
-    document.querySelector(".auth-toggle").hidden = true;
-    document.querySelector('[data-action="account"]').textContent = "Continue";
-    announce("auth-status", `Signed in as ${session.user.email}.`, true);
-  }
+
   async function continueAfterAuth(session) {
-    signedInUi(session);
+    signedIn = true;
+    window.DDDPlayerStartAccount.lockSignedIn(form(), session);
+    announce("auth-status", `Signed in as ${session.user.email}.`, true);
     existingProfile = await window.DDDProductionAPI.getPlayerOnboardingOptional();
     if (existingProfile) {
       if (!editMode) return showReady();
@@ -71,29 +64,35 @@
         return showStep(3);
       }
     }
-    displayNameLabel().hidden = false;
-    form().elements.display_name.disabled = false;
+    window.DDDPlayerStartAccount.enableDisplayName(form());
     if (form().elements.display_name.value.trim()) return showStep(2);
     announce("auth-status", "Signed in. Add the display name your table should see, then continue.", true);
     form().elements.display_name.focus();
   }
+
   async function handleAccount() {
     try {
-      if (signedIn) { if (fieldReady("display_name", "Enter the name your table should see.")) showStep(2); return; }
-      if (authMode === "signup" && !fieldReady("display_name", "Enter the name your table should see.")) return;
-      if (!fieldReady("email", "Enter a valid email address.")) return;
-      if (!fieldReady("password", "Use a password with at least 8 characters.")) return;
-      const email = form().elements.email.value.trim(); const password = form().elements.password.value;
+      if (signedIn) {
+        if (fieldReady("display_name", "Enter the name your table should see.")) showStep(2);
+        return;
+      }
       announce("auth-status", authMode === "signin" ? "Signing in…" : "Creating your account…", true);
-      const result = authMode === "signin" ? { session: await window.DDDProductionAuth.signIn(email, password) } : await window.DDDProductionAuth.signUp(email, password);
+      const result = await window.DDDPlayerStartAccount.authenticate(form(), authMode);
+      if (result.error) return announce("auth-status", result.error);
       if (!result.session) return announce("auth-status", "Check your email to confirm your account. Then come back and choose Sign in.");
       await continueAfterAuth(result.session);
-    } catch (error) { log("Account step failed", error); announce("auth-status", error?.message || "We could not complete the account step."); }
+    } catch (error) {
+      log("Account step failed", error);
+      announce("auth-status", error?.message || "We could not complete the account step.");
+    }
   }
+
   function availabilityReady() {
     if (form().querySelectorAll('[name="availability_day[]"]').length) return true;
-    announce("availability-status", "Choose at least one time when you can play."); return false;
+    announce("availability-status", "Choose at least one time when you can play.");
+    return false;
   }
+
   function locationReady() {
     const zip = form().elements.postal_code;
     const good = /^\d{5}$/.test(zip.value.trim());
@@ -104,14 +103,14 @@
     announce("area-status", "Enter a five-digit ZIP code.");
     return false;
   }
-  function formatWindows(values) {
-    return (values.availability_day || []).map((day, i) => `${day} ${values.availability_start?.[i] || ""}–${values.availability_end?.[i] || ""}`).join(" · ");
-  }
+
   function renderReview() {
     const values = rawValues();
+    const windows = (values.availability_day || []).map((day, i) => `${day} ${values.availability_start?.[i] || ""}–${values.availability_end?.[i] || ""}`).join(" · ");
     const game = editMode ? "Game preferences unchanged" : (values.player_system?.[0] || "D&D 5e (2024)");
-    const rows = [["Game", game], ["Available", formatWindows(values) || "No times selected"], ["Travel", `${values.radius || 25} miles from ${values.postal_code || "your ZIP"}`]];
-    const review = byId("player-review"); review.replaceChildren();
+    const rows = [["Game", game], ["Available", windows || "No times selected"], ["Travel", `${values.radius || 25} miles from ${values.postal_code || "your ZIP"}`]];
+    const review = byId("player-review");
+    review.replaceChildren();
     for (const [label, value] of rows) {
       const row = document.createElement("div"); row.className = "review-row";
       const name = document.createElement("span"); name.textContent = label;
@@ -119,9 +118,13 @@
       row.append(name, strong); review.append(row);
     }
   }
+
   function showReady() {
-    form().hidden = true; document.querySelector(".start-progress").hidden = true; byId("player-ready").hidden = false;
+    form().hidden = true;
+    document.querySelector(".start-progress").hidden = true;
+    byId("player-ready").hidden = false;
   }
+
   async function savePlayer(event) {
     event.preventDefault();
     try {
@@ -137,8 +140,12 @@
         if (saved.matchingError) return announce("save-status", `Your profile saved, but game search could not start: ${saved.matchingError.message}`);
       }
       showReady();
-    } catch (error) { log("Unable to save Player availability", error); announce("save-status", error?.message || "We could not save your availability."); }
+    } catch (error) {
+      log("Unable to save Player availability", error);
+      announce("save-status", error?.message || "We could not save your availability.");
+    }
   }
+
   function bind() {
     document.querySelectorAll("[data-auth-mode]").forEach((button) => button.addEventListener("click", () => setAuthMode(button.dataset.authMode)));
     document.querySelector('[data-action="account"]').addEventListener("click", () => void handleAccount());
@@ -150,14 +157,20 @@
     }));
     form().addEventListener("submit", (event) => void savePlayer(event));
   }
+
   async function init() {
     try {
-      bind(); if (params.get("mode") === "signin") setAuthMode("signin");
+      bind();
+      if (params.get("mode") === "signin") setAuthMode("signin");
       await window.DDDProductionAuth.init();
       const session = await window.DDDProductionAuth.getSession();
       if (session) await continueAfterAuth(session);
-    } catch (error) { log("Unable to initialize Player start", error); announce("auth-status", "Account service is temporarily unavailable."); }
+    } catch (error) {
+      log("Unable to initialize Player start", error);
+      announce("auth-status", "Account service is temporarily unavailable.");
+    }
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true }); else void init();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
+  else void init();
 })();
