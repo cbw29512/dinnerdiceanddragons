@@ -30,24 +30,29 @@
     byId("opportunity-players").textContent = `${opportunity.compatible_player_count} compatible Players · minimum ${opportunity.minimum_players}`;
   }
   function waitingText(role) {
-    if (role === "venue_manager") return "You accepted this possible table. DDD is waiting for the DM and enough Players.";
-    if (role === "gm") return "You accepted this possible table. DDD is waiting for the Venue and enough Players.";
-    return "You're interested. DDD is waiting for the DM, Venue, and enough Players.";
+    if (role === "venue_manager") return "Reserved from your Venue availability. DDD is waiting for the DM and enough Players to accept.";
+    if (role === "gm") return "You accepted this game. The Venue time is already reserved; DDD is waiting for enough Players.";
+    return "You accepted this game. The Venue time is already reserved; DDD is waiting for the DM and enough Players.";
+  }
+  function gameHubLink(eventId) {
+    const link = element("a", "button primary", "Open Game Hub");
+    link.href = `game-hub.html?event=${encodeURIComponent(eventId)}`;
+    return link;
   }
   function formedAction(opportunity, role) {
     const actions = byId("opportunity-actions");
     actions.replaceChildren();
     if (role === "gm" && !opportunity.event_id) {
-      const link = element("a", "button primary", "💥 Table Formed · Finish Event Setup");
+      const link = element("a", "button primary", "💥 GAME ON · Finish Event Setup");
       link.href = `create-game.html?table_match_id=${encodeURIComponent(opportunity.id)}`;
       actions.append(link);
-    } else if (opportunity.event_id && role === "player") {
-      window.DDDSeatActions?.render?.(opportunity, actions);
     } else if (opportunity.event_id) {
-      const link = element("a", "button primary", "Open Game Hub");
-      link.href = `game-hub.html?event=${encodeURIComponent(opportunity.event_id)}`;
-      actions.append(link);
-    } else actions.append(element("p", "success-message", "💥 Table formed. The DM is finishing Event details."));
+      actions.append(gameHubLink(opportunity.event_id));
+    } else {
+      actions.append(element("p", "success-message", role === "venue_manager"
+        ? "💥 GAME ON. This table is reserved from your Venue availability."
+        : "💥 GAME ON. The DM is finishing the Event details."));
+    }
   }
   async function respond(opportunity, role, decision) {
     const actions = byId("opportunity-actions");
@@ -72,7 +77,8 @@
     const decision = opportunity.your_responses?.[role] || "pending";
     if (["accepted", "interested"].includes(decision)) return actions.replaceChildren(element("p", "microcopy", waitingText(role)));
     if (["declined", "expired"].includes(decision)) return actions.replaceChildren(element("p", "microcopy", decision === "declined" ? "You passed on this match." : "This match offer expired."));
-    const accept = element("button", "button primary", role === "player" ? "I'm Interested" : "Accept Match");
+    if (role === "venue_manager") return actions.replaceChildren(element("p", "success-message", "Reserved from your Venue availability. No extra approval is needed."));
+    const accept = element("button", "button primary", "Accept Game");
     const decline = element("button", "button secondary", "Not This One");
     accept.type = decline.type = "button";
     accept.addEventListener("click", () => { void respond(opportunity, role, "accepted"); });
@@ -91,7 +97,7 @@
       renderFacts(opportunity, role);
       renderActions(opportunity, role);
       byId("opportunity-panel").hidden = false;
-      byId("opportunity-status").textContent = "DDD shows only the information needed to make this decision. Private contact details stay private.";
+      byId("opportunity-status").textContent = "DDD matched a DM, Players, a public Venue, and a shared time. Private contact details stay private.";
     } catch (error) {
       console.error("[DDD Opportunity] Unable to load opportunity", error);
       byId("opportunity-status").textContent = error?.message || "This match could not be loaded.";
