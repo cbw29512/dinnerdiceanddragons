@@ -5,6 +5,7 @@
   let authMode = "signup";
   let signedIn = false;
   const params = new URLSearchParams(window.location.search);
+  const addingAnotherVenue = params.get("new") === "1";
   const form = () => document.getElementById("venue-start-form");
   const byId = (id) => document.getElementById(id);
   const log = (message, error) => console.error(`[DDD Venue Start] ${message}`, error);
@@ -49,6 +50,29 @@
     announce(statusId, message);
     return false;
   }
+  function showExistingVenueManager() {
+    try {
+      form().hidden = true;
+      document.querySelector(".start-progress").hidden = true;
+      const ready = byId("venue-ready");
+      ready.hidden = false;
+      ready.querySelector(".eyebrow").textContent = "VENUE MANAGER";
+      ready.querySelector("h2").textContent = "Your account already manages a Venue in DDD.";
+      ready.querySelector("p:not(.eyebrow)").textContent = "Open My DDD for your game-night status, or explicitly add another location if you manage more than one Venue.";
+      const actions = ready.querySelector(".step-actions");
+      if (!actions.querySelector('[data-add-another-venue]')) {
+        const add = document.createElement("a");
+        add.className = "button secondary";
+        add.href = "host.html?new=1";
+        add.dataset.addAnotherVenue = "true";
+        add.textContent = "Add Another Venue";
+        actions.append(add);
+      }
+    } catch (error) {
+      log("Unable to show returning Venue manager state", error);
+      throw error;
+    }
+  }
   async function afterAuth(session) {
     signedIn = true;
     form().elements.email.value = session.user.email;
@@ -56,9 +80,15 @@
     form().elements.password.disabled = true;
     document.querySelector(".auth-toggle").hidden = true;
     document.querySelector('[data-action="account"]').textContent = "Continue";
+    announce("auth-status", `Signed in as ${session.user.email}.`, true);
+
+    if (!addingAnotherVenue) {
+      const me = await window.DDDProductionAPI.getMe();
+      if ((me?.roles || []).includes("venue_manager")) return showExistingVenueManager();
+    }
+
     form().elements.contact_name.disabled = false;
     form().elements.contact_name.closest("label").hidden = false;
-    announce("auth-status", `Signed in as ${session.user.email}.`, true);
     if (form().elements.contact_name.value.trim()) showStep(2);
     else { announce("auth-status", "Signed in. Add the manager name for this Venue, then continue.", true); form().elements.contact_name.focus(); }
   }
@@ -128,7 +158,7 @@
       await window.DDDProductionAuth.init();
       const session = await window.DDDProductionAuth.getSession();
       if (session) await afterAuth(session);
-    } catch (error) { log("Unable to initialize Venue setup", error); announce("auth-status", "Account service is temporarily unavailable."); }
+    } catch (error) { log("Unable to initialize Venue setup", error); announce("auth-status", error?.message || "Account service is temporarily unavailable."); }
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true }); else void init();
