@@ -6,6 +6,7 @@
     "pathfinder-2e": "Pathfinder 2e", "call-of-cthulhu": "Call of Cthulhu",
     "cyberpunk-red": "Cyberpunk RED", shadowrun: "Shadowrun", "other-rpg": "Other"
   });
+  const currentSignals = (items) => (items || []).filter((item) => ["active", "paused"].includes(item.status));
   const titleCase = (value) => String(value || "").replace(/\b\w/g, (letter) => letter.toUpperCase());
 
   function blocks(profile) {
@@ -75,5 +76,37 @@
     }
   }
 
-  window.DDDPlayerStartProfile = Object.freeze({ hydrate, updatePayload });
+  async function activateMatching(profile) {
+    try {
+      const existing = currentSignals(await window.DDDProductionAPI.getPlayerDemands());
+      if (existing.length) return { signals: existing, match: null, opportunities: [] };
+
+      const system = profile?.systems?.[0];
+      if (!system?.system_slug || !(profile?.availability || []).length) {
+        throw new Error("Saved Player game settings are incomplete.");
+      }
+      const signal = await window.DDDProductionAPI.postPlayerDemand({
+        system_slug: system.system_slug,
+        availability: profile.availability,
+        preferred_format: profile.preferred_format || "any",
+        preferred_cadence: null,
+        minimum_age_preference: null,
+        table_style_preferences: [],
+        environment_preferences: profile.environment_preferences || []
+      });
+      const match = await window.DDDProductionAPI.findMyTable(60);
+      const opportunities = await window.DDDProductionAPI.getMatchingOpportunities();
+      return { signals: [signal], match, opportunities };
+    } catch (error) {
+      console.error("[DDD Player Start] Unable to reactivate Player matching", error);
+      throw error;
+    }
+  }
+
+  window.DDDPlayerStartProfile = Object.freeze({
+    activateMatching,
+    currentDemands: currentSignals,
+    hydrate,
+    updatePayload
+  });
 })();

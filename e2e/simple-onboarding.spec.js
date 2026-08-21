@@ -143,17 +143,73 @@ test("returning DM can edit availability without reopening advanced setup", asyn
   await expect(page.locator('[name="availability_day[]"]')).toHaveValue("Saturday");
 });
 
+test("saved DM profile without a supply resumes matching instead of showing false READY", async ({ page }) => {
+  await installAuthenticatedSession(page, { email: "resumedm@example.test" });
+  const gm = {
+    display_name: "Resume DM", bio: null, postal_code: "29501", travel_radius_miles: 50,
+    beginner_friendly: false, gm_style: "Balanced mix of roleplay and combat",
+    systems: [{ system_slug: "dnd-5e-2014", years_playing: 0, years_gming: 0, comfort_level: "comfortable", preferred_player_experience: "any", formats: ["one_shot"], experience_notes: null }],
+    availability: [{ day_of_week: "saturday", start_time: "18:00", end_time: "22:00", pattern_type: "weekly_interval", week_interval: 1, timezone: "America/New_York" }]
+  };
+  let supplyPayload = null;
+  await page.route("**/api/v1/onboarding/gm", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(gm) }));
+  await page.route("**/api/v1/matching/gm-supplies", async (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    supplyPayload = route.request().postDataJSON();
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ id: "new-supply", status: "active", ...supplyPayload }) });
+  });
+  await page.route("**/api/v1/matching/find-my-table", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ created: 0 }) }));
+  await page.route("**/api/v1/matching/opportunities", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
+
+  await page.goto("/dm.html");
+  await expect(page.getByRole("heading", { name: "Where and how big?" })).toBeVisible();
+  await expect(page.locator("#dm-ready")).toBeHidden();
+  await page.getByLabel("How many Players do you want at your table?").fill("15");
+  await page.getByRole("button", { name: "Review" }).click();
+  await expect(page.getByText("15 Players")).toBeVisible();
+  await page.locator("#conduct-check").check();
+  await page.getByRole("button", { name: "Start Looking for a Table" }).click();
+  await expect(page.locator("#dm-ready")).toBeVisible();
+  expect(supplyPayload.minimum_players).toBe(15);
+  expect(supplyPayload.maximum_players).toBe(15);
+  expect(supplyPayload.system_slug).toBe("dnd-5e-2014");
+});
+
+test("saved Player profile without demand resumes matching instead of showing false READY", async ({ page }) => {
+  await installAuthenticatedSession(page, { email: "resumeplayer@example.test" });
+  const player = {
+    display_name: "Resume Player", bio: null, postal_code: "29501", travel_radius_miles: 25,
+    preferred_format: "any", willing_to_learn_new_system: true, environment_preferences: [],
+    systems: [{ system_slug: "dnd-5e-2024", years_playing: 0, comfort_level: "new", experience_notes: null }],
+    availability: [{ day_of_week: "friday", start_time: "18:00", end_time: "22:00", pattern_type: "weekly_interval", week_interval: 1, timezone: "America/New_York" }]
+  };
+  let demandPayload = null;
+  await page.route("**/api/v1/onboarding/player", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(player) }));
+  await page.route("**/api/v1/matching/player-demands", async (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    demandPayload = route.request().postDataJSON();
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ id: "new-demand", status: "active", ...demandPayload }) });
+  });
+  await page.route("**/api/v1/matching/find-my-table", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ created: 0 }) }));
+  await page.route("**/api/v1/matching/opportunities", async (route) => route.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
+
+  await page.goto("/play.html");
+  await expect(page.getByRole("heading", { name: "How far will you travel?" })).toBeVisible();
+  await expect(page.locator("#player-ready")).toBeHidden();
+  await page.getByRole("button", { name: "Review" }).click();
+  await page.locator("#conduct-check").check();
+  await page.getByRole("button", { name: "Start Looking for Games" }).click();
+  await expect(page.locator("#player-ready")).toBeVisible();
+  expect(demandPayload.system_slug).toBe("dnd-5e-2024");
+});
+
 test("returning Venue Manager is not pushed into duplicate Venue creation", async ({ page }) => {
   await installAuthenticatedSession(page, { email: "venue@example.test" });
   await page.route("**/api/v1/me", async (route) => {
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
-      ddd_user_id: "venue-user", email: "venue@example.test", status: "active", roles: ["venue_manager"]
-    }) });
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ddd_user_id: "venue-user", email: "venue@example.test", status: "active", roles: ["venue_manager"] }) });
   });
   await page.route("**/api/v1/onboarding/venues", async (route) => {
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{
-      id: "venue-1", name: "Returning Test Cafe", city: "Florence", state_region: "SC", verified: true
-    }]) });
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{ id: "venue-1", name: "Returning Test Cafe", city: "Florence", state_region: "SC", verified: true }]) });
   });
 
   await page.goto("/host.html");
@@ -171,6 +227,8 @@ test("My DDD answers Player, DM, alerts, and game-night status", async ({ page }
     const gm = { display_name: "Multi Role", postal_code: "29501", travel_radius_miles: 25, systems: [{ system_slug: "dnd-5e-2024" }], availability: [{ day_of_week: "saturday" }] };
     if (url.pathname === "/api/v1/onboarding/player") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(player) });
     if (url.pathname === "/api/v1/onboarding/gm") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(gm) });
+    if (url.pathname === "/api/v1/matching/player-demands") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{ id: "d1", status: "active" }]) });
+    if (url.pathname === "/api/v1/matching/gm-supplies") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{ id: "s1", status: "active" }]) });
     if (url.pathname === "/api/v1/notifications") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{ id: "n1", state: "pending" }]) });
     if (url.pathname === "/api/v1/game-hubs") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{ event_id: "e1" }]) });
     if (url.pathname === "/api/v1/matching/opportunities") return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
@@ -185,6 +243,27 @@ test("My DDD answers Player, DM, alerts, and game-night status", async ({ page }
   await expect(page.locator("#hub-count")).toHaveText("1");
 });
 
+test("My DDD does not call a saved profile active when matching has no signal", async ({ page }) => {
+  await installAuthenticatedSession(page, { email: "savedonly@example.test" });
+  await page.route("**/api/v1/**", async (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname === "/api/v1/auth/session") return route.fallback();
+    const profile = { display_name: "Saved Only", postal_code: "29501", travel_radius_miles: 25, systems: [{ system_slug: "dnd-5e-2024" }], availability: [{ day_of_week: "friday" }] };
+    if (url.pathname === "/api/v1/onboarding/player" || url.pathname === "/api/v1/onboarding/gm") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(profile) });
+    if (url.pathname === "/api/v1/matching/player-demands" || url.pathname === "/api/v1/matching/gm-supplies" || url.pathname === "/api/v1/notifications" || url.pathname === "/api/v1/game-hubs" || url.pathname === "/api/v1/matching/opportunities") return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    if (url.pathname === "/api/v1/notification-preferences") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(DEFAULT_PREFS) });
+    return route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not found" }) });
+  });
+
+  await page.goto("/my-ddd.html");
+  await expect(page.getByText("Your Player profile is saved.")).toBeVisible();
+  await expect(page.getByText("Your DM profile is saved.")).toBeVisible();
+  await expect(page.getByText("You’re available for games.")).toHaveCount(0);
+  await expect(page.getByText("You’re available to DM.")).toHaveCount(0);
+  await expect(page.locator("#player-status-action")).toHaveAttribute("href", "play.html");
+  await expect(page.locator("#dm-status-action")).toHaveAttribute("href", "dm.html");
+});
+
 test("My DDD pause sends a complete preference update", async ({ page }) => {
   await installAuthenticatedSession(page, { email: "pause@example.test" });
   let savedPreferences = null;
@@ -192,15 +271,9 @@ test("My DDD pause sends a complete preference update", async ({ page }) => {
     const url = new URL(route.request().url());
     const method = route.request().method();
     if (url.pathname === "/api/v1/auth/session") return route.fallback();
-    if (url.pathname === "/api/v1/onboarding/player" || url.pathname === "/api/v1/onboarding/gm") {
-      return route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not configured" }) });
-    }
-    if (url.pathname === "/api/v1/notifications" || url.pathname === "/api/v1/game-hubs" || url.pathname === "/api/v1/matching/opportunities") {
-      return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
-    }
-    if (url.pathname === "/api/v1/notification-preferences" && method === "GET") {
-      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(DEFAULT_PREFS) });
-    }
+    if (url.pathname === "/api/v1/onboarding/player" || url.pathname === "/api/v1/onboarding/gm") return route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Not configured" }) });
+    if (url.pathname === "/api/v1/notifications" || url.pathname === "/api/v1/game-hubs" || url.pathname === "/api/v1/matching/opportunities") return route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    if (url.pathname === "/api/v1/notification-preferences" && method === "GET") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(DEFAULT_PREFS) });
     if (url.pathname === "/api/v1/notification-preferences" && method === "PUT") {
       savedPreferences = route.request().postDataJSON();
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(savedPreferences) });
