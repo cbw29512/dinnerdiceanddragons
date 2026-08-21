@@ -35,6 +35,7 @@ import {
   handleNotifications,
   handleOpportunityResponse
 } from "./_lib/privacy-route-handlers.mjs";
+import { handleGameReminders } from "./_lib/reminder-route-handlers.mjs";
 import { enforceRateLimit, RATE_LIMIT_SCOPES } from "./_lib/rate-limit.mjs";
 import { SupabaseRestError } from "./_lib/supabase-rest.mjs";
 import { verifyVenueClaim } from "./_lib/venue-verification.mjs";
@@ -174,6 +175,9 @@ async function matching(request, parts) {
   if (parts[1] === "opportunities" && parts[2] && parts[3] === "respond" && parts.length === 4) {
     await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.TABLE_FORMATION);
     return handleOpportunityResponse(user, request, parts[2]);
+  }
+  if (parts[1] === "opportunities" && parts[2] && parts[3] === "reminders" && parts.length === 4) {
+    return handleGameReminders(user, request, parts[2]);
   }
   if (parts[1] === "opportunities" && parts[2] && parts.length === 3) {
     if (request.method !== "GET") return methodNotAllowed(["GET"]);
