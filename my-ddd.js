@@ -28,8 +28,8 @@
     if (profile) {
       title.textContent = prefix === "player" ? "You’re available for games." : "You’re available to DM.";
       copy.textContent = summary(profile);
-      action.href = prefix === "player" ? "play.html?edit=1" : "dm.html";
-      action.textContent = prefix === "player" ? "Change Availability" : "DM Setup Saved";
+      action.href = prefix === "player" ? "play.html?edit=1" : "dm.html?edit=1";
+      action.textContent = prefix === "player" ? "Change Availability" : "Change DM Availability";
       return;
     }
     title.textContent = prefix === "player" ? "Not looking for a Player seat yet." : "Not available as a DM yet.";
