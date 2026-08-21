@@ -79,9 +79,9 @@ test("GM accepts a structured match, gets BOOM, and creates the real Event", asy
 
   await page.goto(`/opportunity.html?match=${MATCH_ID}&role=gm`);
   await expect(page.getByRole("heading", { name: "Dungeons & Dragons" })).toBeVisible();
-  await page.getByRole("button", { name: "Accept Match" }).click();
+  await page.getByRole("button", { name: "Accept Game" }).click();
 
-  const finish = page.getByRole("link", { name: /Table Formed.*Finish Event Setup/i });
+  const finish = page.getByRole("link", { name: /GAME ON.*Finish Event Setup/i });
   await expect(finish).toBeVisible();
   await finish.click();
   await expect(page).toHaveURL(new RegExp(`create-game\\.html\\?table_match_id=${MATCH_ID}$`));
