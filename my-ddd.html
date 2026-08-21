@@ -5,7 +5,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin"><meta name="robots" content="noindex,nofollow,noarchive">
   <title>My DDD | Dinner, Dice &amp; Dragons</title>
-  <meta name="description" content="See Player and DM availability, review Dinner, Dice & Dragons alerts, and open confirmed game nights.">
+  <meta name="description" content="See Player and DM availability, review Dinner, Dice & Dragons alerts, and keep confirmed game nights and reminders in one place.">
   <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="player-start.css"><link rel="stylesheet" href="my-ddd.css">
 </head>
 <body>
@@ -22,16 +22,21 @@
       <section id="dm-status-card" class="status-panel"><p class="eyebrow">🧙 DM</p><h2 id="dm-status-title">Checking…</h2><p id="dm-status-summary"></p><a id="dm-status-action" class="button secondary" href="dm.html">Get Available to DM</a></section>
     </div>
 
-    <section class="status-panel pause-panel"><p class="eyebrow">MATCHING</p><h2>DDD watches for compatible tables.</h2><div class="dashboard-actions"><label class="pause-control"><input type="checkbox" id="matching-paused"><span>Pause new match alerts</span></label></div><p id="pause-status" class="form-status" role="status" aria-live="polite"></p></section>
+    <section class="status-panel pause-panel"><p class="eyebrow">MATCHING</p><h2>DDD watches for compatible tables.</h2><div class="dashboard-actions"><label class="pause-control"><input type="checkbox" id="matching-paused"><span>Pause new matches</span></label></div><p id="pause-status" class="form-status" role="status" aria-live="polite"></p></section>
+
+    <section id="game-on-section" class="game-on-section" hidden aria-labelledby="game-on-title">
+      <div class="section-heading"><p class="eyebrow">CONFIRMED MATCHES</p><h2 id="game-on-title">Your GAME ON cards</h2><p>These stay here after you accept. Set your own reminders for each game.</p></div>
+      <div id="game-on-list" class="game-on-list"></div>
+    </section>
 
     <div class="dashboard-grid">
       <section class="status-panel"><p class="eyebrow">ALERTS</p><div class="metric" id="alert-count">0</div><h2>Things that need your attention</h2><p>Match offers and important Event changes appear here.</p><a class="button secondary" href="notifications.html">Open My Alerts</a></section>
-      <section class="status-panel"><p class="eyebrow">GAME NIGHTS</p><div class="metric" id="hub-count">0</div><h2>Confirmed Game Hubs</h2><p>Once your role is confirmed at a table, the game-night details live here.</p><a class="button secondary" href="game-hub.html">Open My Game Hubs</a></section>
+      <section class="status-panel"><p class="eyebrow">GAME NIGHTS</p><div class="metric" id="hub-count">0</div><h2>Game Hubs ready</h2><p>Once the DM finishes the Event details, the full game-night information lives here.</p><a class="button secondary" href="game-hub.html">Open My Game Hubs</a></section>
     </div>
 
-    <section class="status-panel venue-shortcut"><p class="eyebrow">🍽️ VENUE</p><h2>Manage or add a public Venue.</h2><p>Venue managers can submit table availability and verification details separately.</p><a class="button secondary" href="host.html">Venue Setup</a></section>
+    <section class="status-panel venue-shortcut"><p class="eyebrow">🍽️ VENUE</p><h2>Manage or add a public Venue.</h2><p>Your Venue calendar is your pre-approval for those table times. DDD notifies you when a game uses one.</p><a class="button secondary" href="host.html">Venue Setup</a></section>
   </div>
 </div></main>
-<script src="production-config.js"></script><script src="production-api-client.js"></script><script src="production-session-store.js"></script><script src="production-auth.js"></script><script src="my-ddd.js"></script>
+<script src="production-config.js"></script><script src="production-api-client.js"></script><script src="production-session-store.js"></script><script src="production-auth.js"></script><script src="my-ddd-reminders.js"></script><script src="my-ddd-games.js"></script><script src="my-ddd.js"></script>
 </body>
 </html>
