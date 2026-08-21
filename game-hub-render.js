@@ -16,7 +16,7 @@
       copy.textContent = "A Hub appears after a matched table is formed and you are the DM, a confirmed Player, or a verified manager of its Venue.";
       const link = document.createElement("a");
       link.className = "button primary";
-      link.href = "join.html";
+      link.href = "play.html";
       link.textContent = "Find a Table";
       empty.append(heading, copy, link);
       grid.append(empty);
@@ -48,10 +48,12 @@
     return card;
   }
 
-  function venueLocation(event) {
-    const lines = [event.venue_address_line1, event.venue_address_line2].filter(Boolean);
-    const locality = [event.venue_city, event.venue_state_region, event.venue_postal_code].filter(Boolean).join(" ");
-    return [...lines, locality].filter(Boolean).join(" · ");
+  function venueAddress(event) {
+    return [event.venue_address_line1, event.venue_address_line2].filter(Boolean).join(", ");
+  }
+
+  function venueLocality(event) {
+    return [event.venue_city, event.venue_state_region, event.venue_postal_code].filter(Boolean).join(" ");
   }
 
   function renderHub() {
@@ -67,7 +69,8 @@
     rt.setText("event-title", event.title);
     rt.setText("event-description", event.description);
     rt.setText("event-venue-name", event.venue_name);
-    rt.setText("event-venue-locality", venueLocation(event));
+    rt.setText("event-venue-address", venueAddress(event));
+    rt.setText("event-venue-locality", venueLocality(event));
     rt.setText("event-schedule", `${rt.formatDateTime(event.starts_at)} – ${rt.formatDateTime(event.ends_at)}`);
     renderExpectations(event.expectations || {});
     renderRoleButtons();
