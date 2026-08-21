@@ -1,5 +1,6 @@
 const DIGESTS = new Set(["immediate", "daily"]);
 const OPPORTUNITY_DECISIONS = new Set(["interested", "accepted", "declined"]);
+const OPPORTUNITY_ROLES = new Set(["player", "gm", "venue_manager"]);
 const NOTIFICATION_ACTIONS = new Set(["read", "act"]);
 
 export class PrivacyApiContractError extends Error {
@@ -34,8 +35,10 @@ export function parsePreferenceUpdate(raw) {
 
 export function parseOpportunityDecision(raw) {
   const decision = String(raw?.decision || "");
+  const role = String(raw?.role || "");
   if (!OPPORTUNITY_DECISIONS.has(decision)) throw new PrivacyApiContractError("Opportunity decision is invalid.");
-  return Object.freeze({ decision });
+  if (!OPPORTUNITY_ROLES.has(role)) throw new PrivacyApiContractError("Opportunity role is invalid.");
+  return Object.freeze({ decision, role });
 }
 
 export function parseNotificationAction(raw) {
