@@ -14,6 +14,7 @@ const LEGACY_ONBOARDING_LINKS = ["join.html#player", "join.html#gm", "venues.htm
 const REQUIRED_FILES = [
   "index.html", "play.html", "dm.html", "host.html", "signin.html", "my-ddd.html",
   "notifications.html", "opportunity.html", "create-game.html", "create-game.js", "game-hub.html",
+  "game-hub-core.js", "game-hub-announcements.js", "game-hub-actions.js", "game-hub-role-views.js", "game-hub-render.js", "game-hub.js",
   "player-start.js", "player-start-account.js", "player-start-profile.js", "player-start-save.js",
   "dm-start.js", "dm-start-account.js", "dm-start-profile.js", "dm-start-save.js",
   "host-start.js", "host-start-account.js", "host-managed-venues.js",
@@ -37,6 +38,7 @@ const PUBLIC_EXTENSIONS = new Set([
   ".webp", ".gif", ".avif", ".ico", ".woff", ".woff2", ".webmanifest"
 ]);
 const TEXT_EXTENSIONS = new Set([".html", ".css", ".js", ".mjs", ".json", ".xml", ".svg", ".webmanifest"]);
+const LEGACY_HUB_CHANNELS = ["post_channels", "table_discussion", "gm_venue", "player_gm", "player_venue_question"];
 
 function normalizedDeployUrl() {
   const raw = String(process.env.URL || "").trim();
@@ -84,10 +86,17 @@ async function assertProductionArtifact(deployUrl) {
   if (!config.includes("apiBaseUrl: window.location.origin")) throw new Error("Netlify production config is not using same-origin /api routing.");
   const auth = await readFile(path.join(OUT, "production-auth.js"), "utf8");
   if (!auth.includes(DEPLOYED_AUTH_ROUTE) || auth.includes(SOURCE_AUTH_ROUTE)) throw new Error("Netlify production auth client is not using the dedicated auth route.");
+  if (!auth.includes("didConfirmEmail")) throw new Error("Netlify production auth client is missing the confirmation-state contract.");
+  const confirmation = await readFile(path.join(OUT, "auth-confirm.js"), "utf8");
+  if (!confirmation.includes("signin.html?confirmed=1")) throw new Error("Confirmed accounts are not routed through explicit Sign In.");
   const apiClient = await readFile(path.join(OUT, "production-api-client.js"), "utf8");
   if (apiClient.includes("getHubMessages") || apiClient.includes("postHubMessage") || apiClient.includes('/messages"')) throw new Error("Direct Game Hub messaging client code remains in the production artifact.");
   const gameHub = await readFile(path.join(OUT, "game-hub.html"), "utf8");
   if (gameHub.includes("game-hub-messages.js") || gameHub.includes("message-channel-grid") || gameHub.includes("venue-question-form")) throw new Error("Direct Game Hub communication controls remain in the production artifact.");
+  const gameHubCore = await readFile(path.join(OUT, "game-hub-core.js"), "utf8");
+  for (const marker of LEGACY_HUB_CHANNELS) if (gameHubCore.includes(marker)) throw new Error(`Legacy Game Hub messaging capability remains in production core: ${marker}`);
+  const announcements = await readFile(path.join(OUT, "game-hub-announcements.js"), "utf8");
+  if (!announcements.includes("can_post_announcement") || !announcements.includes("postAnnouncement")) throw new Error("One-way Game Hub announcement wiring is incomplete.");
   const oldJoin = await readFile(path.join(OUT, "join.html"), "utf8").catch(() => "");
   if (oldJoin.includes("id=\"player-form\"") || oldJoin.includes("id=\"gm-form\"")) throw new Error("Legacy giant onboarding forms remain in the production artifact.");
   const hostHtml = await readFile(path.join(OUT, "host.html"), "utf8");
