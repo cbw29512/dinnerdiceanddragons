@@ -29,20 +29,27 @@
     }
   }
 
+  function nodesForHeading(heading) {
+    const nodes = [];
+    let node = heading;
+    while (node) {
+      if (node !== heading && node.nodeType === Node.ELEMENT_NODE && node.matches(".form-section-title")) break;
+      nodes.push(node);
+      node = node.nextSibling;
+    }
+    return nodes;
+  }
+
   function buildSteps(form) {
     const headings = [...form.querySelectorAll(":scope > .form-section-title")];
     if (headings.length < 2) return [];
+    const groups = headings.map((heading) => ({ heading, nodes: nodesForHeading(heading) }));
     const steps = [];
-    for (const heading of headings) {
+    for (const group of groups) {
       const section = element("section", "ddd-onboarding-step");
-      section.dataset.stepTitle = heading.textContent.replace(/^\d+\.\s*/, "").trim();
-      form.insertBefore(section, heading);
-      let node = heading;
-      while (node && (node === heading || !node.matches?.(".form-section-title"))) {
-        const next = node.nextSibling;
-        section.append(node);
-        node = next;
-      }
+      section.dataset.stepTitle = group.heading.textContent.replace(/^\d+\.\s*/, "").trim();
+      form.insertBefore(section, group.heading);
+      group.nodes.forEach((node) => section.append(node));
       steps.push(section);
     }
     return steps;
@@ -63,15 +70,13 @@
       back.type = next.type = "button";
       controls.append(back, next);
       form.append(controls);
-      const submit = [...form.querySelectorAll(':scope > button[type="submit"]')].at(-1);
 
       const render = () => {
         steps.forEach((step, current) => { step.hidden = current !== index; });
         progress.textContent = `Step ${index + 1} of ${steps.length} · ${steps[index].dataset.stepTitle}`;
         back.hidden = index === 0;
         next.hidden = index === steps.length - 1;
-        if (submit) submit.hidden = index !== steps.length - 1;
-        steps[index].querySelector("h3")?.focus?.({ preventScroll: true });
+        steps[index].scrollIntoView({ block: "nearest" });
       };
       back.addEventListener("click", () => { if (index > 0) { index -= 1; render(); } });
       next.addEventListener("click", () => {
@@ -87,7 +92,11 @@
   }
 
   function init() {
-    document.querySelectorAll("form.prototype-form").forEach(enhance);
+    try {
+      document.querySelectorAll("form.prototype-form").forEach(enhance);
+    } catch (error) {
+      console.error("[DDD Onboarding] Unable to initialize onboarding steppers", error);
+    }
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
