@@ -78,8 +78,8 @@
     }
   }
 
-  async function optionalPlayerOnboarding() {
-    try { return await request("GET", "/api/v1/onboarding/player", undefined, { silentStatuses: [404] }); }
+  async function optionalOnboarding(path) {
+    try { return await request("GET", path, undefined, { silentStatuses: [404] }); }
     catch (error) { if (error?.status === 404) return null; throw error; }
   }
 
@@ -103,9 +103,10 @@
     getNotificationPreferences: () => request("GET", "/api/v1/notification-preferences"),
     putNotificationPreferences: (payload) => request("PUT", "/api/v1/notification-preferences", payload),
     getPlayerOnboarding: () => request("GET", "/api/v1/onboarding/player"),
-    getPlayerOnboardingOptional: optionalPlayerOnboarding,
+    getPlayerOnboardingOptional: () => optionalOnboarding("/api/v1/onboarding/player"),
     putPlayerOnboarding: (payload) => request("PUT", "/api/v1/onboarding/player", payload),
     getGMOnboarding: () => request("GET", "/api/v1/onboarding/gm"),
+    getGMOnboardingOptional: () => optionalOnboarding("/api/v1/onboarding/gm"),
     putGMOnboarding: (payload) => request("PUT", "/api/v1/onboarding/gm", payload),
     postVenueOnboarding: (payload) => request("POST", "/api/v1/onboarding/venue", payload),
     getPlayerDemands: () => request("GET", "/api/v1/matching/player-demands"),
