@@ -5,7 +5,6 @@ import { formAcceptedTableMatch } from "../netlify/functions/_lib/matched-event-
 import { privacyRepository } from "../netlify/functions/_lib/privacy-repository.mjs";
 import { createPrivacyService } from "../netlify/functions/_lib/privacy-service-core.mjs";
 import {
-  GM_USER_ID,
   PLAYER_ONE_USER_ID,
   PLAYER_TWO_USER_ID,
   cloneMatch,
@@ -69,14 +68,12 @@ assert.equal(thresholdNotifications.length, 4, "GAME ON notifications must be em
 
 const formationStart = "2026-10-03T22:00:00.000Z";
 const formationEnd = "2026-10-04T02:00:00.000Z";
-await seedFormationRace(fixture, FORMATION_MATCH_IDS, FORMATION_TABLE_IDS, [
+const { gmUserIds } = await seedFormationRace(fixture, FORMATION_MATCH_IDS, FORMATION_TABLE_IDS, [
   ["a7210000-0000-4000-8000-000000000001", "a7210000-0000-4000-8000-000000000002", "a7210000-0000-4000-8000-000000000003", "a7210000-0000-4000-8000-000000000004"],
   ["a7220000-0000-4000-8000-000000000001", "a7220000-0000-4000-8000-000000000002", "a7220000-0000-4000-8000-000000000003", "a7220000-0000-4000-8000-000000000004"]
 ], formationStart, formationEnd);
 const approvedBefore = await selectMany("venue_booking_requests", {
-  venue_table_window_id: eq(baseMatch.venue_table_window_id),
-  status: eq("approved"),
-  limit: 20
+  venue_table_window_id: eq(baseMatch.venue_table_window_id), status: eq("approved"), limit: 20
 });
 assert.equal(approvedBefore.length, 0, "The shared Venue window must start uncommitted for the race proof.");
 
@@ -93,7 +90,7 @@ function eventPayload(index) {
 
 const formationOutcomes = await withBookingInsertDelay(baseMatch.venue_table_window_id, () =>
   Promise.allSettled(FORMATION_MATCH_IDS.map((matchId, index) =>
-    formAcceptedTableMatch({ id: GM_USER_ID }, matchId, eventPayload(index))
+    formAcceptedTableMatch({ id: gmUserIds[index] }, matchId, eventPayload(index))
   ))
 );
 assert.equal(formationOutcomes.filter((item) => item.status === "fulfilled").length, 1);

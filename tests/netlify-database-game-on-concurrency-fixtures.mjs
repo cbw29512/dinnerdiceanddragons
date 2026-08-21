@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { getDatabase } from "@netlify/database";
 
 import { eq, insertRows, selectMany, selectOne } from "../netlify/functions/_lib/database.mjs";
+import { createFormationRaceGm } from "./netlify-database-game-on-race-gm-fixture.mjs";
 
 export const BASE_MATCH_ID = "a2000000-0000-4000-8000-000000000001";
 export const GM_USER_ID = "a1000000-0000-4000-8000-000000000001";
@@ -22,23 +23,17 @@ export async function loadGameOnFixture() {
 
 export function cloneMatch(baseMatch, id, status, start, end) {
   return {
-    ...baseMatch,
-    id,
-    proposed_start: start,
-    proposed_end: end,
-    status,
-    compatible_player_count: 2,
-    minimum_players: 2,
-    maximum_players: 2,
-    fit_score: 100
+    ...baseMatch, id, proposed_start: start, proposed_end: end, status,
+    compatible_player_count: 2, minimum_players: 2, maximum_players: 2, fit_score: 100
   };
 }
 
-export function responseCopies(baseResponses, matchId, ids, playerDecision = "accepted") {
+export function responseCopies(baseResponses, matchId, ids, playerDecision = "accepted", gmUserId = GM_USER_ID) {
   return baseResponses.map((row, index) => ({
     ...row,
     id: ids[index],
     table_match_id: matchId,
+    user_id: row.role === "gm" ? gmUserId : row.user_id,
     decision: row.role === "player" ? playerDecision : "accepted",
     responded_at: row.role === "player" && playerDecision === "pending" ? null : row.responded_at
   }));
@@ -46,13 +41,15 @@ export function responseCopies(baseResponses, matchId, ids, playerDecision = "ac
 
 export async function seedFormationRace(fixture, matchIds, tableIds, responseIds, start, end) {
   const { baseMatch, baseTable, baseMatchPlayers, baseMemberships, baseResponses } = fixture;
-  await insertRows("table_matches", matchIds.map((id) => cloneMatch(baseMatch, id, "forming", start, end)), { returning: false });
+  const secondGm = await createFormationRaceGm();
+  const matches = matchIds.map((id) => cloneMatch(baseMatch, id, "forming", start, end));
+  matches[1] = { ...matches[1], gm_supply_signal_id: secondGm.supply.id };
+  await insertRows("table_matches", matches, { returning: false });
   await insertRows("table_match_players", matchIds.flatMap((matchId) => baseMatchPlayers.map((row) => ({
-    ...row,
-    table_match_id: matchId,
-    status: "notified"
+    ...row, table_match_id: matchId, status: "notified"
   }))), { returning: false });
-  await insertRows("game_tables", matchIds.map((matchId, index) => ({
+
+  const tables = matchIds.map((matchId, index) => ({
     ...baseTable,
     id: tableIds[index],
     source_table_match_id: matchId,
@@ -60,17 +57,17 @@ export async function seedFormationRace(fixture, matchIds, tableIds, responseIds
     lifecycle_status: "forming",
     proposed_start: start,
     proposed_end: end
-  })), { returning: false });
+  }));
+  tables[1] = { ...tables[1], created_by_user_id: secondGm.userId, gm_profile_id: secondGm.profile.id };
+  await insertRows("game_tables", tables, { returning: false });
   await insertRows("game_table_players", tableIds.flatMap((tableId) => baseMemberships.map((row) => ({
-    ...row,
-    game_table_id: tableId,
-    status: "invited",
-    responded_at: null,
-    ended_at: null
+    ...row, game_table_id: tableId, status: "invited", responded_at: null, ended_at: null
   }))), { returning: false });
-  await insertRows("opportunity_responses", matchIds.flatMap((matchId, index) =>
-    responseCopies(baseResponses, matchId, responseIds[index])
-  ), { returning: false });
+  await insertRows("opportunity_responses", [
+    ...responseCopies(baseResponses, matchIds[0], responseIds[0]),
+    ...responseCopies(baseResponses, matchIds[1], responseIds[1], "accepted", secondGm.userId)
+  ], { returning: false });
+  return { gmUserIds: [GM_USER_ID, secondGm.userId] };
 }
 
 export async function withBookingInsertDelay(windowId, callback) {
@@ -95,7 +92,6 @@ export async function withBookingInsertDelay(windowId, callback) {
   } finally {
     installClient.release();
   }
-
   try {
     return await callback();
   } finally {
