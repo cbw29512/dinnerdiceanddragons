@@ -4,36 +4,44 @@ import {
   listGameHubs as listLifecycleGameHubs
 } from "./lifecycle.mjs";
 import { eq, selectOne } from "./supabase-rest.mjs";
-import { publicVenueLocation } from "./venue-location-kind.mjs";
 
 async function eventVenue(eventId) {
-  const event = await selectOne("events", { id: eq(eventId) });
-  if (!event) return null;
-  const venue = await selectOne("venues", { id: eq(event.venue_id) });
-  return venue ? { event, venue } : null;
+  try {
+    const event = await selectOne("events", { id: eq(eventId) });
+    if (!event) return null;
+    const venue = await selectOne("venues", { id: eq(event.venue_id) });
+    return venue ? { event, venue } : null;
+  } catch (error) {
+    console.error("[DDD Event Location] Unable to load Venue context", { error_type: String(error?.name || "Error") });
+    throw error;
+  }
+}
+
+function publicVenueFields(venue) {
+  try {
+    return {
+      venue_name: venue?.name || "Public Venue",
+      venue_location_kind: "public_venue",
+      venue_location_label: "Public venue",
+      venue_address_line1: venue?.address_line1 || "",
+      venue_address_line2: venue?.address_line2 || null,
+      venue_city: venue?.city || "",
+      venue_state_region: venue?.state_region || "",
+      venue_postal_code: venue?.postal_code || null
+    };
+  } catch (error) {
+    console.error("[DDD Event Location] Unable to project public Venue", { error_type: String(error?.name || "Error") });
+    throw error;
+  }
 }
 
 async function decorateEvent(event) {
   try {
     if (!event?.id) return event;
     const context = await eventVenue(event.id);
-    if (!context) return event;
-    const location = publicVenueLocation(context.venue, { formed: true });
-    return {
-      ...event,
-      venue_name: context.venue.name || location.name,
-      venue_location_kind: location.location_kind,
-      venue_location_label: location.location_label,
-      venue_address_line1: location.address_line1,
-      venue_address_line2: location.address_line2,
-      venue_city: location.city,
-      venue_state_region: location.state_region,
-      venue_postal_code: location.postal_code
-    };
+    return context ? { ...event, ...publicVenueFields(context.venue) } : event;
   } catch (error) {
-    console.error("[DDD Event Location] Unable to decorate Event location", {
-      error_type: String(error?.name || "Error")
-    });
+    console.error("[DDD Event Location] Unable to decorate Event location", { error_type: String(error?.name || "Error") });
     throw error;
   }
 }
@@ -63,16 +71,7 @@ export async function listGameHubs(user) {
     const results = [];
     for (const hub of hubs) {
       const context = await eventVenue(hub.event_id);
-      if (!context) {
-        results.push(hub);
-        continue;
-      }
-      const location = publicVenueLocation(context.venue, { formed: true });
-      results.push({
-        ...hub,
-        venue_name: context.venue.name || location.name,
-        venue_location_kind: location.location_kind
-      });
+      results.push(context ? { ...hub, venue_name: context.venue.name, venue_location_kind: "public_venue" } : hub);
     }
     return results;
   } catch (error) {
