@@ -16,11 +16,17 @@ export async function listManagedVenues(user) {
       const venue = await selectOne("venues", { id: eq(manager.venue_id) });
       if (!venue) continue;
       results.push({
-        id: venue.id, name: venue.name, address_line1: venue.address_line1,
-        city: venue.city, state_region: venue.state_region, postal_code: venue.postal_code,
-        location_kind: venue.location_kind || "business",
-        verified: Boolean(venue.verified), active: Boolean(venue.active),
-        manager_role: manager.role, manager_verified: Boolean(manager.verified_at)
+        id: venue.id,
+        name: venue.name,
+        address_line1: venue.address_line1,
+        city: venue.city,
+        state_region: venue.state_region,
+        postal_code: venue.postal_code,
+        location_kind: "public_venue",
+        verified: Boolean(venue.verified),
+        active: Boolean(venue.active),
+        manager_role: manager.role,
+        manager_verified: Boolean(manager.verified_at)
       });
     }
     return results;
@@ -49,11 +55,17 @@ export async function replaceVenueCalendar(user, venueId, payload) {
         await insertRows("recurring_availability_rules", [rule], { returning: false });
         const windowId = crypto.randomUUID();
         await insertRows("venue_table_windows", [{
-          id: windowId, venue_id: id, recurring_rule_id: rule.id,
-          table_count: tableCount, max_people_per_table: seats,
-          purchase_policy: purchasePolicy, approval_required: false,
-          environment_notes: environmentNotes, active: true,
-          special_support_offerings: [], special_support_notes: null
+          id: windowId,
+          venue_id: id,
+          recurring_rule_id: rule.id,
+          table_count: tableCount,
+          max_people_per_table: seats,
+          purchase_policy: purchasePolicy,
+          approval_required: false,
+          environment_notes: environmentNotes,
+          active: true,
+          special_support_offerings: [],
+          special_support_notes: null
         }], { returning: false });
         created.push({ id: windowId, availability: publicAvailability(rule) });
       }
@@ -64,8 +76,11 @@ export async function replaceVenueCalendar(user, venueId, payload) {
     const now = new Date().toISOString();
     for (const row of old) await updateRows("venue_table_windows", { id: eq(row.id) }, { active: false, updated_at: now }, { returning: false });
     return {
-      venue_id: id, matching_eligible: Boolean(venue.verified),
-      table_count: tableCount, max_people_per_table: seats, availability: created.map((row) => row.availability)
+      venue_id: id,
+      matching_eligible: Boolean(venue.verified),
+      table_count: tableCount,
+      max_people_per_table: seats,
+      availability: created.map((row) => row.availability)
     };
   } catch (error) {
     console.error("[DDD Venues] Unable to replace Venue calendar", { error_type: String(error?.name || "Error") });
