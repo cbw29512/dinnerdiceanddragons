@@ -48,18 +48,36 @@ await test("dedicated auth route returns JSON validation errors instead of HTML"
   assert.match(String(payload?.detail || ""), /valid email/i);
 });
 
+await test("dedicated confirmation route rejects an empty token as JSON", async () => {
+  const response = await authApi(new Request("https://ddd-contract.netlify.app/auth-api/v1/auth/confirm", {
+    method: "POST",
+    headers: {
+      Origin: "https://ddd-contract.netlify.app",
+      "Content-Type": "application/json",
+      Accept: "application/json"
+    },
+    body: JSON.stringify({ token: "" })
+  }));
+  assert.equal(response.status, 422);
+  assert.match(response.headers.get("content-type") || "", /application\/json/i);
+  const payload = await response.json();
+  assert.match(String(payload?.detail || ""), /confirmation token is invalid/i);
+});
+
 test("native API path parsing strips the version prefix", () => {
   const parts = pathParts(new Request("https://ddd-contract.netlify.app/api/v1/matching/opportunities/abc"));
   assert.deepEqual(parts, ["matching", "opportunities", "abc"]);
 });
 
 await test("production runtime is Netlify-native and provider-clean", async () => {
-  const [apiSource, authProxySource, authSource, databaseSource, browserAuthSource, configSource] = await Promise.all([
+  const [apiSource, authProxySource, authSource, databaseSource, browserAuthSource, confirmationSource, signInSource, configSource] = await Promise.all([
     readFile(new URL("../netlify/functions/api.mjs", import.meta.url), "utf8"),
     readFile(new URL("../netlify/functions/auth-api.mjs", import.meta.url), "utf8"),
     readFile(new URL("../netlify/functions/_lib/auth.mjs", import.meta.url), "utf8"),
     readFile(new URL("../netlify/functions/_lib/database.mjs", import.meta.url), "utf8"),
     readFile(new URL("../production-auth.js", import.meta.url), "utf8"),
+    readFile(new URL("../auth-confirm.js", import.meta.url), "utf8"),
+    readFile(new URL("../signin.js", import.meta.url), "utf8"),
     readFile(new URL("../production-config.js", import.meta.url), "utf8")
   ]);
 
@@ -71,9 +89,12 @@ await test("production runtime is Netlify-native and provider-clean", async () =
   assert.match(authProxySource, /content-type.*application\/json/is);
   assert.match(browserAuthSource, /credentials:\s*"same-origin"/);
   assert.match(browserAuthSource, /confirmation_token/);
+  assert.match(browserAuthSource, /didConfirmEmail/);
+  assert.match(confirmationSource, /signin\.html\?confirmed=1/);
+  assert.match(signInSource, /Email confirmed\. Sign in to continue\./);
   assert.match(configSource, /apiBaseUrl:\s*window\.location\.origin/);
 
-  for (const source of [apiSource, authProxySource, authSource, databaseSource, browserAuthSource, configSource]) {
+  for (const source of [apiSource, authProxySource, authSource, databaseSource, browserAuthSource, confirmationSource, signInSource, configSource]) {
     assert.doesNotMatch(source, /supabase\.co|sb_publishable_|SUPABASE_SECRET_KEY/);
   }
 });
