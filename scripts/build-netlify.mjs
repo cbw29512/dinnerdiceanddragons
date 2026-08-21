@@ -25,7 +25,9 @@ const EXCLUDED_DIRS = new Set([
   "netlify", "node_modules", "playwright-report", "scripts", "supabase", "test-results", "tests"
 ]);
 const EXCLUDED_FILES = new Set([
-  "dashboard-prototype.html", "package.json", "package-lock.json", "playwright.config.js", "location-matching-notes.txt"
+  "dashboard-prototype.html", "dashboard.js", "shared-games.js", "form-series.html", "discovery.js",
+  "series-commitments.html", "recurring-match.html", "find-venue.html", "create-game.html", "table-lifecycle.html",
+  "package.json", "package-lock.json", "playwright.config.js", "location-matching-notes.txt"
 ]);
 const PUBLIC_EXTENSIONS = new Set([
   ".html", ".css", ".js", ".mjs", ".json", ".xml", ".svg", ".png", ".jpg", ".jpeg",
@@ -85,7 +87,11 @@ async function assertProductionArtifact(deployUrl) {
   if (gameHub.includes("game-hub-messages.js") || gameHub.includes("message-channel-grid") || gameHub.includes("venue-question-form")) throw new Error("Direct Game Hub communication controls remain in the production artifact.");
   const oldJoin = await readFile(path.join(OUT, "join.html"), "utf8").catch(() => "");
   if (oldJoin.includes("id=\"player-form\"") || oldJoin.includes("id=\"gm-form\"")) throw new Error("Legacy giant onboarding forms remain in the production artifact.");
-  const forbiddenNames = ["backend", ".github", "e2e", "games", "tests", "supabase", "apps-script", "dashboard-prototype.html", "game-hub-messages.js"];
+  const forbiddenNames = [
+    "backend", ".github", "e2e", "games", "tests", "supabase", "apps-script", "dashboard-prototype.html",
+    "dashboard.js", "shared-games.js", "form-series.html", "discovery.js", "series-commitments.html",
+    "recurring-match.html", "find-venue.html", "create-game.html", "table-lifecycle.html", "game-hub-messages.js"
+  ];
   const topLevel = new Set(await readdir(OUT));
   for (const name of forbiddenNames) if (topLevel.has(name)) throw new Error(`Forbidden deployment content found in dist: ${name}`);
 
