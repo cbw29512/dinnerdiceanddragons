@@ -95,26 +95,16 @@ export async function listPlayerDemands(user) {
   await requireRole(user.id, "player");
   const profile = await playerProfile(user.id);
   const rows = await selectMany("player_demand_signals", {
-    player_profile_id: eq(profile.id),
-    order: "created_at.desc,id.asc",
-    limit: 100
+    player_profile_id: eq(profile.id), order: "created_at.desc,id.asc", limit: 100
   });
   const results = [];
   for (const signal of rows) {
     const system = await gameSystemById(signal.game_system_id);
     results.push({
-      id: signal.id,
-      status: signal.status,
-      system_slug: system?.slug || "other-rpg",
+      id: signal.id, status: signal.status, system_slug: system?.slug || "other-rpg",
       availability: await signalAvailability(
-        "player_demand_availability_windows",
-        "player_demand_signal_id",
-        signal.id,
-        {
-          linkTable: "player_availability_windows",
-          ownerColumn: "player_profile_id",
-          ownerId: profile.id
-        }
+        "player_demand_availability_windows", "player_demand_signal_id", signal.id,
+        { linkTable: "player_availability_windows", ownerColumn: "player_profile_id", ownerId: profile.id }
       ),
       preferred_format: signal.preferred_format,
       preferred_cadence: signal.preferred_cadence || null,
@@ -154,59 +144,45 @@ export async function createGMSupply(user, payload) {
     inputs: asArray(payload?.availability, "availability", { min: 1, max: 12 })
   });
   return {
-    id,
-    status: "active",
-    system_slug: system.slug,
-    availability,
-    preferred_format: signal.preferred_format,
-    preferred_cadence: signal.preferred_cadence,
-    minimum_players: minimum,
-    maximum_players: maximum,
-    table_style: signal.table_style
+    id, status: "active", system_slug: system.slug, availability,
+    preferred_format: signal.preferred_format, preferred_cadence: signal.preferred_cadence,
+    minimum_players: minimum, maximum_players: maximum, table_style: signal.table_style
   };
 }
 
 export async function listGMSupplies(user) {
   await requireRole(user.id, "gm");
   const profile = await gmProfile(user.id);
-  const rows = await selectMany("gm_supply_signals", {
-    gm_profile_id: eq(profile.id),
-    order: "created_at.desc,id.asc",
-    limit: 100
-  });
+  const rows = await selectMany("gm_supply_signals", { gm_profile_id: eq(profile.id), order: "created_at.desc,id.asc", limit: 100 });
   const results = [];
   for (const signal of rows) {
     const system = await gameSystemById(signal.game_system_id);
     results.push({
-      id: signal.id,
-      status: signal.status,
-      system_slug: system?.slug || "other-rpg",
+      id: signal.id, status: signal.status, system_slug: system?.slug || "other-rpg",
       availability: await signalAvailability(
-        "gm_supply_availability_windows",
-        "gm_supply_signal_id",
-        signal.id,
-        {
-          linkTable: "gm_availability_windows",
-          ownerColumn: "gm_profile_id",
-          ownerId: profile.id
-        }
+        "gm_supply_availability_windows", "gm_supply_signal_id", signal.id,
+        { linkTable: "gm_availability_windows", ownerColumn: "gm_profile_id", ownerId: profile.id }
       ),
       preferred_format: signal.preferred_format,
       preferred_cadence: signal.preferred_cadence || null,
-      minimum_players: Number(signal.minimum_players),
-      maximum_players: Number(signal.maximum_players),
+      minimum_players: Number(signal.minimum_players), maximum_players: Number(signal.maximum_players),
       table_style: signal.table_style || null
     });
   }
   return results;
 }
 
-export async function createVenueTableWindow(user, venueId, payload) {
+async function venueWindowOwner(user, venueId) {
   await requireRole(user.id, "venue_manager");
   const safeVenueId = requireUuid(venueId, "venue_id");
-  await managedVenue(user.id, safeVenueId, { verified: true });
+  await managedVenue(user.id, safeVenueId, { verified: false });
   const venue = await selectOne("venues", { id: eq(safeVenueId) });
   if (!venue || !venue.active) throw new SupabaseRestError("Venue is not available.", 404);
+  return { safeVenueId, venue };
+}
+
+export async function createVenueTableWindow(user, venueId, payload) {
+  const { safeVenueId, venue } = await venueWindowOwner(user, venueId);
   const rule = normalizeAvailability(payload?.availability);
   const id = crypto.randomUUID();
   await insertRows("recurring_availability_rules", [rule], { returning: false });
@@ -228,6 +204,7 @@ export async function createVenueTableWindow(user, venueId, payload) {
     id,
     venue_id: safeVenueId,
     active: true,
+    matching_eligible: Boolean(venue.verified),
     availability: publicAvailability(rule),
     table_count: row.table_count,
     max_people_per_table: row.max_people_per_table,
@@ -240,9 +217,7 @@ export async function createVenueTableWindow(user, venueId, payload) {
 }
 
 export async function listVenueTableWindows(user, venueId) {
-  await requireRole(user.id, "venue_manager");
-  const safeVenueId = requireUuid(venueId, "venue_id");
-  await managedVenue(user.id, safeVenueId, { verified: true });
+  const { safeVenueId, venue } = await venueWindowOwner(user, venueId);
   const windows = await selectMany("venue_table_windows", { venue_id: eq(safeVenueId), order: "active.desc,id.asc", limit: 100 });
   const results = [];
   for (const row of windows) {
@@ -252,6 +227,7 @@ export async function listVenueTableWindows(user, venueId) {
       id: row.id,
       venue_id: row.venue_id,
       active: Boolean(row.active),
+      matching_eligible: Boolean(venue.verified),
       availability: publicAvailability(rule),
       table_count: Number(row.table_count),
       max_people_per_table: Number(row.max_people_per_table),
