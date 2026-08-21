@@ -5,7 +5,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin"><meta name="robots" content="noindex,nofollow,noarchive">
   <title>My DDD | Dinner, Dice &amp; Dragons</title>
-  <meta name="description" content="See whether you are available for games, review Dinner, Dice & Dragons alerts, and open your confirmed game nights.">
+  <meta name="description" content="See Player and DM availability, review Dinner, Dice & Dragons alerts, and open confirmed game nights.">
   <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="player-start.css"><link rel="stylesheet" href="my-ddd.css">
 </head>
 <body>
@@ -14,15 +14,22 @@
 <main id="main" class="simple-main" tabindex="-1"><div class="simple-shell dashboard-shell">
   <section class="dashboard-heading"><p class="eyebrow">MY DDD</p><h1>Your game-night status.</h1><p id="account-copy">Checking your account…</p></section>
 
-  <section id="signed-out" class="status-panel" hidden><div class="status-icon" aria-hidden="true">🎲</div><h2>Sign in to see your DDD status.</h2><p>Your availability, alerts, and confirmed games stay attached to your account.</p><a class="button primary" href="play.html?mode=signin">Sign In</a></section>
+  <section id="signed-out" class="status-panel" hidden><div class="status-icon" aria-hidden="true">🎲</div><h2>Sign in to see your DDD status.</h2><p>Your availability, alerts, and confirmed games stay attached to your account.</p><a class="button primary" href="signin.html">Sign In</a></section>
 
   <div id="dashboard-content" hidden>
-    <section id="availability-card" class="status-panel status-primary"><p class="eyebrow">AVAILABILITY</p><h2 id="availability-title">Checking…</h2><p id="availability-summary"></p><div class="dashboard-actions"><a id="availability-action" class="button primary" href="play.html?edit=1">Change Availability</a><label class="pause-control"><input type="checkbox" id="matching-paused"><span>Pause looking for games</span></label></div><p id="pause-status" class="form-status" role="status" aria-live="polite"></p></section>
+    <div class="dashboard-grid role-status-grid">
+      <section id="player-status-card" class="status-panel status-primary"><p class="eyebrow">🎲 PLAYER</p><h2 id="player-status-title">Checking…</h2><p id="player-status-summary"></p><a id="player-status-action" class="button primary" href="play.html">Get Available to Play</a></section>
+      <section id="dm-status-card" class="status-panel"><p class="eyebrow">🧙 DM</p><h2 id="dm-status-title">Checking…</h2><p id="dm-status-summary"></p><a id="dm-status-action" class="button secondary" href="dm.html">Get Available to DM</a></section>
+    </div>
+
+    <section class="status-panel pause-panel"><p class="eyebrow">MATCHING</p><h2>DDD watches for compatible tables.</h2><div class="dashboard-actions"><label class="pause-control"><input type="checkbox" id="matching-paused"><span>Pause new match alerts</span></label></div><p id="pause-status" class="form-status" role="status" aria-live="polite"></p></section>
 
     <div class="dashboard-grid">
-      <section class="status-panel"><p class="eyebrow">ALERTS</p><div class="metric" id="alert-count">0</div><h2>Things that need your attention</h2><p>DDD puts match offers and important Event changes here.</p><a class="button secondary" href="notifications.html">Open My Alerts</a></section>
-      <section class="status-panel"><p class="eyebrow">GAME NIGHTS</p><div class="metric" id="hub-count">0</div><h2>Confirmed Game Hubs</h2><p>Once you have a confirmed seat, the game-night details live here.</p><a class="button secondary" href="game-hub.html">Open My Game Hubs</a></section>
+      <section class="status-panel"><p class="eyebrow">ALERTS</p><div class="metric" id="alert-count">0</div><h2>Things that need your attention</h2><p>Match offers and important Event changes appear here.</p><a class="button secondary" href="notifications.html">Open My Alerts</a></section>
+      <section class="status-panel"><p class="eyebrow">GAME NIGHTS</p><div class="metric" id="hub-count">0</div><h2>Confirmed Game Hubs</h2><p>Once your role is confirmed at a table, the game-night details live here.</p><a class="button secondary" href="game-hub.html">Open My Game Hubs</a></section>
     </div>
+
+    <section class="status-panel venue-shortcut"><p class="eyebrow">🍽️ VENUE</p><h2>Manage or add a public Venue.</h2><p>Venue managers can submit table availability and verification details separately.</p><a class="button secondary" href="host.html">Venue Setup</a></section>
   </div>
 </div></main>
 <script src="production-config.js"></script><script src="production-api-client.js"></script><script src="production-session-store.js"></script><script src="production-auth.js"></script><script src="my-ddd.js"></script>
