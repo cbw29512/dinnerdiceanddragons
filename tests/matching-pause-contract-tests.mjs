@@ -11,13 +11,18 @@ function test(name, callback) {
   catch (error) { console.error(`✗ ${name}`); throw error; }
 }
 
+const facade = source("netlify/functions/_lib/matching-inputs.mjs");
+const playerInputs = source("netlify/functions/_lib/player-matching-inputs.mjs");
+const gmInputs = source("netlify/functions/_lib/gm-matching-inputs.mjs");
 const participation = source("netlify/functions/_lib/matching-participation.mjs");
-const inputs = source("netlify/functions/_lib/matching-inputs.mjs");
 const privacy = source("netlify/functions/_lib/privacy-service-core.mjs");
 const engine = source("netlify/functions/_lib/matching-engine.mjs");
 
 test("new Player and DM signals inherit the saved pause preference", () => {
-  assert.match(inputs, /const status = await matchingSignalStatus\(user\.id\)/);
+  assert.match(facade, /createPlayerDemand, listPlayerDemands/);
+  assert.match(facade, /createGMSupply, listGMSupplies/);
+  assert.match(playerInputs, /const status = await matchingSignalStatus\(user\.id\)/);
+  assert.match(gmInputs, /const status = await matchingSignalStatus\(user\.id\)/);
   assert.match(participation, /return prefs\?\.matching_paused \? "paused" : "active"/);
 });
 
