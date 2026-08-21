@@ -16,8 +16,9 @@ export async function listManagedVenues(user) {
       const venue = await selectOne("venues", { id: eq(manager.venue_id) });
       if (!venue) continue;
       results.push({
-        id: venue.id, name: venue.name, city: venue.city, state_region: venue.state_region,
-        postal_code: venue.postal_code, verified: Boolean(venue.verified), active: Boolean(venue.active),
+        id: venue.id, name: venue.name, address_line1: venue.address_line1,
+        city: venue.city, state_region: venue.state_region, postal_code: venue.postal_code,
+        verified: Boolean(venue.verified), active: Boolean(venue.active),
         manager_role: manager.role, manager_verified: Boolean(manager.verified_at)
       });
     }
