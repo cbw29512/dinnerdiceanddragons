@@ -2,6 +2,7 @@ import { confirmEmail, getUser, login, logout, signup, verifyRequestOrigin } fro
 import { listAnnouncements, postAnnouncement } from "./_lib/announcements.mjs";
 import { currentUser, publicCurrentUser, userRoles } from "./_lib/auth.mjs";
 import { databaseHealth } from "./_lib/database.mjs";
+import { getEvent, getGameHub, listGameHubs } from "./_lib/event-location-view.mjs";
 import { json, methodNotAllowed, noContent, notFound, pathParts, readJson, route } from "./_lib/http.mjs";
 import { listManagedVenues, replaceVenueCalendar } from "./_lib/managed-venues.mjs";
 import {
@@ -19,9 +20,6 @@ import {
   cancelMyRegistration,
   decideRegistration,
   decideVenueBooking,
-  getEvent,
-  getGameHub,
-  listGameHubs,
   requestRegistration
 } from "./_lib/lifecycle.mjs";
 import {
