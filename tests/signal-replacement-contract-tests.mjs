@@ -36,7 +36,8 @@ test("GM supply replacement expires older same-system active signals", () => {
 });
 
 test("superseded signals become expired only after replacement exists", () => {
-  assert.match(replacement, /if \(row\.id === keepId\) continue/);
+  assert.match(replacement, /row\.id === keepId/);
+  assert.match(replacement, /!REPLACEABLE\.has\(row\.status\)/);
   assert.match(replacement, /status: "expired"/);
   const playerInsert = inputs.indexOf('insertRows("player_demand_signals"');
   const playerExpire = inputs.indexOf('table: "player_demand_signals"');
