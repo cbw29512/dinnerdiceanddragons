@@ -1,7 +1,7 @@
 import { requireRole } from "./auth.mjs";
+import { getGameHub } from "./event-location-view.mjs";
 import { asString, requireUuid } from "./http.mjs";
 import { eq, insertRows, selectMany, selectOne } from "./supabase-rest.mjs";
-import { getGameHub } from "./lifecycle.mjs";
 
 function publicAnnouncement(row) {
   return Object.freeze({

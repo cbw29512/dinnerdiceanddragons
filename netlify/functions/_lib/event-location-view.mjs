@@ -2,7 +2,7 @@ import {
   getEvent as getLifecycleEvent,
   getGameHub as getLifecycleGameHub,
   listGameHubs as listLifecycleGameHubs
-} from "./lifecycle.mjs";
+} from "./event-hub-view-state.mjs";
 import { eq, selectOne } from "./supabase-rest.mjs";
 
 async function eventVenue(eventId) {
