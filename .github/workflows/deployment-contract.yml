@@ -158,7 +158,7 @@ jobs:
           node -e "JSON.parse(require('node:fs').readFileSync('/tmp/bad-login.json','utf8'))"
 
           confirm_status="$(curl --silent --show-error --output /tmp/bad-confirm.json --write-out '%{http_code}' \
-            -H 'content-type: application/json' -d '{"token":""}' \
+            -H "origin: $PREVIEW_URL" -H 'content-type: application/json' -d '{"token":""}' \
             "$PREVIEW_URL/auth-api/v1/auth/confirm")"
           [[ "$confirm_status" == "422" ]]
           node -e "const b=JSON.parse(require('node:fs').readFileSync('/tmp/bad-confirm.json','utf8')); if(!b.detail) process.exit(1)"
