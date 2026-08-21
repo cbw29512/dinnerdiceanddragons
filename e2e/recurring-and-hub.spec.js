@@ -46,7 +46,7 @@ test("DM can post a one-way Game Hub announcement without opening chat", async (
 
   await expect(page.locator("#gm-view")).toBeVisible();
   await expect(page.locator("#hub-announcement-form")).toBeVisible();
-  await page.getByLabel("Announcement").fill("Bring your character sheet and dice.");
+  await page.getByRole("textbox", { name: "Announcement" }).fill("Bring your character sheet and dice.");
   await page.getByRole("button", { name: "Post Announcement" }).click();
 
   await expect(page.getByText("Bring your character sheet and dice.", { exact: true })).toBeVisible();
