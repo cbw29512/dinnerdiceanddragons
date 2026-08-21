@@ -1,7 +1,7 @@
 import { managedVenue, requireRole } from "./auth.mjs";
 import { normalizeAvailability, publicAvailability } from "./availability.mjs";
 import { asArray, asInteger, asString, requireUuid } from "./http.mjs";
-import { eq, insertRows, selectMany, selectOne, updateRows } from "./supabase-rest.mjs";
+import { SupabaseRestError, eq, insertRows, selectMany, selectOne, updateRows } from "./supabase-rest.mjs";
 
 function optional(value, name, max = 2000) {
   return asString(value, name, { min: 0, max, nullable: true });
@@ -34,7 +34,7 @@ export async function replaceVenueCalendar(user, venueId, payload) {
     const id = requireUuid(venueId, "venue_id");
     await managedVenue(user.id, id, { verified: false });
     const venue = await selectOne("venues", { id: eq(id) });
-    if (!venue?.active) throw Object.assign(new Error("Venue is not active."), { status: 409 });
+    if (!venue?.active) throw new SupabaseRestError("Venue is not active.", 409);
     const availability = asArray(payload?.availability, "availability", { min: 1, max: 14 }).map(normalizeAvailability);
     const tableCount = asInteger(payload?.table_count, "table_count", { min: 1, max: 100 });
     const seats = asInteger(payload?.max_people_per_table, "max_people_per_table", { min: 1, max: 100 });
