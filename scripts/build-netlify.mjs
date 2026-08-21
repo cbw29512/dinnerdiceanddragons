@@ -13,7 +13,7 @@ const DEMO_GAME_MARKERS = ["Shadows Over Florence", "The Lighthouse at Blackwate
 const LEGACY_ONBOARDING_LINKS = ["join.html#player", "join.html#gm", "venues.html#signup"];
 const REQUIRED_FILES = [
   "index.html", "play.html", "dm.html", "host.html", "signin.html", "my-ddd.html",
-  "notifications.html", "opportunity.html", "game-hub.html",
+  "notifications.html", "opportunity.html", "create-game.html", "create-game.js", "game-hub.html",
   "player-start.js", "player-start-profile.js", "dm-start.js", "dm-start-profile.js",
   "host-start.js", "signin.js", "my-ddd.js", "auth-confirm.js",
   "availability-calendar-init.mjs", "calendar-state.mjs", "calendar-ui.mjs",
@@ -26,7 +26,7 @@ const EXCLUDED_DIRS = new Set([
 ]);
 const EXCLUDED_FILES = new Set([
   "dashboard-prototype.html", "dashboard.js", "shared-games.js", "form-series.html", "discovery.js",
-  "series-commitments.html", "recurring-match.html", "find-venue.html", "create-game.html", "table-lifecycle.html",
+  "series-commitments.html", "recurring-match.html", "find-venue.html", "table-lifecycle.html",
   "package.json", "package-lock.json", "playwright.config.js", "location-matching-notes.txt"
 ]);
 const PUBLIC_EXTENSIONS = new Set([
@@ -90,7 +90,7 @@ async function assertProductionArtifact(deployUrl) {
   const forbiddenNames = [
     "backend", ".github", "e2e", "games", "tests", "supabase", "apps-script", "dashboard-prototype.html",
     "dashboard.js", "shared-games.js", "form-series.html", "discovery.js", "series-commitments.html",
-    "recurring-match.html", "find-venue.html", "create-game.html", "table-lifecycle.html", "game-hub-messages.js"
+    "recurring-match.html", "find-venue.html", "table-lifecycle.html", "game-hub-messages.js"
   ];
   const topLevel = new Set(await readdir(OUT));
   for (const name of forbiddenNames) if (topLevel.has(name)) throw new Error(`Forbidden deployment content found in dist: ${name}`);
