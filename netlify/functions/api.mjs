@@ -19,6 +19,7 @@ import {
   decideVenueBooking,
   formTableMatch,
   getEvent,
+  getGameHub,
   listGameHubs,
   requestRegistration
 } from "./_lib/lifecycle.mjs";
@@ -29,7 +30,6 @@ import {
   saveGMOnboarding,
   savePlayerOnboarding
 } from "./_lib/onboarding.mjs";
-import { getPrivacyGameHub } from "./_lib/privacy-game-hub.mjs";
 import {
   handleNotificationPreferences,
   handleNotifications,
@@ -197,7 +197,7 @@ async function events(request, parts) {
   }
   if (parts[2] === "hub" && parts.length === 3) {
     if (request.method !== "GET") return methodNotAllowed(["GET"]);
-    return json(await getPrivacyGameHub(user, eventId));
+    return json(await getGameHub(user, eventId));
   }
   if (parts[2] === "announcements" && parts.length === 3) {
     if (request.method === "GET") return json(await listAnnouncements(user, eventId));
