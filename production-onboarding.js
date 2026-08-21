@@ -34,9 +34,7 @@
 
   function isEnabled(type) {
     return SUPPORTED_TYPES.has(type) && Boolean(
-      window.DDDProductionAuth &&
-      window.DDDProductionAPI &&
-      window.DDDProductionOnboardingAdapters
+      window.DDDProductionAuth && window.DDDProductionAPI && window.DDDProductionOnboardingAdapters
     );
   }
 
@@ -50,21 +48,14 @@
           day_of_week: String(deferred.window_day || "").trim().toLowerCase(),
           start_time: String(deferred.window_start || "").trim(),
           end_time: String(deferred.window_end || "").trim(),
-          pattern_type: "weekly_interval",
-          week_interval: 1,
-          anchor_date: null,
-          monthly_ordinal: null,
-          month_interval: null,
-          timezone,
-          starts_on: null,
-          ends_on: null
+          pattern_type: "weekly_interval", week_interval: 1, anchor_date: null,
+          monthly_ordinal: null, month_interval: null, timezone, starts_on: null, ends_on: null
         },
         table_count: Number(deferred.table_count),
         max_people_per_table: Number(deferred.seats_per_table),
         purchase_policy: deferred.purchase_policy || null,
         approval_required: false,
-        special_support_offerings: [],
-        special_support_notes: null,
+        special_support_offerings: [], special_support_notes: null,
         environment_notes: environmentNotes || null
       };
     } catch (error) {
@@ -88,22 +79,12 @@
   async function saveVenueWindows(venueId, payloads) {
     try {
       const results = [];
-      for (const payload of payloads) {
-        results.push(await window.DDDProductionAPI.postVenueTableWindow(venueId, payload));
-      }
+      for (const payload of payloads) results.push(await window.DDDProductionAPI.postVenueTableWindow(venueId, payload));
       return results;
     } catch (error) {
       console.error("[Dinner Dice & Dragons] Unable to persist Venue table availability", error);
       throw error;
     }
-  }
-
-  function locationKind(rawValues) {
-    const value = String(rawValues?.location_kind || "business").trim();
-    if (!["business", "private_residence"].includes(value)) {
-      throw new Error("Choose whether the game location is a business/public place or a private residence.");
-    }
-    return value;
   }
 
   async function activateMatching(type, mapped, rawValues) {
@@ -142,7 +123,6 @@
       } else {
         mapped = window.DDDProductionOnboardingAdapters.venue(rawValues, options);
         result = await window.DDDProductionAPI.postVenueOnboarding(mapped.payload);
-        await window.DDDProductionAPI.putVenueLocationKind(result.venue_id, locationKind(rawValues));
         pendingVerification = !result.manager_verified || !result.venue_verified;
         venueWindows = await saveVenueWindows(
           result.venue_id,
@@ -151,15 +131,8 @@
       }
 
       return {
-        shared: true,
-        production: true,
-        result,
-        deferred: mapped.deferred,
-        payload: mapped.payload,
-        pendingVerification,
-        venueWindows,
-        matching,
-        matchingError
+        shared: true, production: true, result, deferred: mapped.deferred, payload: mapped.payload,
+        pendingVerification, venueWindows, matching, matchingError
       };
     } catch (error) {
       console.error(`[Dinner Dice & Dragons] Unable to save ${type} onboarding`, error);
@@ -176,14 +149,8 @@
   }
 
   window.DDDProductionOnboarding = Object.freeze({
-    ProductionAuthRequiredError,
-    browserTimezone,
-    init,
-    isEnabled,
-    save,
-    saveVenueWindows,
-    venueWindowPayload,
-    venueWindowPayloads
+    ProductionAuthRequiredError, browserTimezone, init, isEnabled, save,
+    saveVenueWindows, venueWindowPayload, venueWindowPayloads
   });
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
