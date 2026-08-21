@@ -10,6 +10,7 @@ import {
   publicNotification,
   PrivacyApiContractError
 } from "../netlify/functions/_lib/privacy-api-contract.mjs";
+import { publicVenueLocation } from "../netlify/functions/_lib/venue-location-kind.mjs";
 
 function test(name, callback) {
   try {
@@ -104,6 +105,29 @@ test("safe notifications cannot contain private contact or location fields", () 
       PrivacyApiContractError
     );
   }
+});
+
+test("opportunity Venue projection exposes locality but never street or contact data", () => {
+  const venue = publicVenueLocation({
+    name: "Browser Test Cafe",
+    city: "Florence",
+    state_region: "SC",
+    address_line1: "123 Public Table Way",
+    postal_code: "29501",
+    contact_email: "manager@example.test",
+    contact_phone: "555-0100"
+  }, { formed: true });
+  assert.deepEqual(venue, {
+    name: "Browser Test Cafe",
+    location_kind: "public_venue",
+    location_label: "Public venue",
+    city: "Florence",
+    state_region: "SC"
+  });
+  assert.equal(Object.hasOwn(venue, "address_line1"), false);
+  assert.equal(Object.hasOwn(venue, "postal_code"), false);
+  assert.equal(Object.hasOwn(venue, "contact_email"), false);
+  assert.equal(Object.hasOwn(venue, "contact_phone"), false);
 });
 
 test("response normalization rejects unsupported roles", () => {
