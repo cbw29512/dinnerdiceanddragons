@@ -3,14 +3,15 @@ import { SupabaseRestError } from "./supabase-rest.mjs";
 
 export const DEFAULT_REMINDER_MINUTES = Object.freeze([1440, 60]);
 const MAX_REMINDERS = 5;
+const MIN_MINUTES = 15;
 const MAX_MINUTES = 20160;
 
 export function normalizeReminderMinutes(value) {
   if (!Array.isArray(value)) throw new SupabaseRestError("Reminder times must be an array.", 422);
   if (value.length > MAX_REMINDERS) throw new SupabaseRestError(`Choose no more than ${MAX_REMINDERS} reminders.`, 422);
   const normalized = value.map((item) => Number(item));
-  if (normalized.some((item) => !Number.isInteger(item) || item < 1 || item > MAX_MINUTES)) {
-    throw new SupabaseRestError("Reminder times must be between 1 minute and 14 days before the game.", 422);
+  if (normalized.some((item) => !Number.isInteger(item) || item < MIN_MINUTES || item > MAX_MINUTES)) {
+    throw new SupabaseRestError("Reminder times must be between 15 minutes and 14 days before the game.", 422);
   }
   return [...new Set(normalized)].sort((a, b) => b - a);
 }
