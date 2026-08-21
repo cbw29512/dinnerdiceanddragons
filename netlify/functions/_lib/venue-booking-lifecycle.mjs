@@ -31,11 +31,16 @@ export async function decideVenueBooking(user, bookingId, action, message = null
     const safeBookingId = requireUuid(bookingId, "booking_id");
     let booking = await selectOne("venue_booking_requests", { id: eq(safeBookingId) });
     if (!booking?.event_id) throw new SupabaseRestError("Venue booking was not found.", 404);
-    const window = await selectOneForUpdate("venue_table_windows", { id: eq(booking.venue_table_window_id), active: "is.true" });
+    const eventId = booking.event_id;
+    const windowId = booking.venue_table_window_id;
+    const window = await selectOneForUpdate("venue_table_windows", { id: eq(windowId), active: "is.true" });
     if (!window) throw new SupabaseRestError("Venue table window is no longer available.", 409);
+    const event = await selectOneForUpdate("events", { id: eq(eventId) });
+    if (!event) throw new SupabaseRestError("Venue booking was not found.", 404);
     booking = await selectOneForUpdate("venue_booking_requests", { id: eq(safeBookingId) });
-    const event = booking?.event_id ? await selectOneForUpdate("events", { id: eq(booking.event_id) }) : null;
-    if (!booking || !event) throw new SupabaseRestError("Venue booking was not found.", 404);
+    if (!booking || booking.event_id !== eventId || booking.venue_table_window_id !== windowId) {
+      throw new SupabaseRestError("Venue booking state changed while the decision was being processed.", 409);
+    }
     await managedVenue(user.id, event.venue_id, { verified: true });
     const current = booking.status;
     let status;

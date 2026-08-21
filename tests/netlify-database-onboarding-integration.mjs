@@ -70,3 +70,4 @@ await import("./netlify-database-matching-inputs-integration.mjs");
 await import("./netlify-database-game-on-integration.mjs");
 await import("./netlify-database-game-on-concurrency-integration.mjs");
 await import("./netlify-database-lifecycle-integration.mjs");
+await import("./netlify-database-lifecycle-lock-order-integration.mjs");
