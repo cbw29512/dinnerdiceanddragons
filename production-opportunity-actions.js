@@ -22,8 +22,8 @@
     return area;
   }
 
-  function gameHubLink(eventId, label = "Open Game Hub") {
-    const link = element("a", "button primary", label);
+  function gameHubLink(eventId) {
+    const link = element("a", "button primary", "Event Formed · Open Game Hub");
     link.href = `game-hub.html?event=${encodeURIComponent(eventId)}`;
     return link;
   }
@@ -40,12 +40,13 @@
       const gm = progress.gmAccepted ? "DM ✓" : "DM waiting";
       return `${gm} · ${venue} · ${progress.acceptedPlayers} Player${progress.acceptedPlayers === 1 ? "" : "s"} accepted`;
     }
-    return role === "gm" ? "You accepted. DDD is waiting for the Venue and enough Players." : "You're interested. DDD is waiting for the DM, Venue, and enough Players.";
+    return role === "gm"
+      ? "You accepted. DDD is waiting for the Venue and enough Players."
+      : "You're interested. DDD is waiting for the DM, Venue, and enough Players.";
   }
 
   function renderWaiting(card, role, progress = null) {
-    const area = actionArea(card);
-    area.replaceChildren(element("p", "microcopy", waitingCopy(role, progress)));
+    actionArea(card).replaceChildren(element("p", "microcopy", waitingCopy(role, progress)));
   }
 
   async function respond(opportunity, type, card, decision) {
@@ -73,8 +74,7 @@
     } catch (error) {
       console.error("[Dinner Dice & Dragons] Unable to respond to opportunity", error);
       buttons.forEach((button) => { button.disabled = false; });
-      const message = element("p", "error-message", error?.message || "Your response could not be saved.");
-      area.append(message);
+      area.append(element("p", "error-message", error?.message || "Your response could not be saved."));
     }
   }
 
@@ -103,7 +103,8 @@
     try {
       const role = roleFor(type);
       if (opportunity.event_id) {
-        actionArea(card).replaceChildren(gameHubLink(opportunity.event_id));
+        if (role === "gm") actionArea(card).replaceChildren(gameHubLink(opportunity.event_id));
+        else window.DDDSeatActions?.render?.(opportunity, card);
       } else if (opportunity.status === "forming") {
         actionArea(card).replaceChildren(
           role === "gm"
