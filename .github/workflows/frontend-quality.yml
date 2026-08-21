@@ -6,6 +6,7 @@ on:
     paths:
       - "*.html"
       - "*.js"
+      - "*.mjs"
       - "*.css"
       - "assets/**"
       - "css/**"
@@ -25,6 +26,7 @@ on:
     paths:
       - "*.html"
       - "*.js"
+      - "*.mjs"
       - "*.css"
       - "assets/**"
       - "css/**"
@@ -49,39 +51,31 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.13"
-
       - name: Set up Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: "22"
           cache: npm
-
       - name: Install locked frontend dependencies
         run: npm ci
-
       - name: Check HTML metadata, links, and skip-focus targets
         run: python scripts/check_site.py
-
       - name: Check button and interaction wiring
         run: python scripts/check_buttons.py
-
-      - name: Check JavaScript syntax
+      - name: Check JavaScript and browser-module syntax
         shell: bash
         run: |
           set -euo pipefail
           while IFS= read -r -d '' file; do
             echo "Checking $file"
             node --check "$file"
-          done < <(find . -type f -name '*.js' -not -path './.git/*' -not -path './node_modules/*' -print0)
-
+          done < <(find . -type f \( -name '*.js' -o -name '*.mjs' \) -not -path './.git/*' -not -path './node_modules/*' -print0)
       - name: Run matching and lifecycle JavaScript tests
         run: node tests/run-tests.js
-
       - name: Check Apps Script syntax
         shell: bash
         run: |
@@ -100,27 +94,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
       - name: Set up Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: "22"
           cache: npm
-
       - name: Set up Python for local site server
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.13"
-
       - name: Install locked browser test dependencies
         run: npm ci
-
       - name: Install Chromium browser
         run: npx playwright install chromium
-
       - name: Run functional, keyboard, WCAG, reflow, and runtime tests
         run: npm run test:e2e
-
       - name: Preserve Playwright failure diagnostics
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -141,21 +129,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
       - name: Set up Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: "22"
-
       - name: Install pinned Lighthouse CI
         run: npm install --global @lhci/cli@0.15.1
-
       - name: Collect Lighthouse reports
         run: lhci collect --config=lighthouserc.cjs
-
       - name: Enforce Lighthouse thresholds
         run: lhci assert --config=lighthouserc.cjs
-
       - name: Preserve Lighthouse reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
