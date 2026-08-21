@@ -98,6 +98,14 @@
     configure,
     isConfigured,
     getMe: () => request("GET", "/api/v1/me"),
+    getNotifications: () => request("GET", "/api/v1/notifications"),
+    markNotification: (notificationId, action) => request(
+      "PATCH",
+      `/api/v1/notifications/${encodeURIComponent(String(notificationId || ""))}`,
+      { action }
+    ),
+    getNotificationPreferences: () => request("GET", "/api/v1/notification-preferences"),
+    putNotificationPreferences: (payload) => request("PUT", "/api/v1/notification-preferences", payload),
     getPlayerOnboarding: () => request("GET", "/api/v1/onboarding/player"),
     putPlayerOnboarding: (payload) => request("PUT", "/api/v1/onboarding/player", payload),
     getGMOnboarding: () => request("GET", "/api/v1/onboarding/gm"),
@@ -112,26 +120,20 @@
     findMyTable: (horizonDays = 60) => request("POST", "/api/v1/matching/find-my-table", { horizon_days: horizonDays }),
     getMatchingOpportunities: () => request("GET", "/api/v1/matching/opportunities"),
     getMatchingOpportunity: (tableMatchId) => request("GET", opportunityPath(tableMatchId)),
+    respondToOpportunity: (tableMatchId, role, decision) => request(
+      "POST", opportunityPath(tableMatchId, "/respond"), { role, decision }
+    ),
     formTableMatch: (tableMatchId, payload) => request("POST", opportunityPath(tableMatchId, "/form"), payload),
     getGameHubs: () => request("GET", "/api/v1/game-hubs"),
     getEvent: (eventId) => request("GET", eventPath(eventId)),
     getGameHub: (eventId) => request("GET", eventPath(eventId, "/hub")),
-    getHubMessages: (eventId, { limit = 50, cursor = "" } = {}) => {
-      const params = new URLSearchParams({ limit: String(limit) });
-      if (cursor) params.set("cursor", cursor);
-      return request("GET", `${eventPath(eventId, "/messages")}?${params.toString()}`);
-    },
-    postHubMessage: (eventId, payload) => request("POST", eventPath(eventId, "/messages"), payload),
     postRegistration: (eventId) => request("POST", eventPath(eventId, "/registrations"), { expectations_acknowledged: true }),
     cancelMyRegistration: (eventId) => request("PATCH", eventPath(eventId, "/registrations/me"), { action: "cancel" }),
     decideRegistration: (eventId, registrationId, action) => request(
-      "PATCH",
-      eventPath(eventId, `/registrations/${encodeURIComponent(String(registrationId || ""))}`),
-      { action }
+      "PATCH", eventPath(eventId, `/registrations/${encodeURIComponent(String(registrationId || ""))}`), { action }
     ),
     decideVenueBooking: (bookingId, action, message = null) => request(
-      "PATCH",
-      `/api/v1/venue-bookings/${encodeURIComponent(String(bookingId || ""))}`,
+      "PATCH", `/api/v1/venue-bookings/${encodeURIComponent(String(bookingId || ""))}`,
       { action, ...(message ? { message } : {}) }
     )
   });
