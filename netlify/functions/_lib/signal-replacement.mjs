@@ -1,17 +1,18 @@
 import { eq, selectMany, updateRows } from "./supabase-rest.mjs";
 
+const REPLACEABLE = new Set(["active", "paused"]);
+
 export async function expireSupersededSignals({ table, ownerColumn, ownerId, gameSystemId, keepId }) {
   try {
     const rows = await selectMany(table, {
       [ownerColumn]: eq(ownerId),
       game_system_id: eq(gameSystemId),
-      status: eq("active"),
       limit: 50
     });
     const now = new Date().toISOString();
     let expired = 0;
     for (const row of rows) {
-      if (row.id === keepId) continue;
+      if (row.id === keepId || !REPLACEABLE.has(row.status)) continue;
       await updateRows(table, { id: eq(row.id) }, {
         status: "expired",
         updated_at: now
