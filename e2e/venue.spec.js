@@ -47,12 +47,12 @@ test("Venue manager saves guided availability durably without a browser-only pen
   });
 
   await page.goto("/host.html");
-  await page.getByLabel("Manager name").fill("Venue Manager");
+  await page.getByLabel("Host / manager name").fill("Venue Manager");
   await page.getByRole("button", { name: "Continue" }).click();
 
   await expect(page.getByRole("heading", { name: "Where will games be hosted?" })).toBeVisible();
-  await page.getByLabel("Business / Venue name").fill("Browser Test Tavern");
-  await page.getByLabel("Street address").fill("100 Test Street");
+  await page.getByLabel("Venue name").fill("Browser Test Tavern");
+  await page.getByLabel("Public street address").fill("100 Test Street");
   await page.getByLabel("City").fill("Florence");
   await page.getByLabel("State").fill("SC");
   await page.getByLabel("ZIP code").fill("29501");
@@ -66,10 +66,11 @@ test("Venue manager saves guided availability durably without a browser-only pen
   await page.getByLabel("Purchase policy").selectOption({ label: "Each guest should purchase food or drink" });
   await page.getByRole("button", { name: "Review" }).click();
   await page.locator("#conduct-check").check();
-  await page.getByRole("button", { name: "Submit Venue for Verification" }).click();
+  await page.getByRole("button", { name: "Submit Venue" }).click();
 
-  await expect(page.getByRole("heading", { name: "Your Venue is waiting for verification." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your venue and table times are saved." })).toBeVisible();
   expect(venuePayload.name).toBe("Browser Test Tavern");
+  expect(venuePayload.venue_type).toBe("public_venue");
   expect(windowPayloads).toHaveLength(1);
   expect(windowPayloads[0].availability.day_of_week).toBe("saturday");
   expect(windowPayloads[0].availability.start_time).toBe("18:00");
