@@ -4,7 +4,10 @@
   let step = 1;
   let authMode = "signup";
   let signedIn = false;
+  let existingProfile = null;
+  let existingSupplies = [];
   const params = new URLSearchParams(window.location.search);
+  const editMode = params.get("edit") === "1";
   const form = () => document.getElementById("dm-start-form");
   const byId = (id) => document.getElementById(id);
   const log = (message, error) => console.error(`[DDD DM Start] ${message}`, error);
@@ -15,10 +18,10 @@
     node.textContent = message;
   }
   function showStep(next) {
-    step = Math.max(1, Math.min(5, next));
+    step = Math.max(editMode ? 3 : 1, Math.min(5, next));
     document.querySelectorAll(".start-step").forEach((node) => { node.hidden = Number(node.dataset.step) !== step; });
-    byId("step-count").textContent = `Step ${step} of 5`;
-    byId("progress-bar").style.width = `${step * 20}%`;
+    byId("step-count").textContent = editMode ? `Update ${step - 2} of 3` : `Step ${step} of 5`;
+    byId("progress-bar").style.width = editMode ? `${(step - 2) * 33.34}%` : `${step * 20}%`;
     if (step === 5) renderReview();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -47,7 +50,17 @@
     field?.setAttribute("aria-invalid", "true"); field?.focus(); announce("auth-status", message); return false;
   }
   function showReady() {
-    form().hidden = true; document.querySelector(".start-progress").hidden = true; byId("dm-ready").hidden = false;
+    form().hidden = true;
+    document.querySelector(".start-progress").hidden = true;
+    byId("dm-ready").hidden = false;
+  }
+  function configureEditUi() {
+    const tableSize = form().elements.minimum_players?.closest(".distance-choices");
+    if (tableSize) tableSize.hidden = true;
+    const conduct = byId("conduct-check")?.closest("label");
+    if (conduct) conduct.hidden = true;
+    const submit = form().querySelector('button[type="submit"]');
+    if (submit) submit.textContent = "Save DM Availability";
   }
   async function afterAuth(session) {
     signedIn = true;
@@ -57,8 +70,14 @@
     document.querySelector(".auth-toggle").hidden = true;
     document.querySelector('[data-action="account"]').textContent = "Continue";
     announce("auth-status", `Signed in as ${session.user.email}.`, true);
-    const existing = await window.DDDProductionAPI.getGMOnboardingOptional();
-    if (existing) return showReady();
+    existingProfile = await window.DDDProductionAPI.getGMOnboardingOptional();
+    if (existingProfile) {
+      if (!editMode) return showReady();
+      existingSupplies = await window.DDDProductionAPI.getGMSupplies();
+      configureEditUi();
+      if (window.DDDDMStartProfile?.hydrate(form(), existingProfile)) return showStep(3);
+      throw new Error("Saved DM availability could not be loaded safely.");
+    }
     form().elements.display_name.disabled = false;
     form().elements.display_name.closest("label").hidden = false;
     if (form().elements.display_name.value.trim()) showStep(2);
@@ -91,6 +110,7 @@
       return false;
     }
     zip.setCustomValidity("");
+    if (editMode) { announce("table-status", "Travel area looks good.", true); return true; }
     const minimum = Number(form().elements.minimum_players.value);
     const maximum = Number(form().elements.maximum_players.value);
     if (maximum < minimum) {
@@ -103,7 +123,9 @@
   }
   function renderReview() {
     const raw = values();
-    const rows = [["Game", `${raw.gm_system?.[0]} · ${raw.gm_format?.[0]}`], ["Available", (raw.availability_day || []).join(", ")], ["Travel", `${raw.radius} miles from ${raw.postal_code}`], ["Table size", `${raw.minimum_players}–${raw.maximum_players} Players`]];
+    const rows = editMode
+      ? [["DM settings", "Game, format, style, and table sizes unchanged"], ["Available", (raw.availability_day || []).join(", ")], ["Travel", `${raw.radius} miles from ${raw.postal_code}`]]
+      : [["Game", `${raw.gm_system?.[0]} · ${raw.gm_format?.[0]}`], ["Available", (raw.availability_day || []).join(", ")], ["Travel", `${raw.radius} miles from ${raw.postal_code}`], ["Table size", `${raw.minimum_players}–${raw.maximum_players} Players`]];
     const review = byId("dm-review"); review.replaceChildren();
     rows.forEach(([label, value]) => {
       const row = document.createElement("div"); row.className = "review-row";
@@ -115,10 +137,17 @@
   async function save(event) {
     event.preventDefault();
     try {
-      if (!byId("conduct-check").checked) { byId("conduct-check").focus(); return announce("save-status", "Please agree to the Code of Conduct first."); }
-      announce("save-status", "Saving your DM availability and looking for a table…", true);
-      const saved = await window.DDDProductionOnboarding.save("Game Master", values());
-      if (saved.matchingError) return announce("save-status", `Your DM profile saved, but table search could not start: ${saved.matchingError.message}`);
+      if (!editMode && !byId("conduct-check").checked) { byId("conduct-check").focus(); return announce("save-status", "Please agree to the Code of Conduct first."); }
+      announce("save-status", editMode ? "Updating your DM availability…" : "Saving your DM availability and looking for a table…", true);
+      if (editMode && existingProfile) {
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const payload = window.DDDDMStartProfile.updatePayload(existingProfile, values(), timezone);
+        await window.DDDProductionAPI.putGMOnboarding(payload);
+        await window.DDDDMStartProfile.refreshSupplies(existingSupplies, payload.availability);
+      } else {
+        const saved = await window.DDDProductionOnboarding.save("Game Master", values());
+        if (saved.matchingError) return announce("save-status", `Your DM profile saved, but table search could not start: ${saved.matchingError.message}`);
+      }
       showReady();
     } catch (error) { log("Unable to save DM setup", error); announce("save-status", error?.message || "We could not save your DM setup."); }
   }
@@ -137,7 +166,7 @@
       await window.DDDProductionAuth.init();
       const session = await window.DDDProductionAuth.getSession();
       if (session) await afterAuth(session);
-    } catch (error) { log("Unable to initialize DM setup", error); announce("auth-status", "Account service is temporarily unavailable."); }
+    } catch (error) { log("Unable to initialize DM setup", error); announce("auth-status", error?.message || "Account service is temporarily unavailable."); }
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true }); else void init();
