@@ -1,6 +1,7 @@
 import { activeGameSystem, gameSystemById } from "./catalog.mjs";
 import { createSignalAvailability, listAvailability, normalizeAvailability, publicAvailability } from "./availability.mjs";
 import { managedVenue, requireRole } from "./auth.mjs";
+import { matchingSignalStatus } from "./matching-participation.mjs";
 import { expireSupersededSignals } from "./signal-replacement.mjs";
 import {
   SupabaseRestError,
@@ -60,6 +61,7 @@ export async function createPlayerDemand(user, payload) {
   const system = await activeGameSystem(payload?.system_slug);
   const availabilityInputs = asArray(payload?.availability, "availability", { min: 1, max: 12 });
   const id = crypto.randomUUID();
+  const status = await matchingSignalStatus(user.id);
   const signal = {
     id,
     player_profile_id: profile.id,
@@ -69,7 +71,7 @@ export async function createPlayerDemand(user, payload) {
     minimum_age_preference: payload.minimum_age_preference == null ? null : asInteger(payload.minimum_age_preference, "minimum_age_preference", { min: 0, max: 120 }),
     table_style_preferences: uniqueStrings(payload.table_style_preferences ?? [], "table_style_preferences"),
     environment_preferences: uniqueStrings(payload.environment_preferences ?? [], "environment_preferences"),
-    status: "active",
+    status,
     updated_at: new Date().toISOString()
   };
   await insertRows("player_demand_signals", [signal], { returning: false });
@@ -88,7 +90,7 @@ export async function createPlayerDemand(user, payload) {
   });
   return {
     id,
-    status: "active",
+    status,
     system_slug: system.slug,
     availability,
     preferred_format: signal.preferred_format,
@@ -132,6 +134,7 @@ export async function createGMSupply(user, payload) {
   const maximum = asInteger(payload.maximum_players, "maximum_players", { min: 1, max: 20 });
   if (maximum < minimum) throw new SupabaseRestError("maximum_players cannot be below minimum_players.", 422);
   const id = crypto.randomUUID();
+  const status = await matchingSignalStatus(user.id);
   const signal = {
     id,
     gm_profile_id: profile.id,
@@ -141,7 +144,7 @@ export async function createGMSupply(user, payload) {
     minimum_players: minimum,
     maximum_players: maximum,
     table_style: optionalText(payload.table_style, "table_style"),
-    status: "active",
+    status,
     updated_at: new Date().toISOString()
   };
   await insertRows("gm_supply_signals", [signal], { returning: false });
@@ -159,7 +162,7 @@ export async function createGMSupply(user, payload) {
     keepId: id
   });
   return {
-    id, status: "active", system_slug: system.slug, availability,
+    id, status, system_slug: system.slug, availability,
     preferred_format: signal.preferred_format, preferred_cadence: signal.preferred_cadence,
     minimum_players: minimum, maximum_players: maximum, table_style: signal.table_style
   };
