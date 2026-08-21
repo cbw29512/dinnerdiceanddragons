@@ -5,14 +5,14 @@ on:
     branches: [main]
     paths:
       - "*.mjs"
-      - "production-*.js"
+      - "*.js"
+      - "*.html"
       - "notifications.*"
       - "opportunity.*"
       - "game-hub*"
       - "netlify/functions/**"
       - "netlify/database/migrations/**"
       - "tests/privacy-*"
-      - "tests/private-residence-*"
       - "tests/venue-pending-*"
       - "tests/venue-preapproval-*"
       - "tests/signal-replacement-*"
@@ -24,14 +24,14 @@ on:
     branches: [main]
     paths:
       - "*.mjs"
-      - "production-*.js"
+      - "*.js"
+      - "*.html"
       - "notifications.*"
       - "opportunity.*"
       - "game-hub*"
       - "netlify/functions/**"
       - "netlify/database/migrations/**"
       - "tests/privacy-*"
-      - "tests/private-residence-*"
       - "tests/venue-pending-*"
       - "tests/venue-preapproval-*"
       - "tests/signal-replacement-*"
@@ -50,53 +50,38 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
       - name: Set up Node
-        uses: actions/setup-node@249970729cb0ef3589644e89e685e5dc5ba9c38 # v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: "22"
-
       - name: Check privacy and onboarding module syntax
         shell: bash
         run: |
           set -euo pipefail
-          while IFS= read -r -d '' file; do
-            echo "Checking $file"
-            node --check "$file"
-          done < <(find . -maxdepth 1 -type f \( -name '*.mjs' -o -name '*.js' \) -print0)
-          while IFS= read -r -d '' file; do
-            echo "Checking $file"
-            node --check "$file"
-          done < <(find netlify/functions/_lib -type f -name '*.mjs' -print0)
+          while IFS= read -r -d '' file; do node --check "$file"; done < <(find . -maxdepth 1 -type f \( -name '*.mjs' -o -name '*.js' \) -print0)
+          while IFS= read -r -d '' file; do node --check "$file"; done < <(find netlify/functions/_lib -type f -name '*.mjs' -print0)
           node --check e2e/privacy-three-way.spec.js
           node --check e2e/simple-onboarding.spec.js
-
       - name: Run privacy matching state tests
         run: node tests/privacy-matching-tests.mjs
-
-      - name: Run private residence privacy contract
-        run: node tests/private-residence-contract-tests.mjs
-
       - name: Run pending Venue persistence contract
         run: node tests/venue-pending-window-contract-tests.mjs
-
       - name: Run Venue preapproval contract
         run: node tests/venue-preapproval-contract-tests.mjs
-
       - name: Run stale signal replacement contract
         run: node tests/signal-replacement-contract-tests.mjs
-
       - name: Run matching pause contract
         run: node tests/matching-pause-contract-tests.mjs
-
       - name: Run privacy browser API client tests
         run: node tests/privacy-api-client-tests.js
-
-      - name: Verify direct messaging is not in the public browser boundary
+      - name: Verify privacy boundaries
         shell: bash
         run: |
           set -euo pipefail
           test ! -e game-hub-messages.js
+          test ! -e netlify/functions/_lib/venue-location-kind.mjs
+          test ! -e netlify/database/migrations/0004_venue_location_kind.sql
           ! grep -q 'getHubMessages\|postHubMessage' production-api-client.js
           ! grep -q 'message-channel-grid\|venue-question-form\|game-hub-messages.js' game-hub.html
           ! grep -q 'parts\[2\] === "messages"' netlify/functions/api.mjs
+          ! grep -q 'private_residence\|putVenueLocationKind' host.html host-start.js production-onboarding.js production-api-client.js netlify/functions/api.mjs
