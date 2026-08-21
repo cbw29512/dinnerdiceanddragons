@@ -4,8 +4,8 @@ import { AvailabilityCalendar } from "./calendar-ui.mjs";
 
 function labelFor(builder) {
   const form = builder.closest("form");
-  if (form?.id === "gm-form") return "When can you DM?";
-  if (form?.id === "venue-form") return "When can your venue host a table?";
+  if (["gm-form", "dm-start-form"].includes(form?.id)) return "When can you DM?";
+  if (["venue-form", "venue-start-form"].includes(form?.id)) return "When can your venue host a table?";
   return "When can you play?";
 }
 
