@@ -5,28 +5,28 @@ on:
     branches: [main]
     paths:
       - "*.mjs"
-      - "production-api-client.js"
-      - "production-config.js"
+      - "production-*.js"
       - "notifications.*"
       - "opportunity.*"
       - "game-hub*"
       - "netlify/functions/**"
       - "netlify/database/migrations/**"
       - "tests/privacy-*"
+      - "tests/venue-pending-*"
       - "e2e/privacy-*"
       - ".github/workflows/privacy-matching-contract.yml"
   push:
     branches: [main]
     paths:
       - "*.mjs"
-      - "production-api-client.js"
-      - "production-config.js"
+      - "production-*.js"
       - "notifications.*"
       - "opportunity.*"
       - "game-hub*"
       - "netlify/functions/**"
       - "netlify/database/migrations/**"
       - "tests/privacy-*"
+      - "tests/venue-pending-*"
       - "e2e/privacy-*"
       - ".github/workflows/privacy-matching-contract.yml"
 
@@ -59,9 +59,13 @@ jobs:
             node --check "$file"
           done < <(find netlify/functions/_lib -type f -name '*.mjs' -print0)
           node --check e2e/privacy-three-way.spec.js
+          node --check e2e/simple-onboarding.spec.js
 
       - name: Run privacy matching state tests
         run: node tests/privacy-matching-tests.mjs
+
+      - name: Run pending Venue persistence contract
+        run: node tests/venue-pending-window-contract-tests.mjs
 
       - name: Run privacy browser API client tests
         run: node tests/privacy-api-client-tests.js
