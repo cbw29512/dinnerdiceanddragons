@@ -40,11 +40,39 @@ import { SupabaseRestError } from "./_lib/supabase-rest.mjs";
 import { verifyVenueClaim } from "./_lib/venue-verification.mjs";
 
 function activeUser(request) { return currentUser(request, { active: true }); }
-function authFailure(error, fallback) {
+function identityErrorText(error) {
+  return [error?.message, error?.cause?.message, error?.cause?.error_description]
+    .filter((value) => typeof value === "string")
+    .join(" ")
+    .toLowerCase();
+}
+function authFailure(error, action, fallback) {
   const status = Number(error?.status || error?.statusCode || 0);
+  const detail = identityErrorText(error);
+
+  if (status === 429 || /rate.?limit|too many (requests|attempts)/.test(detail)) {
+    return new SupabaseRestError("Too many authentication attempts. Try again later.", 429);
+  }
+  if (action === "signup" && /(already registered|already exists|user already|email.+(?:registered|exists))/.test(detail)) {
+    return new SupabaseRestError("An account already exists for this email. Choose Sign in instead.", 409);
+  }
+  if (action === "signup" && /(signup.+disabled|signups?.+(?:disabled|not allowed)|registration.+(?:disabled|not allowed|closed))/.test(detail)) {
+    return new SupabaseRestError("New account registration is currently unavailable.", 403);
+  }
+  if (action === "login" && status >= 400 && status < 500) {
+    return new SupabaseRestError("Email or password is incorrect.", status);
+  }
+  if (action === "confirm" && status >= 400 && status < 500) {
+    return new SupabaseRestError("Confirmation link is invalid or expired.", status);
+  }
   if (status === 403) return new SupabaseRestError("Authentication request was rejected.", 403);
   if (status >= 400 && status < 500) return new SupabaseRestError(fallback, status);
-  console.warn("[Dinner Dice & Dragons] Netlify Identity request failed", error);
+
+  console.warn("[Dinner Dice & Dragons] Netlify Identity request failed", {
+    action,
+    status,
+    name: String(error?.name || "IdentityError")
+  });
   return new SupabaseRestError("Authentication is temporarily unavailable.", 503);
 }
 function credentials(payload) {
@@ -64,7 +92,7 @@ async function auth(request, parts) {
       const user = await getUser();
       return json(user ? { authenticated: true, id: user.id, email: user.email } : { authenticated: false });
     } catch (error) {
-      throw authFailure(error, "Authentication session could not be refreshed.");
+      throw authFailure(error, "session", "Authentication session could not be refreshed.");
     }
   }
   if (request.method !== "POST") return methodNotAllowed(["POST"]);
@@ -90,7 +118,7 @@ async function auth(request, parts) {
     }
   } catch (error) {
     if (error instanceof SupabaseRestError) throw error;
-    throw authFailure(error, action === "login" ? "Email or password is incorrect." : "Authentication request could not be completed.");
+    throw authFailure(error, action, action === "login" ? "Email or password is incorrect." : "Authentication request could not be completed.");
   }
   return notFound();
 }
