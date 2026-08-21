@@ -14,9 +14,9 @@ PAGE_SCRIPTS = {
     "index.html": ("production-config.js", "production-api-client.js", "production-auth.js", "auth-confirm.js"),
     "play.html": ("production-auth.js", "production-onboarding.js", "production-matching.js", "availability-calendar-init.mjs", "player-start-profile.js", "player-start.js"),
     "dm.html": ("production-auth.js", "production-onboarding.js", "production-matching.js", "availability-calendar-init.mjs", "dm-start-profile.js", "dm-start.js"),
-    "host.html": ("production-auth.js", "venue-window-payloads.js", "production-onboarding.js", "availability-calendar-init.mjs", "host-start.js"),
+    "host.html": ("production-auth.js", "venue-window-payloads.js", "production-onboarding.js", "availability-calendar-init.mjs", "host-managed-venues.js", "host-start-account.js", "host-start.js"),
     "signin.html": ("production-auth.js", "signin.js"),
-    "my-ddd.html": ("production-auth.js", "my-ddd.js"),
+    "my-ddd.html": ("production-auth.js", "my-ddd.js", "my-ddd-games.js", "my-ddd-reminders.js"),
     "notifications.html": ("production-auth.js", "notifications.js"),
     "opportunity.html": ("production-auth.js", "production-seat-actions.js", "opportunity-review.js"),
     "create-game.html": ("production-auth.js", "create-game.js"),
@@ -30,7 +30,9 @@ SOURCE_WIRING = {
     "player-start-profile.js": ("calendar.loadBlocks", "updatePayload", "accessibility_notes_private"),
     "dm-start.js": ("availabilityReady", 'DDDProductionOnboarding.save("Game Master"', "getGMOnboardingOptional"),
     "dm-start-profile.js": ("calendar.loadBlocks", "refreshSupplies", "updatePayload"),
-    "host-start.js": ("venue_manager", "getMe", 'DDDProductionOnboarding.save("Venue"'),
+    "host-start-account.js": ("DDDProductionAuth.signIn", "DDDProductionAuth.signUp", "lockSignedIn"),
+    "host-managed-venues.js": ("calendar.loadBlocks", "replacementPayload", "Change Calendar"),
+    "host-start.js": ("getManagedVenues", "getVenueTableWindows", "putVenueTableWindows", 'DDDProductionOnboarding.save("Venue"'),
     "my-ddd.js": ("matching_paused", "putNotificationPreferences", "dm.html?edit=1"),
     "notifications.js": ("getNotifications", "opportunity.html?", "getNotificationPreferences"),
     "opportunity-review.js": ("respondToOpportunity", "Not This One", "create-game.html?table_match_id="),
@@ -52,18 +54,13 @@ class Parser(HTMLParser):
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = {key: value or "" for key, value in attrs}
-        if tag == "form":
-            self.form_depth += 1
-        elif tag == "button":
-            self.buttons.append((values, self.form_depth > 0))
-        elif tag == "a" and "button" in values.get("class", "").split():
-            self.button_links.append(values)
-        elif tag == "script" and values.get("src"):
-            self.scripts.append(values["src"])
+        if tag == "form": self.form_depth += 1
+        elif tag == "button": self.buttons.append((values, self.form_depth > 0))
+        elif tag == "a" and "button" in values.get("class", "").split(): self.button_links.append(values)
+        elif tag == "script" and values.get("src"): self.scripts.append(values["src"])
 
     def handle_endtag(self, tag: str) -> None:
-        if tag == "form" and self.form_depth:
-            self.form_depth -= 1
+        if tag == "form" and self.form_depth: self.form_depth -= 1
 
 
 def parse(page: Path) -> Parser:
@@ -78,41 +75,31 @@ def check_page(page: Path) -> list[str]:
     for attrs, in_form in parser.buttons:
         kind = attrs.get("type", "").lower()
         descriptor = attrs.get("id") or attrs.get("class") or "<button>"
-        if kind not in {"button", "submit", "reset"}:
-            errors.append(f"{page.name}: button {descriptor!r} needs an explicit valid type")
-        if kind in {"submit", "reset"} and not in_form:
-            errors.append(f"{page.name}: {kind} button {descriptor!r} is outside a form")
-        if kind == "button" and not (attrs.get("id") or attrs.get("class") or any(key.startswith("data-") for key in attrs)):
-            errors.append(f"{page.name}: type=button {descriptor!r} has no JS hook")
+        if kind not in {"button", "submit", "reset"}: errors.append(f"{page.name}: button {descriptor!r} needs an explicit valid type")
+        if kind in {"submit", "reset"} and not in_form: errors.append(f"{page.name}: {kind} button {descriptor!r} is outside a form")
+        if kind == "button" and not (attrs.get("id") or attrs.get("class") or any(key.startswith("data-") for key in attrs)): errors.append(f"{page.name}: type=button {descriptor!r} has no JS hook")
     for attrs in parser.button_links:
-        if attrs.get("href", "").strip() in {"", "#"}:
-            errors.append(f"{page.name}: button-style link has no destination")
+        if attrs.get("href", "").strip() in {"", "#"}: errors.append(f"{page.name}: button-style link has no destination")
     for required in PAGE_SCRIPTS.get(page.name, ()):
-        if required not in parser.scripts:
-            errors.append(f"{page.name}: required script missing: {required}")
+        if required not in parser.scripts: errors.append(f"{page.name}: required script missing: {required}")
     return errors
 
 
 def check_sources() -> list[str]:
     errors: list[str] = []
     for name, snippets in SOURCE_WIRING.items():
-        try:
-            text = (ROOT / name).read_text(encoding="utf-8")
+        try: text = (ROOT / name).read_text(encoding="utf-8")
         except Exception as exc:
             errors.append(f"{name}: could not read source: {exc}")
             continue
         for snippet in snippets:
-            if snippet not in text:
-                errors.append(f"{name}: expected wiring missing: {snippet}")
+            if snippet not in text: errors.append(f"{name}: expected wiring missing: {snippet}")
     api = (ROOT / "production-api-client.js").read_text(encoding="utf-8")
     for forbidden in ("getHubMessages", "postHubMessage", '/messages"'):
-        if forbidden in api:
-            errors.append(f"production-api-client.js: direct messaging wiring remains: {forbidden}")
-    if (ROOT / "game-hub-messages.js").exists():
-        errors.append("game-hub-messages.js must not exist")
-    for name in ("host.html", "host-start.js"):
-        if "private_residence" in (ROOT / name).read_text(encoding="utf-8"):
-            errors.append(f"{name}: private-residence hosting must not be exposed")
+        if forbidden in api: errors.append(f"production-api-client.js: direct messaging wiring remains: {forbidden}")
+    if (ROOT / "game-hub-messages.js").exists(): errors.append("game-hub-messages.js must not exist")
+    for name in ("host.html", "host-start.js", "production-onboarding.js", "production-api-client.js"):
+        if "private_residence" in (ROOT / name).read_text(encoding="utf-8"): errors.append(f"{name}: private-residence hosting must not be exposed")
     return errors
 
 
@@ -121,8 +108,7 @@ def main() -> int:
         pages = [ROOT / name for name in PRODUCTION_PAGES]
         errors = [error for page in pages for error in check_page(page)]
         errors.extend(check_sources())
-        for error in errors:
-            LOGGER.error(error)
+        for error in errors: LOGGER.error(error)
         if errors:
             LOGGER.error("Button/security QA failed with %d issue(s).", len(errors))
             return 1
