@@ -47,8 +47,8 @@
       const next = { ...prefs, matching_paused: Boolean(byId("matching-paused").checked) };
       const saved = await window.DDDProductionAPI.putNotificationPreferences(next);
       byId("pause-status").textContent = saved.matching_paused
-        ? "New match alerts paused. Your saved availability was not deleted."
-        : "Match alerts active. DDD will notify you when a table fits.";
+        ? "New matches paused. Your saved availability and confirmed games were not deleted."
+        : "Matching active. DDD will notify you when a table fits.";
       return saved;
     } catch (error) {
       log("Unable to change matching pause", error);
@@ -64,16 +64,18 @@
       byId("account-copy").textContent = `Signed in as ${session.user.email}.`;
       byId("signed-out").hidden = true;
       byId("dashboard-content").hidden = false;
-      const [player, gm, notifications, hubs, initialPrefs] = await Promise.all([
+      const [player, gm, notifications, hubs, opportunities, initialPrefs] = await Promise.all([
         window.DDDProductionAPI.getPlayerOnboardingOptional(),
         window.DDDProductionAPI.getGMOnboardingOptional(),
         window.DDDProductionAPI.getNotifications(),
         window.DDDProductionAPI.getGameHubs(),
+        window.DDDProductionAPI.getMatchingOpportunities(),
         window.DDDProductionAPI.getNotificationPreferences()
       ]);
       renderRole("player", player);
       renderRole("dm", gm);
       renderCounts(notifications, hubs);
+      window.DDDGameCards?.render?.(opportunities);
       let prefs = initialPrefs;
       byId("matching-paused").checked = Boolean(prefs.matching_paused);
       byId("matching-paused").addEventListener("change", async () => { prefs = await savePause(prefs); });
