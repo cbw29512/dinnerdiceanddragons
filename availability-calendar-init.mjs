@@ -15,10 +15,7 @@ function enhance(builder) {
     const legacyList = builder.querySelector(".availability-list");
     const addButton = builder.querySelector(".add-availability");
     if (!legacyList) return;
-    let blocks = legacyFieldsToBlocks(collectLegacyFields(legacyList));
-    if (!blocks.length) {
-      blocks = [{ day: "Monday", start: "18:00", end: "22:00", recurrence: { type: "weekly", interval: 1 } }];
-    }
+    const blocks = legacyFieldsToBlocks(collectLegacyFields(legacyList));
     legacyList.querySelectorAll("input, select, button").forEach((node) => { node.disabled = true; });
     legacyList.hidden = true;
     if (addButton) addButton.hidden = true;
