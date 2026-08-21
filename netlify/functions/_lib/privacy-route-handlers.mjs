@@ -34,8 +34,8 @@ export async function handleNotificationPreferences(user, request) {
 export async function handleOpportunityResponse(user, request, matchId) {
   try {
     if (request.method !== "POST") return methodNotAllowed(["POST"]);
-    const { decision } = parseOpportunityDecision(await readJson(request));
-    return json(await privacyService.respond(user.id, matchId, decision));
+    const { decision, role } = parseOpportunityDecision(await readJson(request));
+    return json(await privacyService.respond(user.id, matchId, role, decision));
   } catch (error) {
     console.error("[DDD Privacy] Opportunity response route failed", { error_type: String(error?.name || "Error") });
     throw error;
