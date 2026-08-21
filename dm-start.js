@@ -83,18 +83,27 @@
   }
   function tableReady() {
     const zip = form().elements.postal_code;
-    if (!/^\d{5}$/.test(zip.value.trim())) { zip.focus(); return false; }
-    if (Number(form().elements.maximum_players.value) >= Number(form().elements.minimum_players.value)) return true;
-    form().elements.maximum_players.focus(); return false;
+    if (!/^\d{5}$/.test(zip.value.trim())) {
+      zip.setCustomValidity("Enter a five-digit ZIP code.");
+      zip.setAttribute("aria-invalid", "true");
+      zip.focus();
+      announce("table-status", "Enter a five-digit ZIP code.");
+      return false;
+    }
+    zip.setCustomValidity("");
+    const minimum = Number(form().elements.minimum_players.value);
+    const maximum = Number(form().elements.maximum_players.value);
+    if (maximum < minimum) {
+      form().elements.maximum_players.focus();
+      announce("table-status", "Maximum Players must be at least the minimum Player count.");
+      return false;
+    }
+    announce("table-status", "Table size and travel area look good.", true);
+    return true;
   }
   function renderReview() {
     const raw = values();
-    const rows = [
-      ["Game", `${raw.gm_system?.[0]} · ${raw.gm_format?.[0]}`],
-      ["Available", (raw.availability_day || []).join(", ")],
-      ["Travel", `${raw.radius} miles from ${raw.postal_code}`],
-      ["Table size", `${raw.minimum_players}–${raw.maximum_players} Players`]
-    ];
+    const rows = [["Game", `${raw.gm_system?.[0]} · ${raw.gm_format?.[0]}`], ["Available", (raw.availability_day || []).join(", ")], ["Travel", `${raw.radius} miles from ${raw.postal_code}`], ["Table size", `${raw.minimum_players}–${raw.maximum_players} Players`]];
     const review = byId("dm-review"); review.replaceChildren();
     rows.forEach(([label, value]) => {
       const row = document.createElement("div"); row.className = "review-row";
