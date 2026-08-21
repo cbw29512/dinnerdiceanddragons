@@ -1,11 +1,7 @@
 (() => {
   "use strict";
-  let step = 1;
-  let authMode = "signup";
-  let signedIn = false;
-  let resumeMatching = false;
-  let existingProfile = null;
-  let existingSupplies = [];
+  let step = 1, authMode = "signup", signedIn = false, resumeMatching = false;
+  let existingProfile = null, existingSupplies = [];
   const params = new URLSearchParams(window.location.search);
   const editMode = params.get("edit") === "1";
   const form = () => document.getElementById("dm-start-form");
@@ -18,39 +14,18 @@
     node.className = `form-status ${success ? "success-message" : "error-message"}`;
     node.textContent = message;
   }
-
   function values() {
     const output = {};
     for (const [rawKey, value] of new FormData(form()).entries()) {
-      const array = rawKey.endsWith("[]");
-      const key = array ? rawKey.slice(0, -2) : rawKey;
+      const array = rawKey.endsWith("[]"), key = array ? rawKey.slice(0, -2) : rawKey;
       if (array) (output[key] ||= []).push(value); else output[key] = value;
     }
-    if (output.player_count !== undefined) {
-      output.minimum_players = output.player_count;
-      output.maximum_players = output.player_count;
-    }
+    if (output.player_count !== undefined) output.minimum_players = output.maximum_players = output.player_count;
     return output;
   }
-
-  function pausedSignals(signals) {
-    return Boolean(signals?.length) && signals.every((item) => item.status === "paused");
+  function showReady(signals = []) {
+    window.DDDDMStartSave.showReadyState(form(), document.querySelector(".start-progress"), byId("dm-ready"), signals);
   }
-
-  function showReady(paused = false) {
-    const ready = byId("dm-ready");
-    window.DDDDMStartSave.showReady(form(), document.querySelector(".start-progress"), ready);
-    const heading = ready.querySelector("h2");
-    const copy = ready.querySelector("h2 + p");
-    if (paused) {
-      heading.textContent = "Your DM availability is saved. Matching is paused.";
-      copy.textContent = "Resume matching from My DDD when you want DDD to look for a table again.";
-    } else {
-      heading.textContent = "DDD is looking for a table that fits.";
-      copy.textContent = "When compatible Players, a public Venue, and your schedule line up, the match will appear in My DDD and My Alerts.";
-    }
-  }
-
   function showStep(next) {
     try {
       step = Math.max(editMode ? 3 : 1, Math.min(5, next));
@@ -61,45 +36,35 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) { log("Unable to change DM step", error); }
   }
-
   function fieldReady(name, message) {
     const result = window.DDDDMStartAccount.valid(form(), name, message);
     if (!result.ok) announce("auth-status", result.message);
     return result.ok;
   }
-
-  function setAuthMode(mode) {
-    authMode = mode;
-    window.DDDDMStartAccount.setMode(form(), mode);
-  }
+  function setAuthMode(mode) { authMode = mode; window.DDDDMStartAccount.setMode(form(), mode); }
+  const availabilityReady = () => window.DDDDMStartSave.availabilityReady(form(), announce);
+  const tableReady = () => window.DDDDMStartSave.tableReady(form(), announce, editMode);
 
   async function afterAuth(session) {
     signedIn = true;
     window.DDDDMStartAccount.lockSignedIn(form(), session);
     announce("auth-status", `Signed in as ${session.user.email}.`, true);
     existingProfile = await window.DDDProductionAPI.getGMOnboardingOptional();
-
     if (existingProfile) {
       existingSupplies = await window.DDDProductionAPI.getGMSupplies();
       const current = window.DDDDMStartProfile.currentSupplies(existingSupplies);
-
       if (editMode) {
         window.DDDDMStartSave.configureEditUi(form(), byId("conduct-check"));
         if (window.DDDDMStartProfile.hydrate(form(), existingProfile)) return showStep(3);
         throw new Error("Saved DM availability could not be loaded safely.");
       }
-
-      if (current.length) return showReady(pausedSignals(current));
-
+      if (current.length) return showReady(current);
       resumeMatching = true;
-      if (!window.DDDDMStartProfile.hydrate(form(), existingProfile)) {
-        throw new Error("Saved DM settings could not be loaded safely.");
-      }
+      if (!window.DDDDMStartProfile.hydrate(form(), existingProfile)) throw new Error("Saved DM settings could not be loaded safely.");
       showStep(4);
       announce("table-status", "Your DM profile is saved. Choose the Player-seat count to restart table matching.", true);
       return;
     }
-
     window.DDDDMStartAccount.enableDisplayName(form());
     if (form().elements.display_name.value.trim()) return showStep(2);
     announce("auth-status", "Signed in. Add the display name Players should see, then continue.", true);
@@ -120,39 +85,6 @@
     }
   }
 
-  function availabilityReady() {
-    if (form().querySelectorAll('[name="availability_day[]"]').length) return true;
-    announce("availability-status", "Choose at least one time when you can DM.");
-    return false;
-  }
-
-  function tableReady() {
-    const zip = form().elements.postal_code;
-    if (!/^\d{5}$/.test(zip.value.trim())) {
-      zip.setCustomValidity("Enter a five-digit ZIP code.");
-      zip.setAttribute("aria-invalid", "true");
-      zip.focus();
-      announce("table-status", "Enter a five-digit ZIP code.");
-      return false;
-    }
-    zip.setCustomValidity("");
-    if (editMode) { announce("table-status", "Travel area looks good.", true); return true; }
-
-    const playerCount = form().elements.player_count;
-    const count = Number(playerCount.value);
-    if (!Number.isInteger(count) || count < 1) {
-      playerCount.setCustomValidity("Enter at least 1 Player.");
-      playerCount.setAttribute("aria-invalid", "true");
-      playerCount.focus();
-      announce("table-status", "Enter a whole number of Players, starting at 1.");
-      return false;
-    }
-    playerCount.setCustomValidity("");
-    playerCount.removeAttribute("aria-invalid");
-    announce("table-status", "Player count and travel area look good.", true);
-    return true;
-  }
-
   async function save(event) {
     event.preventDefault();
     try {
@@ -160,22 +92,12 @@
         byId("conduct-check").focus();
         return announce("save-status", "Please agree to the Code of Conduct first.");
       }
-
-      announce(
-        "save-status",
-        editMode ? "Updating your DM availability…" : resumeMatching ? "Restarting table matching…" : "Saving your DM availability and looking for a table…",
-        true
-      );
-
+      announce("save-status", editMode ? "Updating your DM availability…" : resumeMatching ? "Restarting table matching…" : "Saving your DM availability and looking for a table…", true);
       const saved = resumeMatching
         ? await window.DDDDMStartProfile.activateMatching(existingProfile, values())
         : await window.DDDDMStartSave.persist({ editMode, existingProfile, existingSupplies, values: values() });
-
-      if (saved?.matchingError) {
-        return announce("save-status", `Your DM profile saved, but table search could not start: ${saved.matchingError.message}`);
-      }
-      const signals = saved?.signals || saved?.matching?.signals || [];
-      showReady(pausedSignals(signals));
+      if (saved?.matchingError) return announce("save-status", `Your DM profile saved, but table search could not start: ${saved.matchingError.message}`);
+      showReady(saved?.signals || saved?.matching?.signals || []);
     } catch (error) {
       log("Unable to save DM setup", error);
       announce("save-status", error?.message || "We could not save your DM setup.");
@@ -202,7 +124,6 @@
       announce("auth-status", error?.message || "Account service is temporarily unavailable.");
     }
   }
-
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
   else void init();
 })();
