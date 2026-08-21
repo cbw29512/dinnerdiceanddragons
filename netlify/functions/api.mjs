@@ -1,4 +1,4 @@
-import { confirmEmail, getUser, login, logout, signup, verifyRequestOrigin } from "@netlify/identity";
+import { confirmEmail, getUser, login, logout, refreshSession, signup, verifyRequestOrigin } from "@netlify/identity";
 import { listAnnouncements, postAnnouncement } from "./_lib/announcements.mjs";
 import { currentUser, publicCurrentUser, userRoles } from "./_lib/auth.mjs";
 import { databaseHealth } from "./_lib/database.mjs";
@@ -59,8 +59,13 @@ async function auth(request, parts) {
   const action = parts[1];
   if (action === "session" && parts.length === 2) {
     if (request.method !== "GET") return methodNotAllowed(["GET"]);
-    const user = await getUser();
-    return json(user ? { authenticated: true, id: user.id, email: user.email } : { authenticated: false });
+    try {
+      await refreshSession();
+      const user = await getUser();
+      return json(user ? { authenticated: true, id: user.id, email: user.email } : { authenticated: false });
+    } catch (error) {
+      throw authFailure(error, "Authentication session could not be refreshed.");
+    }
   }
   if (request.method !== "POST") return methodNotAllowed(["POST"]);
   try {
