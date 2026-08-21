@@ -13,7 +13,8 @@ const DEMO_GAME_MARKERS = ["Shadows Over Florence", "The Lighthouse at Blackwate
 const REQUIRED_FILES = [
   "index.html", "play.html", "dm.html", "host.html", "signin.html", "my-ddd.html",
   "notifications.html", "opportunity.html", "game-hub.html",
-  "player-start.js", "dm-start.js", "host-start.js", "signin.js", "my-ddd.js", "auth-confirm.js",
+  "player-start.js", "player-start-profile.js", "dm-start.js", "dm-start-profile.js",
+  "host-start.js", "signin.js", "my-ddd.js", "auth-confirm.js",
   "availability-calendar-init.mjs", "calendar-state.mjs", "calendar-ui.mjs",
   "production-config.js", "production-api-client.js", "production-auth.js",
   "deploy-meta.json", "sitemap.xml"
