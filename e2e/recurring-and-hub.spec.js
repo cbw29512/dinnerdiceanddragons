@@ -43,27 +43,28 @@ test("DM can check recurring dates, create the recurring table, and review commi
   await expect(page.locator("#commitment-summary")).toContainText("Venue confirmed");
 });
 
-test("live Game Hub renders production API state and treats stored message HTML as text", async ({ page }) => {
+test("live Game Hub renders production logistics and one-way announcements without chat", async ({ page }) => {
   const eventId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
-  const xssBody = '<img src=x onerror="window.__dddXss=1">Live table message';
-  const messages = [hubMessage("11111111-1111-4111-8111-111111111111", xssBody)];
+  const requests = [];
 
   await page.route(`${API_BASE}/api/v1/**`, async (route) => {
     const request = route.request();
     const url = new URL(request.url());
+    requests.push(`${request.method()} ${url.pathname}`);
     if (url.pathname === `/api/v1/events/${eventId}/hub` && request.method() === "GET") {
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(hubPayload(eventId)) });
       return;
     }
-    if (url.pathname === `/api/v1/events/${eventId}/messages` && request.method() === "GET") {
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ items: messages, next_cursor: null }) });
+    if (url.pathname === `/api/v1/events/${eventId}/announcements` && request.method() === "GET") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([{ id: "announcement-1", body: "Bring a level 3 character.", created_at: "2030-08-01T13:00:00Z" }])
+      });
       return;
     }
-    if (url.pathname === `/api/v1/events/${eventId}/messages` && request.method() === "POST") {
-      const payload = request.postDataJSON();
-      const created = hubMessage("22222222-2222-4222-8222-222222222222", payload.body, true);
-      messages.unshift(created);
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(created) });
+    if (url.pathname === "/api/v1/notifications" && request.method() === "GET") {
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
       return;
     }
     if (url.pathname === "/api/v1/me") {
@@ -79,15 +80,12 @@ test("live Game Hub renders production API state and treats stored message HTML 
   await expect(page.locator("#event-title")).toHaveText("Browser Test Live Hub");
   await expect(page.locator("#player-view")).toBeVisible();
   await expect(page.locator("#hub-headcount")).toHaveText("3");
-  await expect(page.getByText(xssBody, { exact: true })).toBeVisible();
-  await expect(page.locator(".hub-message-item img")).toHaveCount(0);
-  expect(await page.evaluate(() => window.__dddXss)).toBeUndefined();
-
-  const discussion = page.locator('form[data-channel="table_discussion"]');
-  await discussion.locator("textarea").fill("I will arrive ten minutes early.");
-  await discussion.getByRole("button", { name: "Send Message" }).click();
-  await expect(page.locator("#hub-status")).toHaveText("Message sent.");
-  await expect(page.getByText("I will arrive ten minutes early.", { exact: true })).toBeVisible();
+  await expect(page.getByText("123 Public Table Way", { exact: true })).toBeVisible();
+  await expect(page.getByText("Bring a level 3 character.", { exact: true })).toBeVisible();
+  await expect(page.locator("#message-channel-grid")).toHaveCount(0);
+  await expect(page.locator("#venue-question-form")).toHaveCount(0);
+  await expect(page.getByText(/live messages/i)).toHaveCount(0);
+  expect(requests.some((entry) => entry.includes("/messages"))).toBe(false);
 });
 
 function hubPayload(eventId) {
@@ -96,7 +94,7 @@ function hubPayload(eventId) {
       id: eventId,
       slug: "browser-test-live-hub",
       title: "Browser Test Live Hub",
-      description: "Live production-backed Game Hub browser fixture.",
+      description: "Live production-backed privacy-safe Game Hub browser fixture.",
       status: "confirmed",
       event_type: "one_shot",
       join_mode: "instant_join",
@@ -109,6 +107,7 @@ function hubPayload(eventId) {
       system_name: "Dungeons & Dragons",
       system_edition: "5e (2014)",
       venue_name: "Browser Test Cafe",
+      venue_address_line1: "123 Public Table Way",
       venue_city: "Florence",
       venue_state_region: "SC",
       viewer_roles: ["player"],
@@ -121,21 +120,12 @@ function hubPayload(eventId) {
         requested_end: "2030-08-24T02:00:00Z"
       },
       expectations: {
-        tone: null,
-        age_environment: null,
         play_style: "Collaborative roleplay and tactical combat.",
         boundaries: "Respectful table.",
         pvp_policy: null,
         homebrew_policy: null,
-        character_death_policy: null,
-        mature_content_notes: null,
-        alcohol_policy: null,
-        new_players_welcome: true,
-        break_policy: null,
         safety_framework: null,
-        environment_notes: null,
-        accessibility_notes: null,
-        other_notes: null
+        accessibility_notes: null
       },
       your_registration: {
         id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
@@ -149,24 +139,10 @@ function hubPayload(eventId) {
     },
     capabilities: {
       viewer_roles: ["player"],
-      post_channels: ["table_discussion", "player_gm", "player_venue_question"],
+      post_channels: [],
       can_manage_registrations: false,
       can_manage_booking: false
     },
     registration_queue: []
-  };
-}
-
-function hubMessage(id, body, mine = false) {
-  return {
-    id,
-    channel_type: "table_discussion",
-    category: null,
-    body,
-    created_at: "2030-08-01T13:00:00Z",
-    sender_display_name: mine ? "Browser Player" : "DM Browser",
-    sender_role: mine ? "player" : "gm",
-    mine,
-    reply_registration_id: null
   };
 }
