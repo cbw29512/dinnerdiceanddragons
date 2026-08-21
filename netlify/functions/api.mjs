@@ -19,7 +19,6 @@ import {
   decideVenueBooking,
   formTableMatch,
   getEvent,
-  getGameHub,
   listGameHubs,
   requestRegistration
 } from "./_lib/lifecycle.mjs";
@@ -30,6 +29,7 @@ import {
   saveGMOnboarding,
   savePlayerOnboarding
 } from "./_lib/onboarding.mjs";
+import { getPrivacyGameHub } from "./_lib/privacy-game-hub.mjs";
 import {
   handleNotificationPreferences,
   handleNotifications,
@@ -65,34 +65,28 @@ function credentials(payload) {
 
 async function auth(request, parts) {
   const action = parts[1];
-
   if (action === "session" && parts.length === 2) {
     if (request.method !== "GET") return methodNotAllowed(["GET"]);
     const user = await getUser();
     return json(user ? { authenticated: true, id: user.id, email: user.email } : { authenticated: false });
   }
-
   if (request.method !== "POST") return methodNotAllowed(["POST"]);
   try {
     verifyRequestOrigin(request);
-
     if (action === "signup" && parts.length === 2) {
       const { email, password } = credentials(await readJson(request));
       const user = await signup(email, password, {});
       return json({ status: "confirmation_required", email: user?.email || email }, 201);
     }
-
     if (action === "login" && parts.length === 2) {
       const { email, password } = credentials(await readJson(request));
       const user = await login(email, password);
       return json({ authenticated: true, id: user.id, email: user.email });
     }
-
     if (action === "logout" && parts.length === 2) {
       await logout();
       return noContent();
     }
-
     if (action === "confirm" && parts.length === 2) {
       const payload = await readJson(request);
       const token = String(payload?.token || "").trim();
@@ -104,7 +98,6 @@ async function auth(request, parts) {
     if (error instanceof SupabaseRestError) throw error;
     throw authFailure(error, action === "login" ? "Email or password is incorrect." : "Authentication request could not be completed.");
   }
-
   return notFound();
 }
 
@@ -204,7 +197,7 @@ async function events(request, parts) {
   }
   if (parts[2] === "hub" && parts.length === 3) {
     if (request.method !== "GET") return methodNotAllowed(["GET"]);
-    return json(await getGameHub(user, eventId));
+    return json(await getPrivacyGameHub(user, eventId));
   }
   if (parts[2] === "announcements" && parts.length === 3) {
     if (request.method === "GET") return json(await listAnnouncements(user, eventId));
@@ -242,16 +235,14 @@ async function booking(request, parts) {
   const { user } = await activeUser(request);
   await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.VENUE_BOOKING);
   const payload = await readJson(request);
-  return json(await decideVenueBooking(user, parts[1], payload.action, payload.message));
+  if (!["approve", "decline", "cancel"].includes(payload.action)) {
+    throw new SupabaseRestError("Unsupported Venue booking action.", 422);
+  }
+  return json(await decideVenueBooking(user, parts[1], payload.action, null));
 }
 
 async function admin(request, parts) {
-  if (
-    parts.length !== 6 ||
-    parts[1] !== "venues" ||
-    parts[3] !== "manager-claims" ||
-    parts[5] !== "verify"
-  ) return notFound();
+  if (parts.length !== 6 || parts[1] !== "venues" || parts[3] !== "manager-claims" || parts[5] !== "verify") return notFound();
   if (request.method !== "POST") return methodNotAllowed(["POST"]);
   const { user } = await activeUser(request);
   await verifyVenueClaim(user, parts[2], parts[4]);
@@ -294,6 +285,4 @@ export default async (request) => route(async () => {
   return notFound();
 });
 
-export const config = {
-  path: "/api/*"
-};
+export const config = { path: "/api/*" };
