@@ -94,6 +94,60 @@ test("DM and Venue entry pages use the same guided language", async ({ page }) =
   await expect(page.getByText(/Step 1 of/)).toBeVisible();
 });
 
+test("returning DM can edit availability without reopening advanced setup", async ({ page }) => {
+  await installAuthenticatedSession(page, { email: "returningdm@example.test" });
+  const gm = {
+    display_name: "Returning DM",
+    bio: "Preserve me",
+    postal_code: "29501",
+    travel_radius_miles: 25,
+    beginner_friendly: true,
+    gm_style: "Roleplay-forward",
+    systems: [{
+      system_slug: "dnd-5e-2024",
+      years_playing: 10,
+      years_gming: 5,
+      comfort_level: "expert",
+      preferred_player_experience: "any",
+      formats: ["one_shot"],
+      experience_notes: "Existing settings"
+    }],
+    availability: [{
+      day_of_week: "saturday", start_time: "18:00", end_time: "22:00",
+      pattern_type: "weekly_interval", week_interval: 1, timezone: "America/New_York"
+    }]
+  };
+  await page.route("**/api/v1/onboarding/gm", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(gm) });
+  });
+  await page.route("**/api/v1/matching/gm-supplies", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify([{
+      id: "supply-1", status: "active", system_slug: "dnd-5e-2024", preferred_format: "one_shot",
+      preferred_cadence: "weekly", minimum_players: 3, maximum_players: 5, table_style: "Roleplay-forward"
+    }]) });
+  });
+
+  await page.goto("/dm.html?edit=1");
+  await expect(page.getByRole("heading", { name: "When can you DM?" })).toBeVisible();
+  await expect(page.getByText("Update 1 of 3")).toBeVisible();
+  await expect(page.getByLabel("Minimum Players")).toBeHidden();
+  await expect(page.locator('[name="availability_day[]"]')).toHaveValue("Saturday");
+});
+
+test("returning Venue Manager is not pushed into duplicate Venue creation", async ({ page }) => {
+  await installAuthenticatedSession(page, { email: "venue@example.test" });
+  await page.route("**/api/v1/me", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      ddd_user_id: "venue-user", email: "venue@example.test", status: "active", roles: ["venue_manager"]
+    }) });
+  });
+
+  await page.goto("/host.html");
+  await expect(page.getByRole("heading", { name: "Your account already manages a Venue in DDD." })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Add Another Venue" })).toHaveAttribute("href", "host.html?new=1");
+  await expect(page.locator("#venue-start-form")).toBeHidden();
+});
+
 test("My DDD answers Player, DM, alerts, and game-night status", async ({ page }) => {
   await installAuthenticatedSession(page, { email: "multirole@example.test" });
   await page.route("**/api/v1/**", async (route) => {
@@ -111,6 +165,7 @@ test("My DDD answers Player, DM, alerts, and game-night status", async ({ page }
   await page.goto("/my-ddd.html");
   await expect(page.getByText("You’re available for games.")).toBeVisible();
   await expect(page.getByText("You’re available to DM.")).toBeVisible();
+  await expect(page.locator("#dm-status-action")).toHaveAttribute("href", "dm.html?edit=1");
   await expect(page.locator("#alert-count")).toHaveText("1");
   await expect(page.locator("#hub-count")).toHaveText("1");
 });
