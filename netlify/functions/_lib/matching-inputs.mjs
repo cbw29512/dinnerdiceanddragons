@@ -1,6 +1,7 @@
 import { activeGameSystem, gameSystemById } from "./catalog.mjs";
 import { createSignalAvailability, listAvailability, normalizeAvailability, publicAvailability } from "./availability.mjs";
 import { managedVenue, requireRole } from "./auth.mjs";
+import { expireSupersededSignals } from "./signal-replacement.mjs";
 import {
   SupabaseRestError,
   eq,
@@ -78,6 +79,13 @@ export async function createPlayerDemand(user, payload) {
     ownerId: id,
     inputs: availabilityInputs
   });
+  await expireSupersededSignals({
+    table: "player_demand_signals",
+    ownerColumn: "player_profile_id",
+    ownerId: profile.id,
+    gameSystemId: system.id,
+    keepId: id
+  });
   return {
     id,
     status: "active",
@@ -142,6 +150,13 @@ export async function createGMSupply(user, payload) {
     ownerColumn: "gm_supply_signal_id",
     ownerId: id,
     inputs: asArray(payload?.availability, "availability", { min: 1, max: 12 })
+  });
+  await expireSupersededSignals({
+    table: "gm_supply_signals",
+    ownerColumn: "gm_profile_id",
+    ownerId: profile.id,
+    gameSystemId: system.id,
+    keepId: id
   });
   return {
     id, status: "active", system_slug: system.slug, availability,
