@@ -11,6 +11,10 @@ function expiry(nowIso, proposedStartIso, hours = 24) {
   return new Date(target).toISOString();
 }
 
+function initialDecision(participant) {
+  return participant.role === "venue_manager" && participant.preapproved ? "accepted" : "pending";
+}
+
 export function createOpportunityAlertService(repository, clock = () => new Date().toISOString()) {
   if (!repository) throw new Error("Opportunity alert repository is required.");
 
@@ -34,10 +38,14 @@ export function createOpportunityAlertService(repository, clock = () => new Date
       let created = 0;
       for (const participant of active) {
         const found = existing.find((row) => row.user_id === participant.user_id && row.role === participant.role);
-        if (found || await repository.matchingPaused(participant.user_id)) continue;
+        if (found) continue;
+        if (participant.role !== "venue_manager" && await repository.matchingPaused(participant.user_id)) continue;
+        const decision = initialDecision(participant);
         await repository.createResponse({
           id: crypto.randomUUID(), table_match_id: match.id, user_id: participant.user_id,
-          role: participant.role, decision: "pending", offered_at: now, expires_at: expiresAt, updated_at: now
+          role: participant.role, decision, offered_at: now,
+          responded_at: decision === "accepted" ? now : null,
+          expires_at: expiresAt, updated_at: now
         });
         const preferences = await repository.preferences(participant.user_id);
         const plan = deliveryChannels("match_available", preferences || {});
