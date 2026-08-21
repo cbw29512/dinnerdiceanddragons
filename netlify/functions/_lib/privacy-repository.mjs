@@ -14,10 +14,14 @@ export const privacyRepository = Object.freeze({
   },
   syncMatchingPause,
   seedDefaultReminders: seedDefaultGameReminders,
-  listNotifications: (userId, limit) => selectMany("notifications", { user_id: eq(userId), order: "created_at.desc", limit }),
+  listNotifications: (userId, limit) => selectMany("notifications", {
+    user_id: eq(userId), channel: eq("in_app"), order: "created_at.desc", limit
+  }),
   createNotification: (row) => insertRows("notifications", [row], { returning: false }),
   async updateNotification(userId, notificationId, values) {
-    const rows = await updateRows("notifications", { id: eq(notificationId), user_id: eq(userId) }, values);
+    const rows = await updateRows("notifications", {
+      id: eq(notificationId), user_id: eq(userId), channel: eq("in_app")
+    }, values);
     return rows[0] || null;
   },
   findResponse: (userId, matchId, role) => selectOne("opportunity_responses", {
