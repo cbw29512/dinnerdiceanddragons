@@ -13,7 +13,8 @@ export {
   neq,
   selectMany,
   selectOne,
-  updateRows
+  updateRows,
+  withTransaction
 } from "./database.mjs";
 
 export class ApiConfigError extends Error {
