@@ -139,7 +139,7 @@
       document.querySelector('[data-action="account"]').addEventListener("click", () => void account());
       document.querySelectorAll(".back-button").forEach((button) => button.addEventListener("click", () => showStep(step - 1)));
       document.querySelectorAll(".next-button:not([data-action])").forEach((button) => button.addEventListener("click", () => { if (step === 2 && !venueReady()) return; if (step === 3 && !availabilityReady()) return; showStep(step + 1); }));
-      form().addEventListener("submit", (event) => void save(event));
+      form().addEventListener("submit", (event) => void save(event)); void import("./host-location.mjs").then(({ installVenuePostalLookup }) => installVenuePostalLookup(form(), announce)).catch((error) => log("Unable to initialize Venue ZIP lookup", error));
       if (params.get("mode") === "signin") { authMode = "signin"; window.DDDHostStartAccount.setMode(form(), authMode); }
       await window.DDDProductionAuth.init();
       const session = await window.DDDProductionAuth.getSession();
