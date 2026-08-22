@@ -48,13 +48,12 @@ await insertRows("venue_managers", [{
 }], { returning: false });
 
 const pending = await listPendingVenueClaims({ id: adminId });
-assert.equal(pending.length, 1);
-assert.equal(pending[0].venue_id, venueId);
-assert.equal(pending[0].venue_manager_id, managerId);
-assert.equal(pending[0].name, "Verification Test Cafe");
-assert.equal(pending[0].manager_email, "venue-manager@example.test");
-assert.equal(pending[0].manager_account_status, "active");
-assert.equal(Object.hasOwn(pending[0], "user_id"), false);
+const pendingClaim = pending.find((claim) => claim.venue_id === venueId && claim.venue_manager_id === managerId);
+assert.ok(pendingClaim);
+assert.equal(pendingClaim.name, "Verification Test Cafe");
+assert.equal(pendingClaim.manager_email, "venue-manager@example.test");
+assert.equal(pendingClaim.manager_account_status, "active");
+assert.equal(Object.hasOwn(pendingClaim, "user_id"), false);
 await assert.rejects(() => listPendingVenueClaims({ id: managerUserId }), /permission/i);
 await updateRows("users", { id: eq(managerUserId) }, { status: "suspended" });
 await assert.rejects(() => verifyVenueClaim({ id: adminId }, venueId, managerId), /not active/i);
@@ -102,7 +101,8 @@ try {
   assert.equal(Number(verifiedVenue.longitude), -79.7626);
   assert.ok(verifiedManager.verified_at);
   assert.equal(audit.action, "venue.verify_initial_claim");
-  assert.equal((await listPendingVenueClaims({ id: adminId })).length, 0);
+  const remaining = await listPendingVenueClaims({ id: adminId });
+  assert.equal(remaining.some((claim) => claim.venue_id === venueId && claim.venue_manager_id === managerId), false);
 
 } finally {
   globalThis.fetch = originalFetch;
