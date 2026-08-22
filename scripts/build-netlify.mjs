@@ -13,6 +13,7 @@ const DEMO_GAME_MARKERS = ["Shadows Over Florence", "The Lighthouse at Blackwate
 const LEGACY_ONBOARDING_LINKS = ["join.html#player", "join.html#gm", "venues.html#signup"];
 const REQUIRED_FILES = [
   "index.html", "play.html", "dm.html", "host.html", "signin.html", "my-ddd.html",
+  "admin-venues.html", "admin-venues.css", "admin-venues.js",
   "notifications.html", "opportunity.html", "create-game.html", "create-game.js", "game-hub.html",
   "game-hub-core.js", "game-hub-announcements.js", "game-hub-actions.js", "game-hub-role-views.js", "game-hub-render.js", "game-hub.js",
   "player-start.js", "player-start-account.js", "player-start-profile.js", "player-start-save.js",

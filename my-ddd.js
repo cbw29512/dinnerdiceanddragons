@@ -109,7 +109,8 @@
       byId("signed-out").hidden = true;
       byId("dashboard-content").hidden = false;
 
-      const [player, gm, notifications, hubs, opportunities, initialPrefs] = await Promise.all([
+      const [me, player, gm, notifications, hubs, opportunities, initialPrefs] = await Promise.all([
+        window.DDDProductionAPI.getMeOptional(),
         window.DDDProductionAPI.getPlayerOnboardingOptional(),
         window.DDDProductionAPI.getGMOnboardingOptional(),
         window.DDDProductionAPI.getNotifications(),
@@ -125,6 +126,7 @@
       renderRole("player", player, playerDemands);
       renderRole("dm", gm, gmSupplies);
       renderCounts(notifications, hubs);
+      byId("admin-shortcut").hidden = !(me?.roles || []).includes("admin");
       window.DDDGameCards?.render?.(opportunities);
 
       let prefs = initialPrefs;

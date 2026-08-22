@@ -37,7 +37,7 @@ import {
 import { handleGameReminders } from "./_lib/reminder-route-handlers.mjs";
 import { enforceRateLimit, RATE_LIMIT_SCOPES } from "./_lib/rate-limit.mjs";
 import { SupabaseRestError } from "./_lib/supabase-rest.mjs";
-import { verifyVenueClaim } from "./_lib/venue-verification.mjs";
+import { listPendingVenueClaims, verifyVenueClaim } from "./_lib/venue-verification.mjs";
 
 function activeUser(request) { return currentUser(request, { active: true }); }
 function identityErrorText(error) {
@@ -256,11 +256,17 @@ async function booking(request, parts) {
 }
 
 async function admin(request, parts) {
-  if (parts.length !== 6 || parts[1] !== "venues" || parts[3] !== "manager-claims" || parts[5] !== "verify") return notFound();
-  if (request.method !== "POST") return methodNotAllowed(["POST"]);
   const { user } = await activeUser(request);
-  await verifyVenueClaim(user, parts[2], parts[4]);
-  return noContent();
+  if (parts.length === 3 && parts[1] === "venues" && parts[2] === "pending-claims") {
+    if (request.method !== "GET") return methodNotAllowed(["GET"]);
+    return json(await listPendingVenueClaims(user));
+  }
+  if (parts.length === 6 && parts[1] === "venues" && parts[3] === "manager-claims" && parts[5] === "verify") {
+    if (request.method !== "POST") return methodNotAllowed(["POST"]);
+    await verifyVenueClaim(user, parts[2], parts[4]);
+    return noContent();
+  }
+  return notFound();
 }
 
 export default async (request) => route(async () => {

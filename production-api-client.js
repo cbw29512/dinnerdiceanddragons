@@ -49,13 +49,19 @@
     try { return await request("GET", path, undefined, { silentStatuses: [404] }); }
     catch (error) { if (error?.status === 404) return null; throw error; }
   }
+  async function optionalRequest(path, statuses = [401, 403, 404]) {
+    try { return await request("GET", path, undefined, { silentStatuses: statuses }); }
+    catch (error) { if (statuses.includes(Number(error?.status))) return null; throw error; }
+  }
   const eventPath = (eventId, suffix = "") => `/api/v1/events/${encodeURIComponent(String(eventId || ""))}${suffix}`;
   const opportunityPath = (tableMatchId, suffix = "") => `/api/v1/matching/opportunities/${encodeURIComponent(String(tableMatchId || ""))}${suffix}`;
   const venueWindowPath = (venueId) => `/api/v1/matching/venues/${encodeURIComponent(String(venueId || ""))}/table-windows`;
+  const venueClaimPath = (venueId, managerId) => `/api/v1/admin/venues/${encodeURIComponent(String(venueId || ""))}/manager-claims/${encodeURIComponent(String(managerId || ""))}/verify`;
 
   window.DDDProductionAPI = Object.freeze({
     ProductionApiError, configure, isConfigured,
     getMe: () => request("GET", "/api/v1/me"),
+    getMeOptional: () => optionalRequest("/api/v1/me"),
     getNotifications: () => request("GET", "/api/v1/notifications"),
     markNotification: (notificationId, action) => request("PATCH", `/api/v1/notifications/${encodeURIComponent(String(notificationId || ""))}`, { action }),
     getNotificationPreferences: () => request("GET", "/api/v1/notification-preferences"),
@@ -90,6 +96,8 @@
     postRegistration: (eventId) => request("POST", eventPath(eventId, "/registrations"), { expectations_acknowledged: true }),
     cancelMyRegistration: (eventId) => request("PATCH", eventPath(eventId, "/registrations/me"), { action: "cancel" }),
     decideRegistration: (eventId, registrationId, action) => request("PATCH", eventPath(eventId, `/registrations/${encodeURIComponent(String(registrationId || ""))}`), { action }),
-    decideVenueBooking: (bookingId, action) => request("PATCH", `/api/v1/venue-bookings/${encodeURIComponent(String(bookingId || ""))}`, { action })
+    decideVenueBooking: (bookingId, action) => request("PATCH", `/api/v1/venue-bookings/${encodeURIComponent(String(bookingId || ""))}`, { action }),
+    getPendingVenueClaims: () => request("GET", "/api/v1/admin/venues/pending-claims"),
+    verifyVenueClaim: (venueId, managerId) => request("POST", venueClaimPath(venueId, managerId))
   });
 })();
