@@ -121,6 +121,38 @@
     return results;
   }
 
+  async function refreshMatches() {
+    let match = null;
+    try {
+      match = await window.DDDProductionAPI.findMyTable(60);
+    } catch (error) {
+      console.error("[Dinner Dice & Dragons] Matching signal saved, but immediate match refresh failed", error);
+      return {
+        match: null,
+        opportunities: [],
+        refreshError: error,
+        refreshStage: "find-my-table"
+      };
+    }
+
+    try {
+      return {
+        match,
+        opportunities: await window.DDDProductionAPI.getMatchingOpportunities(),
+        refreshError: null,
+        refreshStage: null
+      };
+    } catch (error) {
+      console.error("[Dinner Dice & Dragons] Matching signal saved, but opportunity refresh failed", error);
+      return {
+        match,
+        opportunities: [],
+        refreshError: error,
+        refreshStage: "opportunities"
+      };
+    }
+  }
+
   async function syncAndFind(type, mapped, rawValues) {
     if (!window.DDDProductionAPI?.isConfigured?.()) {
       throw new ProductionMatchingError("Production matching API is not configured.");
@@ -129,9 +161,7 @@
     const signals = type === "Player"
       ? await ensurePlayerDemands(mapped)
       : await ensureGMSupplies(mapped, rawValues);
-    const match = await window.DDDProductionAPI.findMyTable(60);
-    const opportunities = await window.DDDProductionAPI.getMatchingOpportunities();
-    return { signals, match, opportunities };
+    return { signals, ...(await refreshMatches()) };
   }
 
   window.DDDProductionMatching = Object.freeze({
@@ -140,6 +170,7 @@
     comparablePlayerDemand,
     gmPayloads,
     playerPayloads,
+    refreshMatches,
     syncAndFind
   });
 })();

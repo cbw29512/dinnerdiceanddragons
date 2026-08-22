@@ -92,8 +92,8 @@
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         const payload = window.DDDDMStartProfile.updatePayload(existingProfile, values, timezone);
         await window.DDDProductionAPI.putGMOnboarding(payload);
-        await window.DDDDMStartProfile.refreshSupplies(existingSupplies, payload.availability);
-        return { matchingError: null };
+        const matching = await window.DDDDMStartProfile.refreshSupplies(existingSupplies, payload.availability);
+        return { matchingError: null, matching };
       }
       return window.DDDProductionOnboarding.save("Game Master", values);
     } catch (error) { log("Unable to persist DM setup", error); throw error; }

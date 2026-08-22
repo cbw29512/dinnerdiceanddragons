@@ -76,10 +76,24 @@
     }
   }
 
+  async function refreshAfterSignal(signals) {
+    const refresh = window.DDDProductionMatching?.refreshMatches;
+    if (typeof refresh !== "function") {
+      return {
+        signals,
+        match: null,
+        opportunities: [],
+        refreshError: new Error("Immediate match refresh is unavailable."),
+        refreshStage: "bridge"
+      };
+    }
+    return { signals, ...(await refresh()) };
+  }
+
   async function activateMatching(profile) {
     try {
       const existing = currentSignals(await window.DDDProductionAPI.getPlayerDemands());
-      if (existing.length) return { signals: existing, match: null, opportunities: [] };
+      if (existing.length) return refreshAfterSignal(existing);
 
       const system = profile?.systems?.[0];
       if (!system?.system_slug || !(profile?.availability || []).length) {
@@ -94,9 +108,7 @@
         table_style_preferences: [],
         environment_preferences: profile.environment_preferences || []
       });
-      const match = await window.DDDProductionAPI.findMyTable(60);
-      const opportunities = await window.DDDProductionAPI.getMatchingOpportunities();
-      return { signals: [signal], match, opportunities };
+      return refreshAfterSignal([signal]);
     } catch (error) {
       console.error("[DDD Player Start] Unable to reactivate Player matching", error);
       throw error;

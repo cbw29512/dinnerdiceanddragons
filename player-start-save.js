@@ -74,12 +74,12 @@
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         const payload = window.DDDPlayerStartProfile.updatePayload(existingProfile, values, timezone);
         await window.DDDProductionAPI.putPlayerOnboarding(payload);
-        await window.DDDProductionMatching.syncAndFind(
+        const matching = await window.DDDProductionMatching.syncAndFind(
           "Player",
           { payload, deferred: { table_style_preference: null } },
           values
         );
-        return { matchingError: null };
+        return { matchingError: null, matching };
       }
       return window.DDDProductionOnboarding.save("Player", values);
     } catch (error) { log("Unable to persist Player availability", error); throw error; }

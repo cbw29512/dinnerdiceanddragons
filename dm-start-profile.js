@@ -89,10 +89,24 @@
     }
   }
 
+  async function refreshAfterSignal(signals) {
+    const refresh = window.DDDProductionMatching?.refreshMatches;
+    if (typeof refresh !== "function") {
+      return {
+        signals,
+        match: null,
+        opportunities: [],
+        refreshError: new Error("Immediate match refresh is unavailable."),
+        refreshStage: "bridge"
+      };
+    }
+    return { signals, ...(await refresh()) };
+  }
+
   async function activateMatching(profile, raw) {
     try {
       const existing = currentSignals(await window.DDDProductionAPI.getGMSupplies());
-      if (existing.length) return { signals: existing, match: null, opportunities: [] };
+      if (existing.length) return refreshAfterSignal(existing);
 
       const count = Number(raw.player_count);
       if (!Number.isSafeInteger(count) || count < 1) throw new Error("Player count must be a whole number of 1 or more.");
@@ -109,9 +123,7 @@
         maximum_players: count,
         table_style: profile.gm_style || null
       });
-      const match = await window.DDDProductionAPI.findMyTable(60);
-      const opportunities = await window.DDDProductionAPI.getMatchingOpportunities();
-      return { signals: [signal], match, opportunities };
+      return refreshAfterSignal([signal]);
     } catch (error) {
       console.error("[DDD DM Start] Unable to reactivate DM matching", error);
       throw error;
@@ -133,9 +145,7 @@
           table_style: supply.table_style || null
         }));
       }
-      const match = await window.DDDProductionAPI.findMyTable(60);
-      const opportunities = await window.DDDProductionAPI.getMatchingOpportunities();
-      return { supplies: results, match, opportunities };
+      return { ...(await refreshAfterSignal(results)), supplies: results };
     } catch (error) {
       console.error("[DDD DM Start] Unable to refresh DM matching supplies", error);
       throw error;
