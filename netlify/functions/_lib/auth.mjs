@@ -1,11 +1,13 @@
 import { getUser, refreshSession } from "@netlify/identity";
 import {
   SupabaseRestError,
+  deleteRows,
   eq,
   insertRows,
   selectMany,
   selectOne,
-  updateRows
+  updateRows,
+  withTransaction
 } from "./supabase-rest.mjs";
 
 const PRIVILEGED_IDENTITY_ROLES = new Set(["moderator", "admin"]);
@@ -29,16 +31,34 @@ async function identityUser() {
   return user;
 }
 
-async function syncPrivilegedIdentityRoles(userId, authUser) {
+export async function syncPrivilegedIdentityRoles(userId, authUser) {
+  const desired = new Set(
+    (Array.isArray(authUser?.roles) ? authUser.roles : [])
+      .map((role) => String(role || "").trim())
+      .filter((role) => PRIVILEGED_IDENTITY_ROLES.has(role))
+  );
   const now = new Date().toISOString();
-  for (const role of Array.isArray(authUser.roles) ? authUser.roles : []) {
-    if (!PRIVILEGED_IDENTITY_ROLES.has(role)) continue;
-    await insertRows("user_roles", [{ user_id: userId, role, verified_at: now }], {
-      upsert: true,
-      onConflict: "user_id,role",
-      returning: false
-    });
-  }
+
+  return withTransaction(async () => {
+    const existing = await selectMany("user_roles", { user_id: eq(userId) });
+    const existingPrivileged = existing.filter((row) => PRIVILEGED_IDENTITY_ROLES.has(row.role));
+
+    for (const role of desired) {
+      await insertRows("user_roles", [{ user_id: userId, role, verified_at: now }], {
+        upsert: true,
+        onConflict: "user_id,role",
+        returning: false
+      });
+    }
+
+    for (const row of existingPrivileged) {
+      if (desired.has(row.role)) continue;
+      await deleteRows("user_roles", {
+        user_id: eq(userId),
+        role: eq(row.role)
+      });
+    }
+  });
 }
 
 export async function currentUser(_request, { active = false } = {}) {
