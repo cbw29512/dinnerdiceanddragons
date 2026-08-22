@@ -27,12 +27,12 @@
     ));
 
     const actions = make("div", null, "cta-row");
-    const player = make("a", "Add a Player", "button");
-    player.href = "join.html#player";
-    const gm = make("a", "Add a DM / Game", "button");
-    gm.href = "join.html#gm";
-    const venue = make("a", "Add a Venue", "button");
-    venue.href = "venues.html#signup";
+    const player = make("a", "Find a Game", "button");
+    player.href = "play.html";
+    const gm = make("a", "Run a Game", "button");
+    gm.href = "dm.html";
+    const venue = make("a", "Host Games", "button");
+    venue.href = "host.html";
     actions.append(player, gm, venue);
     card.appendChild(actions);
     list.appendChild(card);

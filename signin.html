@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin"><meta name="robots" content="noindex,nofollow,noarchive">
+  <title>Sign In | Dinner, Dice &amp; Dragons</title>
+  <meta name="description" content="Sign in to your Dinner, Dice & Dragons account to see availability, match alerts, and confirmed game nights.">
+  <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="player-start.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="simple-header"><div class="simple-shell"><a class="brand" href="index.html"><span aria-hidden="true">🎲</span><span>Dinner, Dice &amp; Dragons</span></a><a href="index.html" class="quiet-link">Back home</a></div></header>
+<main id="main" class="simple-main" tabindex="-1"><div class="simple-shell start-layout">
+  <aside class="start-intro"><p class="eyebrow">WELCOME BACK</p><h1>Sign in to My DDD.</h1><p>Your Player, DM, and Venue activity can all use the same account.</p></aside>
+  <section class="start-card"><form id="signin-form" class="start-step" novalidate><p class="eyebrow">YOUR ACCOUNT</p><h2>Sign in.</h2>
+    <label>Email<input type="email" name="email" autocomplete="email" required></label><label>Password<input type="password" name="password" autocomplete="current-password" minlength="8" required></label>
+    <p id="signin-status" class="form-status" role="status" aria-live="polite"></p><button class="button primary" type="submit">Sign In</button>
+    <div class="privacy-note"><strong>New to DDD?</strong><span>Choose what you want to do first:</span><div class="step-actions"><a class="button secondary" href="play.html">Play</a><a class="button secondary" href="dm.html">DM</a><a class="button secondary" href="host.html">Host</a></div></div>
+  </form></section>
+</div></main>
+<script src="production-config.js"></script><script src="production-api-client.js"></script><script src="production-session-store.js"></script><script src="production-auth.js"></script><script src="signin.js"></script>
+</body>
+</html>

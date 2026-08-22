@@ -10,46 +10,36 @@ const SOURCE_AUTH_ROUTE = "/api/v1/auth/";
 const DEPLOYED_AUTH_ROUTE = "/auth-api/v1/auth/";
 const SUPABASE_MARKERS = ["supabase.co", "sb_publishable_", "SUPABASE_SECRET_KEY"];
 const DEMO_GAME_MARKERS = ["Shadows Over Florence", "The Lighthouse at Blackwater", "Trouble Below the Old Road"];
+const LEGACY_ONBOARDING_LINKS = ["join.html#player", "join.html#gm", "venues.html#signup"];
 const REQUIRED_FILES = [
-  "index.html",
-  "join.html",
-  "venues.html",
-  "production-config.js",
-  "production-api-client.js",
-  "production-auth.js",
-  "deploy-meta.json",
-  "sitemap.xml"
+  "index.html", "play.html", "dm.html", "host.html", "signin.html", "my-ddd.html",
+  "admin-venues.html", "admin-venues.css", "admin-venues.js",
+  "notifications.html", "opportunity.html", "create-game.html", "create-game.js", "game-hub.html",
+  "game-hub-core.js", "game-hub-announcements.js", "game-hub-actions.js", "game-hub-role-views.js", "game-hub-render.js", "game-hub.js",
+  "player-start.js", "player-start-account.js", "player-start-profile.js", "player-start-save.js",
+  "dm-start.js", "dm-start-account.js", "dm-start-profile.js", "dm-start-save.js",
+  "host-start.js", "host-start-account.js", "host-managed-venues.js",
+  "signin.js", "my-ddd.js", "my-ddd-games.js", "my-ddd-reminders.js",
+  "auth-confirm.js", "venue-window-payloads.js",
+  "availability-calendar-init.mjs", "availability-presets.mjs", "calendar-state.mjs", "calendar-ui.mjs",
+  "production-config.js", "production-api-client.js", "production-auth.js",
+  "deploy-meta.json", "sitemap.xml"
 ];
 const EXCLUDED_DIRS = new Set([
-  ".git",
-  ".github",
-  ".venv",
-  "apps-script",
-  "backend",
-  "dist",
-  "docs",
-  "e2e",
-  "games",
-  "netlify",
-  "node_modules",
-  "playwright-report",
-  "scripts",
-  "supabase",
-  "test-results",
-  "tests"
+  ".git", ".github", ".venv", "apps-script", "backend", "dist", "docs", "e2e", "games",
+  "netlify", "node_modules", "playwright-report", "scripts", "supabase", "test-results", "tests"
 ]);
 const EXCLUDED_FILES = new Set([
-  "dashboard-prototype.html",
-  "package.json",
-  "package-lock.json",
-  "playwright.config.js",
-  "location-matching-notes.txt"
+  "dashboard-prototype.html", "dashboard.js", "shared-games.js", "form-series.html", "discovery.js",
+  "series-commitments.html", "recurring-match.html", "find-venue.html", "table-lifecycle.html",
+  "package.json", "package-lock.json", "playwright.config.js", "location-matching-notes.txt"
 ]);
 const PUBLIC_EXTENSIONS = new Set([
-  ".html", ".css", ".js", ".json", ".xml", ".svg", ".png", ".jpg", ".jpeg",
+  ".html", ".css", ".js", ".mjs", ".json", ".xml", ".svg", ".png", ".jpg", ".jpeg",
   ".webp", ".gif", ".avif", ".ico", ".woff", ".woff2", ".webmanifest"
 ]);
-const TEXT_EXTENSIONS = new Set([".html", ".css", ".js", ".json", ".xml", ".svg", ".webmanifest"]);
+const TEXT_EXTENSIONS = new Set([".html", ".css", ".js", ".mjs", ".json", ".xml", ".svg", ".webmanifest"]);
+const LEGACY_HUB_CHANNELS = ["post_channels", "table_discussion", "gm_venue", "player_gm", "player_venue_question"];
 
 function normalizedDeployUrl() {
   const raw = String(process.env.URL || "").trim();
@@ -62,39 +52,29 @@ function normalizedDeployUrl() {
 function transformText(relativePath, text, deployUrl) {
   let output = text.replaceAll(` ${OLD_API_ORIGIN}`, "");
   if (deployUrl) output = output.replaceAll(OLD_SITE_ORIGIN, deployUrl);
-  if (relativePath === "production-auth.js") {
-    output = output.replaceAll(SOURCE_AUTH_ROUTE, DEPLOYED_AUTH_ROUTE);
-  }
+  if (relativePath === "production-auth.js") output = output.replaceAll(SOURCE_AUTH_ROUTE, DEPLOYED_AUTH_ROUTE);
   return output;
 }
 
 async function copyPublicFiles(currentDir = ROOT, relativeDir = "", deployUrl = "") {
   let copied = 0;
-  const entries = await readdir(currentDir, { withFileTypes: true });
-  for (const entry of entries) {
+  for (const entry of await readdir(currentDir, { withFileTypes: true })) {
     if (entry.name.startsWith(".")) continue;
     const relativePath = path.posix.join(relativeDir.replaceAll("\\", "/"), entry.name);
     const sourcePath = path.join(currentDir, entry.name);
-
     if (entry.isDirectory()) {
-      if (EXCLUDED_DIRS.has(entry.name)) continue;
-      copied += await copyPublicFiles(sourcePath, relativePath, deployUrl);
+      if (!EXCLUDED_DIRS.has(entry.name)) copied += await copyPublicFiles(sourcePath, relativePath, deployUrl);
       continue;
     }
-    if (!entry.isFile()) continue;
-    if (EXCLUDED_FILES.has(relativePath) || EXCLUDED_FILES.has(entry.name)) continue;
-
+    if (!entry.isFile() || EXCLUDED_FILES.has(relativePath) || EXCLUDED_FILES.has(entry.name)) continue;
     const extension = path.extname(entry.name).toLowerCase();
     if (!PUBLIC_EXTENSIONS.has(extension)) continue;
-
     const destination = path.join(OUT, relativePath);
     await mkdir(path.dirname(destination), { recursive: true });
     if (TEXT_EXTENSIONS.has(extension)) {
-      const text = await readFile(sourcePath, "utf8");
-      await writeFile(destination, transformText(relativePath, text, deployUrl), "utf8");
+      await writeFile(destination, transformText(relativePath, await readFile(sourcePath, "utf8"), deployUrl), "utf8");
     } else {
-      const bytes = await readFile(sourcePath);
-      await writeFile(destination, bytes);
+      await writeFile(destination, await readFile(sourcePath));
     }
     copied += 1;
   }
@@ -103,42 +83,46 @@ async function copyPublicFiles(currentDir = ROOT, relativeDir = "", deployUrl = 
 
 async function assertProductionArtifact(deployUrl) {
   for (const required of REQUIRED_FILES) await readFile(path.join(OUT, required));
-
   const config = await readFile(path.join(OUT, "production-config.js"), "utf8");
-  if (!config.includes("apiBaseUrl: window.location.origin")) {
-    throw new Error("Netlify production config is not using same-origin /api routing.");
-  }
-
+  if (!config.includes("apiBaseUrl: window.location.origin")) throw new Error("Netlify production config is not using same-origin /api routing.");
   const auth = await readFile(path.join(OUT, "production-auth.js"), "utf8");
-  if (!auth.includes(DEPLOYED_AUTH_ROUTE) || auth.includes(SOURCE_AUTH_ROUTE)) {
-    throw new Error("Netlify production auth client is not using the dedicated auth route.");
-  }
-
-  const forbiddenNames = ["backend", ".github", "e2e", "games", "tests", "supabase", "apps-script", "dashboard-prototype.html"];
+  if (!auth.includes(DEPLOYED_AUTH_ROUTE) || auth.includes(SOURCE_AUTH_ROUTE)) throw new Error("Netlify production auth client is not using the dedicated auth route.");
+  if (!auth.includes("didConfirmEmail")) throw new Error("Netlify production auth client is missing the confirmation-state contract.");
+  const confirmation = await readFile(path.join(OUT, "auth-confirm.js"), "utf8");
+  if (!confirmation.includes("signin.html?confirmed=1")) throw new Error("Confirmed accounts are not routed through explicit Sign In.");
+  const apiClient = await readFile(path.join(OUT, "production-api-client.js"), "utf8");
+  if (apiClient.includes("getHubMessages") || apiClient.includes("postHubMessage") || apiClient.includes('/messages"')) throw new Error("Direct Game Hub messaging client code remains in the production artifact.");
+  const gameHub = await readFile(path.join(OUT, "game-hub.html"), "utf8");
+  if (gameHub.includes("game-hub-messages.js") || gameHub.includes("message-channel-grid") || gameHub.includes("venue-question-form")) throw new Error("Direct Game Hub communication controls remain in the production artifact.");
+  const gameHubCore = await readFile(path.join(OUT, "game-hub-core.js"), "utf8");
+  for (const marker of LEGACY_HUB_CHANNELS) if (gameHubCore.includes(marker)) throw new Error(`Legacy Game Hub messaging capability remains in production core: ${marker}`);
+  const announcements = await readFile(path.join(OUT, "game-hub-announcements.js"), "utf8");
+  if (!announcements.includes("can_post_announcement") || !announcements.includes("postAnnouncement")) throw new Error("One-way Game Hub announcement wiring is incomplete.");
+  const oldJoin = await readFile(path.join(OUT, "join.html"), "utf8").catch(() => "");
+  if (oldJoin.includes("id=\"player-form\"") || oldJoin.includes("id=\"gm-form\"")) throw new Error("Legacy giant onboarding forms remain in the production artifact.");
+  const hostHtml = await readFile(path.join(OUT, "host.html"), "utf8");
+  const hostScript = await readFile(path.join(OUT, "host-start.js"), "utf8");
+  if (hostHtml.includes("private_residence") || hostScript.includes("private_residence")) throw new Error("Private-residence hosting leaked into production.");
+  const forbiddenNames = [
+    "backend", ".github", "e2e", "games", "tests", "supabase", "apps-script", "dashboard-prototype.html",
+    "dashboard.js", "shared-games.js", "form-series.html", "discovery.js", "series-commitments.html",
+    "recurring-match.html", "find-venue.html", "table-lifecycle.html", "game-hub-messages.js"
+  ];
   const topLevel = new Set(await readdir(OUT));
-  for (const name of forbiddenNames) {
-    if (topLevel.has(name)) throw new Error(`Forbidden deployment content found in dist: ${name}`);
-  }
+  for (const name of forbiddenNames) if (topLevel.has(name)) throw new Error(`Forbidden deployment content found in dist: ${name}`);
 
   async function scan(dir) {
     for (const entry of await readdir(dir, { withFileTypes: true })) {
       const filePath = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        await scan(filePath);
-        continue;
-      }
+      if (entry.isDirectory()) { await scan(filePath); continue; }
       if (!TEXT_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) continue;
       const text = await readFile(filePath, "utf8");
-      if (text.includes(OLD_API_ORIGIN)) throw new Error(`Legacy Vercel origin remains in ${path.relative(OUT, filePath)}`);
-      for (const marker of SUPABASE_MARKERS) {
-        if (text.includes(marker)) throw new Error(`Supabase production dependency remains in ${path.relative(OUT, filePath)}`);
-      }
-      for (const marker of DEMO_GAME_MARKERS) {
-        if (text.includes(marker)) throw new Error(`Demo game content remains in production artifact: ${marker} in ${path.relative(OUT, filePath)}`);
-      }
-      if (deployUrl && text.includes(OLD_SITE_ORIGIN)) {
-        throw new Error(`Legacy GitHub Pages origin remains in ${path.relative(OUT, filePath)}`);
-      }
+      const relative = path.relative(OUT, filePath);
+      if (text.includes(OLD_API_ORIGIN)) throw new Error(`Legacy Vercel origin remains in ${relative}`);
+      for (const marker of SUPABASE_MARKERS) if (text.includes(marker)) throw new Error(`Supabase production dependency remains in ${relative}`);
+      for (const marker of DEMO_GAME_MARKERS) if (text.includes(marker)) throw new Error(`Demo game content remains in production artifact: ${marker} in ${relative}`);
+      for (const legacyLink of LEGACY_ONBOARDING_LINKS) if (text.includes(legacyLink)) throw new Error(`Legacy onboarding link remains in ${relative}: ${legacyLink}`);
+      if (deployUrl && text.includes(OLD_SITE_ORIGIN)) throw new Error(`Legacy GitHub Pages origin remains in ${relative}`);
     }
   }
   await scan(OUT);

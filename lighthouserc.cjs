@@ -4,10 +4,10 @@ module.exports = {
       staticDistDir: ".",
       url: [
         "http://localhost/index.html",
-        "http://localhost/join.html#player",
-        "http://localhost/venues.html",
-        "http://localhost/find-venue.html",
-        "http://localhost/games/lighthouse-at-blackwater/index.html"
+        "http://localhost/play.html",
+        "http://localhost/dm.html",
+        "http://localhost/host.html",
+        "http://localhost/conduct.html"
       ],
       numberOfRuns: 3,
       settings: {

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Host D&amp;D Games at Your Venue | Dinner, Dice &amp; Dragons</title>
+  <meta name="description" content="Restaurants, cafes, breweries, libraries, game stores, and other public venues can offer table availability for organized local D&D game nights.">
+  <link rel="canonical" href="https://cbw29512.github.io/dinnerdiceanddragons/host.html">
+  <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="availability-calendar.css"><link rel="stylesheet" href="player-start.css"><link rel="stylesheet" href="responsive-hardening.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="simple-header"><div class="simple-shell"><a class="brand" href="index.html"><span aria-hidden="true">🎲</span><span>Dinner, Dice &amp; Dragons</span></a><a href="index.html" class="quiet-link">Back home</a></div></header>
+<main id="main" class="simple-main" tabindex="-1"><div class="simple-shell start-layout">
+  <aside class="start-intro"><p class="eyebrow">HOST GAME NIGHTS</p><h1>Tell us when your public venue has tables open.</h1><p>Restaurants, cafes, breweries, libraries, game stores, and community spaces can offer table times. DDD lines those openings up with compatible DMs and Players.</p><div class="privacy-note"><strong>No member-to-member contact required.</strong><span>DDD coordinates availability and match decisions without exposing private user contact information.</span></div></aside>
+  <section class="start-card" aria-labelledby="venue-step-title">
+    <div class="start-progress" aria-live="polite"><span id="step-count">Step 1 of 5</span><div class="progress-track"><span id="progress-bar"></span></div></div>
+    <form id="venue-start-form" novalidate>
+      <section class="start-step" data-step="1"><p class="eyebrow">YOUR ACCOUNT</p><h2 id="venue-step-title">Create your venue host account.</h2><p class="step-copy">Already use DDD? Sign in instead.</p>
+        <div class="auth-toggle" role="group" aria-label="Account action"><button type="button" class="choice-button is-selected" data-auth-mode="signup">Create account</button><button type="button" class="choice-button" data-auth-mode="signin">Sign in</button></div>
+        <label>Host / manager name<input name="contact_name" autocomplete="name" placeholder="Your name" required></label><label>Email<input type="email" name="email" autocomplete="email" required></label><label>Password<input type="password" name="password" autocomplete="new-password" minlength="8" required></label>
+        <p id="auth-status" class="form-status" role="status" aria-live="polite"></p><button type="button" class="button primary next-button" data-action="account">Create Account &amp; Continue</button>
+      </section>
+      <section class="start-step" data-step="2" hidden><p class="eyebrow">YOUR VENUE</p><h2>Where will games be hosted?</h2><p class="step-copy">DDD only matches at public/business/community venues. The public venue address becomes part of confirmed game-night logistics.</p>
+        <input type="hidden" name="location_kind" value="business">
+        <label>Venue name<input name="business_name" autocomplete="organization" placeholder="Cafe, library, brewery, game store..." required></label><label>Public street address<input name="address" autocomplete="street-address" required></label>
+        <div class="distance-choices"><label>City<input name="city" autocomplete="address-level2" required></label><label>State<input name="state" autocomplete="address-level1" maxlength="2" pattern="[A-Za-z]{2}" placeholder="SC" required></label></div>
+        <label>ZIP code<input name="postal_code" inputmode="numeric" autocomplete="postal-code" pattern="[0-9]{5}" maxlength="5" placeholder="29501" required></label>
+        <p id="venue-details-status" class="form-status" role="status" aria-live="polite"></p>
+        <div class="step-actions"><button type="button" class="button secondary back-button">Back</button><button type="button" class="button primary next-button">Continue</button></div>
+      </section>
+      <section class="start-step" data-step="3" hidden><p class="eyebrow">TABLE AVAILABILITY</p><h2>When can you host a game?</h2><p class="step-copy">Use a quick pick or choose your own times. Nothing is selected until you choose it.</p>
+        <div class="availability-builder"><div class="availability-list" aria-live="polite"></div></div><p id="availability-status" class="form-status" role="status" aria-live="polite"></p>
+        <div class="distance-choices"><label>Tables / game spaces available<select name="table_count"><option value="1" selected>1 table</option><option value="2">2 tables</option><option value="3">3 tables</option><option value="4">4 tables</option></select></label><label>Seats per table<select name="seats_per_table"><option value="4">4 seats</option><option value="6" selected>6 seats</option><option value="8">8 seats</option><option value="10">10 seats</option></select></label></div>
+        <div class="step-actions"><button type="button" class="button secondary back-button">Back</button><button type="button" class="button primary next-button">Continue</button></div>
+      </section>
+      <section class="start-step" data-step="4" hidden><p class="eyebrow">BASIC POLICIES</p><h2>What should DDD know up front?</h2><p class="step-copy">These details help DMs and Players know whether the venue fits their game night.</p>
+        <label>Purchase policy<select name="purchase_policy"><option value="No minimum purchase" selected>No minimum purchase</option><option value="Each guest should purchase food or drink">Each guest should purchase food or drink</option><option value="Table minimum applies">Table minimum applies</option></select></label>
+        <label>Age policy<select name="age_policy"><option value="All ages" selected>All ages</option><option value="18+">18+</option><option value="21+">21+</option></select></label>
+        <label>Accessibility / environment notes<textarea name="accessibility" rows="3" placeholder="Accessible entrance, parking, noise level, lighting, stairs..."></textarea></label>
+        <div class="privacy-note"><strong>Verification protects the network.</strong><span>Your availability can be saved immediately, but DDD does not use the venue in matching until the venue/manager verification requirement is satisfied.</span></div>
+        <div class="step-actions"><button type="button" class="button secondary back-button">Back</button><button type="button" class="button primary next-button">Review</button></div>
+      </section>
+      <section class="start-step" data-step="5" hidden><p class="eyebrow">REVIEW</p><h2 id="venue-review-title">Ready to submit this venue?</h2><div id="venue-review" class="review-card"></div>
+        <label class="check-label"><input type="checkbox" id="conduct-check" required><span>I agree to the <a href="conduct.html">Code of Conduct</a> and confirm I am authorized to offer these public venue tables for game nights.</span></label><p id="save-status" class="form-status" role="status" aria-live="polite"></p>
+        <div class="step-actions"><button type="button" class="button secondary back-button">Back</button><button id="venue-submit" type="submit" class="button primary">Submit Venue</button></div>
+      </section>
+    </form>
+    <section id="venue-ready" class="ready-state" hidden aria-live="polite"><div class="ready-icon" aria-hidden="true">✓</div><p class="eyebrow">VENUE SUBMITTED</p><h2>Your venue and table times are saved.</h2><p>Your schedule is stored now. DDD will only make those openings eligible for matching when the venue is verified.</p><div id="managed-venue-list" class="review-card" hidden></div><div class="step-actions"><a class="button primary" href="my-ddd.html">My DDD</a><a class="button secondary" href="notifications.html">My Alerts</a></div></section>
+  </section>
+</div></main>
+<script src="production-config.js"></script><script src="production-api-client.js"></script><script src="production-onboarding-adapters.js"></script><script src="production-session-store.js"></script><script src="production-auth.js"></script><script src="venue-window-payloads.js"></script><script src="production-venue-onboarding.js"></script><script src="production-onboarding.js"></script><script type="module" src="availability-calendar-init.mjs"></script><script src="host-managed-venues.js"></script><script src="host-start-account.js"></script><script src="host-start.js"></script>
+</body>
+</html>

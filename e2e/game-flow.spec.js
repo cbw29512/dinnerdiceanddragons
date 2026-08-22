@@ -1,7 +1,6 @@
 const { test, expect } = require("@playwright/test");
 const { installAuthenticatedSession } = require("./helpers");
 
-const API_BASE = "http://127.0.0.1:4173";
 const MATCH_ID = "11111111-1111-4111-8111-111111111111";
 const TABLE_ID = "22222222-2222-4222-8222-222222222222";
 const VENUE_ID = "33333333-3333-4333-8333-333333333333";
@@ -20,36 +19,13 @@ function opportunity(overrides = {}) {
     minimum_players: 3,
     maximum_players: 5,
     compatible_player_count: 4,
-    system: {
-      slug: "dnd-5e-2014",
-      name: "Dungeons & Dragons",
-      edition: "5e (2014)"
-    },
-    venue: {
-      id: VENUE_ID,
-      name: "Browser Test Cafe",
-      city: "Florence",
-      state_region: "SC"
-    },
+    system: { slug: "dnd-5e-2014", name: "Dungeons & Dragons", edition: "5e (2014)" },
+    venue: { id: VENUE_ID, name: "Browser Test Cafe", city: "Florence", state_region: "SC" },
     viewer_roles: ["gm"],
+    your_responses: { gm: "pending" },
     your_player_distance_miles: null,
     your_gm_distance_miles: 4.2,
     ...overrides
-  };
-}
-
-function matcherResponse(item) {
-  return {
-    boom: true,
-    run: {
-      computed_opportunities: 1,
-      persisted_count: 1,
-      created_count: 1,
-      refreshed_count: 0,
-      materialized_table_count: 1,
-      expired_count: 0
-    },
-    opportunities: [item]
   };
 }
 
@@ -57,43 +33,32 @@ async function fulfillJson(route, body, status = 200) {
   await route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
 }
 
-async function installGmApi(page) {
-  const item = opportunity();
-  await page.route(`${API_BASE}/api/v1/**`, async (route) => {
+async function installOpportunityApi(page, item, role) {
+  await page.route("**/api/v1/**", async (route) => {
     const request = route.request();
-    const url = new URL(request.url());
-    const path = url.pathname;
-
-    if (path === "/api/v1/me") {
-      await fulfillJson(route, { display_name: "Browser GM", roles: ["gm"] });
-      return;
-    }
-    if (path === "/api/v1/onboarding/gm" && request.method() === "PUT") {
-      await fulfillJson(route, { role: "gm", display_name: "Browser GM" });
-      return;
-    }
-    if (path === "/api/v1/matching/gm-supplies" && request.method() === "GET") {
-      await fulfillJson(route, []);
-      return;
-    }
-    if (path === "/api/v1/matching/gm-supplies" && request.method() === "POST") {
-      await fulfillJson(route, { id: "44444444-4444-4444-8444-444444444444", status: "active", ...request.postDataJSON() });
-      return;
-    }
-    if (path === "/api/v1/matching/find-my-table" && request.method() === "POST") {
-      await fulfillJson(route, matcherResponse(item));
-      return;
-    }
-    if (path === "/api/v1/matching/opportunities" && request.method() === "GET") {
-      await fulfillJson(route, [item]);
-      return;
-    }
+    const path = new URL(request.url()).pathname;
+    if (path === "/api/v1/auth/session") return route.fallback();
+    if (path === "/api/v1/me") return fulfillJson(route, { display_name: `Browser ${role}`, roles: [role] });
+    if (path === "/api/v1/notifications") return fulfillJson(route, []);
     if (path === `/api/v1/matching/opportunities/${MATCH_ID}` && request.method() === "GET") {
-      await fulfillJson(route, { ...item, your_player_fit_flags: [], your_player_availability_overlap: null, explanations: [] });
-      return;
+      return fulfillJson(route, { ...item, your_player_fit_flags: [], your_player_availability_overlap: null, explanations: [] });
+    }
+    if (path === `/api/v1/matching/opportunities/${MATCH_ID}/respond` && request.method() === "POST") {
+      const payload = request.postDataJSON();
+      item.status = "forming";
+      item.your_responses = { ...(item.your_responses || {}), [role]: payload.decision };
+      return fulfillJson(route, {
+        role,
+        decision: payload.decision,
+        table_status: "forming",
+        progress: { gmAccepted: true, venueAccepted: true, acceptedPlayers: 3, formed: true }
+      });
     }
     if (path === `/api/v1/matching/opportunities/${MATCH_ID}/form` && request.method() === "POST") {
-      await fulfillJson(route, {
+      item.event_id = EVENT_ID;
+      item.event_status = "venue_requested";
+      item.status = "converted";
+      return fulfillJson(route, {
         event_id: EVENT_ID,
         event_slug: "browser-test-adventure",
         table_match_id: MATCH_ID,
@@ -102,31 +67,23 @@ async function installGmApi(page) {
         created: true,
         venue_booking_request_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
       });
-      return;
     }
-    await fulfillJson(route, { detail: `Unhandled browser fixture: ${request.method()} ${path}` }, 404);
+    return fulfillJson(route, { detail: `Unhandled browser fixture: ${request.method()} ${path}` }, 404);
   });
 }
 
-test("GM signup enters production matching and forms the real Event", async ({ page }) => {
-  await installGmApi(page);
+test("GM accepts a structured match, gets BOOM, and creates the real Event", async ({ page }) => {
+  const item = opportunity();
   await installAuthenticatedSession(page, { email: "gm-browser@example.test" });
-  await page.goto("/join.html#gm");
+  await installOpportunityApi(page, item, "gm");
 
-  const form = page.locator("#gm-form");
-  await form.locator('[name="display_name"]').fill("Browser GM");
-  await expect(form.locator('[name="email"]')).toHaveValue("gm-browser@example.test");
-  await expect(form.locator('[name="email"]')).toHaveAttribute("readonly", "");
-  await form.locator('[name="postal_code"]').fill("29501");
-  await form.locator('[name="style"]').fill("Friendly roleplay with tactical combat.");
-  await form.locator('[name="expectations"]').fill("Respectful table, no PvP, use safety tools.");
-  await form.locator('.check-label input[type="checkbox"]').check();
-  await form.getByRole("button", { name: "Find Players + Venue" }).click();
+  await page.goto(`/opportunity.html?match=${MATCH_ID}&role=gm`);
+  await expect(page.getByRole("heading", { name: "Dungeons & Dragons" })).toBeVisible();
+  await page.getByRole("button", { name: "Accept Game" }).click();
 
-  await expect(form.locator(".form-status")).toContainText("Saved and matched");
-  const build = page.getByRole("link", { name: "Build This Table" });
-  await expect(build).toBeVisible();
-  await build.click();
+  const finish = page.getByRole("link", { name: /GAME ON.*Finish Event Setup/i });
+  await expect(finish).toBeVisible();
+  await finish.click();
   await expect(page).toHaveURL(new RegExp(`create-game\\.html\\?table_match_id=${MATCH_ID}$`));
 
   const eventForm = page.locator("#game-form");
@@ -145,25 +102,24 @@ test("GM signup enters production matching and forms the real Event", async ({ p
   await expect(page.locator("#game-hub-link")).toHaveAttribute("href", `game-hub.html?event=${EVENT_ID}`);
 });
 
-test("matched Player can request a real Event seat from signup results", async ({ page }) => {
-  const converted = opportunity({
+test("matched Player reviews the Event opportunity and requests a real seat", async ({ page }) => {
+  const item = opportunity({
     status: "converted",
     event_id: EVENT_ID,
     event_status: "venue_requested",
     viewer_roles: ["player"],
+    your_responses: { player: "accepted" },
     your_player_distance_miles: 3.1,
     your_gm_distance_miles: null
   });
-
-  await page.route(`${API_BASE}/api/v1/**`, async (route) => {
+  await installAuthenticatedSession(page, { email: "player-browser@example.test" });
+  await page.route("**/api/v1/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
+    if (path === "/api/v1/auth/session") return route.fallback();
     if (path === "/api/v1/me") return fulfillJson(route, { display_name: "Browser Player", roles: ["player"] });
-    if (path === "/api/v1/onboarding/player" && request.method() === "PUT") return fulfillJson(route, { role: "player" });
-    if (path === "/api/v1/matching/player-demands" && request.method() === "GET") return fulfillJson(route, []);
-    if (path === "/api/v1/matching/player-demands" && request.method() === "POST") return fulfillJson(route, { id: "55555555-5555-4555-8555-555555555555", status: "active", ...request.postDataJSON() });
-    if (path === "/api/v1/matching/find-my-table" && request.method() === "POST") return fulfillJson(route, matcherResponse(converted));
-    if (path === "/api/v1/matching/opportunities" && request.method() === "GET") return fulfillJson(route, [converted]);
+    if (path === "/api/v1/notifications") return fulfillJson(route, []);
+    if (path === `/api/v1/matching/opportunities/${MATCH_ID}`) return fulfillJson(route, { ...item, explanations: [] });
     if (path === `/api/v1/events/${EVENT_ID}` && request.method() === "GET") return fulfillJson(route, { id: EVENT_ID, your_registration: null });
     if (path === `/api/v1/events/${EVENT_ID}/registrations` && request.method() === "POST") {
       return fulfillJson(route, {
@@ -178,17 +134,8 @@ test("matched Player can request a real Event seat from signup results", async (
     }
     return fulfillJson(route, { detail: `Unhandled browser fixture: ${request.method()} ${path}` }, 404);
   });
-  await installAuthenticatedSession(page, { email: "player-browser@example.test" });
 
-  await page.goto("/join.html#player");
-  const form = page.locator("#player-form");
-  await form.locator('[name="display_name"]').fill("Browser Player");
-  await expect(form.locator('[name="email"]')).toHaveValue("player-browser@example.test");
-  await expect(form.locator('[name="email"]')).toHaveAttribute("readonly", "");
-  await form.locator('[name="postal_code"]').fill("29501");
-  await form.locator('.check-label input[type="checkbox"]').check();
-  await form.getByRole("button", { name: "Find My Table" }).click();
-
+  await page.goto(`/opportunity.html?match=${MATCH_ID}&role=player`);
   const seatButton = page.getByRole("button", { name: "Request My Seat" });
   await expect(seatButton).toBeVisible();
   await seatButton.click();
@@ -197,11 +144,9 @@ test("matched Player can request a real Event seat from signup results", async (
 
 test("production match values render as inert text on Event creation", async ({ page }) => {
   const malicious = opportunity({
-    system: {
-      slug: "dnd-5e-2014",
-      name: '<img id="system-xss" src=x onerror="window.__dddStoredXss=1">',
-      edition: "5e"
-    },
+    status: "forming",
+    your_responses: { gm: "accepted" },
+    system: { slug: "dnd-5e-2014", name: '<img id="system-xss" src=x onerror="window.__dddStoredXss=1">', edition: "5e" },
     venue: {
       id: VENUE_ID,
       name: '<svg id="venue-xss" onload="window.__dddStoredXss=2"></svg>',
@@ -209,17 +154,15 @@ test("production match values render as inert text on Event creation", async ({ 
       state_region: "SC"
     }
   });
-
-  await page.route(`${API_BASE}/api/v1/**`, async (route) => {
-    const request = route.request();
-    const path = new URL(request.url()).pathname;
+  await installAuthenticatedSession(page, { email: "gm-browser@example.test" });
+  await page.route("**/api/v1/**", async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/v1/auth/session") return route.fallback();
     if (path === "/api/v1/me") return fulfillJson(route, { display_name: "Browser GM", roles: ["gm"] });
-    if (path === `/api/v1/matching/opportunities/${MATCH_ID}`) {
-      return fulfillJson(route, { ...malicious, your_player_fit_flags: [], your_player_availability_overlap: null, explanations: [] });
-    }
+    if (path === "/api/v1/notifications") return fulfillJson(route, []);
+    if (path === `/api/v1/matching/opportunities/${MATCH_ID}`) return fulfillJson(route, { ...malicious, explanations: [] });
     return fulfillJson(route, { detail: "Not found" }, 404);
   });
-  await installAuthenticatedSession(page, { email: "gm-browser@example.test" });
 
   await page.goto(`/create-game.html?table_match_id=${MATCH_ID}`);
   const summary = page.locator("#selected-slot");

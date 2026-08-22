@@ -6,9 +6,7 @@
   function renderIndex(hubs) {
     const grid = rt.byId("hub-index-grid");
     if (grid) grid.replaceChildren();
-    for (const item of hubs) {
-      if (grid) grid.append(buildHubCard(item));
-    }
+    for (const item of hubs) if (grid) grid.append(buildHubCard(item));
     if (grid && hubs.length === 0) {
       const empty = document.createElement("div");
       empty.className = "panel empty-state";
@@ -18,7 +16,7 @@
       copy.textContent = "A Hub appears after a matched table is formed and you are the DM, a confirmed Player, or a verified manager of its Venue.";
       const link = document.createElement("a");
       link.className = "button primary";
-      link.href = "index.html#shared-games";
+      link.href = "play.html";
       link.textContent = "Find a Table";
       empty.append(heading, copy, link);
       grid.append(empty);
@@ -45,16 +43,24 @@
     const link = document.createElement("a");
     link.className = "button primary";
     link.href = `game-hub.html?event=${encodeURIComponent(item.event_id)}`;
-    link.textContent = "Open Live Game Hub";
+    link.textContent = "Open Game Hub";
     card.append(eyebrow, heading, meta, link);
     return card;
+  }
+
+  function venueAddress(event) {
+    return [event.venue_address_line1, event.venue_address_line2].filter(Boolean).join(", ");
+  }
+
+  function venueLocality(event) {
+    return [event.venue_city, event.venue_state_region, event.venue_postal_code].filter(Boolean).join(" ");
   }
 
   function renderHub() {
     const event = rt.state.hub.event;
     document.title = `${event.title} Game Hub | Dinner, Dice & Dragons`;
     rt.setText("hub-title", event.title);
-    rt.setText("hub-lede", "Live table logistics, commitments, Venue coordination, and role-scoped communication.");
+    rt.setText("hub-lede", "Live table logistics, commitments, public Venue details, announcements, and structured role actions.");
     rt.setText("hub-status-value", rt.humanize(event.status));
     rt.setText("hub-headcount", event.booking.expected_guests);
     rt.setText("hub-venue", event.venue_name);
@@ -63,7 +69,8 @@
     rt.setText("event-title", event.title);
     rt.setText("event-description", event.description);
     rt.setText("event-venue-name", event.venue_name);
-    rt.setText("event-venue-locality", `${event.venue_city}, ${event.venue_state_region}`);
+    rt.setText("event-venue-address", venueAddress(event));
+    rt.setText("event-venue-locality", venueLocality(event));
     rt.setText("event-schedule", `${rt.formatDateTime(event.starts_at)} – ${rt.formatDateTime(event.ends_at)}`);
     renderExpectations(event.expectations || {});
     renderRoleButtons();
@@ -76,12 +83,9 @@
     if (!list) return;
     list.replaceChildren();
     const fields = [
-      ["Play style", expectations.play_style],
-      ["Boundaries", expectations.boundaries],
-      ["PvP", expectations.pvp_policy],
-      ["Homebrew", expectations.homebrew_policy],
-      ["Safety", expectations.safety_framework],
-      ["Accessibility", expectations.accessibility_notes]
+      ["Play style", expectations.play_style], ["Boundaries", expectations.boundaries],
+      ["PvP", expectations.pvp_policy], ["Homebrew", expectations.homebrew_policy],
+      ["Safety", expectations.safety_framework], ["Accessibility", expectations.accessibility_notes]
     ];
     for (const [label, value] of fields) {
       if (!value) continue;
@@ -114,17 +118,13 @@
   function showRole(role, announce = true) {
     if (!rt.state.hub?.capabilities?.viewer_roles?.includes(role)) return;
     rt.state.role = role;
-    for (const [knownRole, viewId] of Object.entries(rt.ROLE_VIEW_IDS)) {
-      rt.setVisible(viewId, knownRole === role);
-    }
-    document.querySelectorAll(".hub-role-button").forEach((button) => {
-      button.setAttribute("aria-pressed", String(button.dataset.role === role));
-    });
+    for (const [knownRole, viewId] of Object.entries(rt.ROLE_VIEW_IDS)) rt.setVisible(viewId, knownRole === role);
+    document.querySelectorAll(".hub-role-button").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.role === role)));
     const url = new URL(window.location.href);
     url.searchParams.set("event", rt.state.eventId);
     url.searchParams.set("role", role);
     history.replaceState({}, "", url);
-    window.DDDGameHubMessages.renderChannels();
+    window.DDDGameHubAnnouncements?.bind?.();
     if (announce) rt.setStatus(`${rt.ROLE_LABELS[role]} view active.`);
   }
 

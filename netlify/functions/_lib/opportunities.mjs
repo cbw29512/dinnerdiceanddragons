@@ -1,6 +1,8 @@
 import { gameSystemById } from "./catalog.mjs";
 import { userRoles } from "./auth.mjs";
-import { SupabaseRestError, eq, inList, selectMany, selectOne } from "./supabase-rest.mjs";
+import { reconcileOpportunityAlerts } from "./opportunity-alert-seeding.mjs";
+import { SupabaseRestError, eq, selectMany, selectOne } from "./supabase-rest.mjs";
+import { publicVenueLocation } from "./venue-location-kind.mjs";
 
 const VISIBLE_MATCH = new Set(["potential", "invited", "forming", "converted"]);
 const VISIBLE_PLAYER = new Set(["eligible", "notified", "interested", "committed"]);
@@ -64,6 +66,15 @@ async function viewerContext(user, match, roles) {
   };
 }
 
+async function ownResponses(userId, matchId, viewerRoles) {
+  const rows = await selectMany("opportunity_responses", {
+    table_match_id: eq(matchId), user_id: eq(userId), limit: 10
+  });
+  return Object.fromEntries(
+    rows.filter((row) => viewerRoles.includes(row.role)).map((row) => [row.role, row.decision])
+  );
+}
+
 async function summary(user, match, roles, { detail = false } = {}) {
   const context = await viewerContext(user, match, roles);
   if (!context.visible) return null;
@@ -73,6 +84,7 @@ async function summary(user, match, roles, { detail = false } = {}) {
   if (!system || !venue) return null;
   const table = await selectOne("game_tables", { source_table_match_id: eq(match.id) });
   const event = await selectOne("events", { table_match_id: eq(match.id) });
+  const venueView = publicVenueLocation(venue, { formed: ["forming", "converted"].includes(match.status) });
   const result = {
     id: match.id,
     game_table_id: table?.id || null,
@@ -86,8 +98,9 @@ async function summary(user, match, roles, { detail = false } = {}) {
     maximum_players: Number(match.maximum_players),
     compatible_player_count: Number(match.compatible_player_count),
     system: { slug: system.slug, name: system.name, edition: system.edition || null },
-    venue: { id: venue.id, name: venue.name, city: venue.city, state_region: venue.state_region },
+    venue: { id: venue.id, ...venueView },
     viewer_roles: context.roles,
+    your_responses: await ownResponses(user.id, match.id, context.roles),
     your_player_distance_miles: context.playerDistance,
     your_gm_distance_miles: context.gmDistance
   };
@@ -123,6 +136,12 @@ export async function getOpportunity(user, matchId) {
 }
 
 export async function findMyTable(user, run) {
+  const alerts = await reconcileOpportunityAlerts();
   const opportunities = (await listOpportunities(user)).filter((item) => ["potential", "invited", "forming"].includes(item.status));
-  return { boom: opportunities.length > 0, run, opportunities };
+  return {
+    boom: opportunities.some((item) => item.status === "forming"),
+    run,
+    alerts,
+    opportunities
+  };
 }

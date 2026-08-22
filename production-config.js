@@ -6,4 +6,15 @@
   window.DDDProductionConfig = Object.freeze({
     apiBaseUrl: window.location.origin
   });
+
+  try {
+    if (!document.querySelector('script[data-ddd-notifications-bootstrap]')) {
+      const script = document.createElement("script");
+      script.src = "global-notifications-ui.js";
+      script.dataset.dddNotificationsBootstrap = "true";
+      document.head.append(script);
+    }
+  } catch (error) {
+    console.error("[DDD Config] Unable to bootstrap notification UI", error);
+  }
 })();

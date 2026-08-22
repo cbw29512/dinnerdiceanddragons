@@ -3,42 +3,20 @@
 const assert = require("node:assert/strict");
 
 global.window = globalThis;
-global.window.location = {
-  origin: "https://dinnerdiceanddragons.netlify.app",
-  hash: "",
-  pathname: "/join.html",
-  search: ""
-};
-global.history = {
-  replaced: null,
-  replaceState(_state, _title, url) { this.replaced = url; }
-};
+global.window.location = { origin: "https://dinnerdiceanddragons.netlify.app", hash: "", pathname: "/play.html", search: "" };
+global.history = { replaced: null, replaceState(_state, _title, url) { this.replaced = url; } };
 
 require("../production-config.js");
 require("../production-api-client.js");
 require("../production-auth.js");
 
 let failures = 0;
-
 async function test(name, callback) {
-  try {
-    await callback();
-    console.log(`✓ ${name}`);
-  } catch (error) {
-    failures += 1;
-    console.error(`✗ ${name}`);
-    console.error(error);
-  }
+  try { await callback(); console.log(`✓ ${name}`); }
+  catch (error) { failures += 1; console.error(`✗ ${name}`); console.error(error); }
 }
-
 function jsonResponse(status, payload) {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    async text() {
-      return payload === null ? "" : JSON.stringify(payload);
-    }
-  };
+  return { ok: status >= 200 && status < 300, status, async text() { return payload === null ? "" : JSON.stringify(payload); } };
 }
 
 async function run() {
@@ -48,10 +26,7 @@ async function run() {
 
   await test("production API sends secure same-origin cookies without bearer tokens", async () => {
     let captured = null;
-    global.fetch = async (url, options) => {
-      captured = { url, options };
-      return jsonResponse(200, { display_name: "Player One", systems: [], availability: [] });
-    };
+    global.fetch = async (url, options) => { captured = { url, options }; return jsonResponse(200, { display_name: "Player One", systems: [], availability: [] }); };
     DDDProductionAPI.configure({ baseUrl: DDDProductionConfig.apiBaseUrl });
     const body = await DDDProductionAPI.getPlayerOnboarding();
     assert.equal(captured.url, "https://dinnerdiceanddragons.netlify.app/api/v1/onboarding/player");
@@ -63,10 +38,7 @@ async function run() {
 
   await test("production API serializes canonical onboarding PUT payload", async () => {
     let captured = null;
-    global.fetch = async (url, options) => {
-      captured = { url, options };
-      return jsonResponse(200, { role: "gm" });
-    };
+    global.fetch = async (url, options) => { captured = { url, options }; return jsonResponse(200, { role: "gm" }); };
     DDDProductionAPI.configure({ baseUrl: DDDProductionConfig.apiBaseUrl });
     const payload = { display_name: "GM One", postal_code: "29501", travel_radius_miles: 25, systems: [], availability: [] };
     await DDDProductionAPI.putGMOnboarding(payload);
@@ -78,48 +50,13 @@ async function run() {
 
   await test("production API exposes matching inputs, BOOM refresh, and formation routes", async () => {
     const calls = [];
-    global.fetch = async (url, options) => {
-      calls.push({ url, options });
-      return jsonResponse(200, { ok: true });
-    };
+    global.fetch = async (url, options) => { calls.push({ url, options }); return jsonResponse(200, { ok: true }); };
     DDDProductionAPI.configure({ baseUrl: DDDProductionConfig.apiBaseUrl });
-
-    const availability = [{
-      day_of_week: "tuesday",
-      start_time: "18:00",
-      end_time: "22:00",
-      pattern_type: "weekly_interval",
-      week_interval: 1,
-      anchor_date: null,
-      monthly_ordinal: null,
-      month_interval: null,
-      timezone: "America/New_York",
-      starts_on: null,
-      ends_on: null
-    }];
+    const availability = [{ day_of_week: "tuesday", start_time: "18:00", end_time: "22:00", pattern_type: "weekly_interval", week_interval: 1, anchor_date: null, monthly_ordinal: null, month_interval: null, timezone: "America/New_York", starts_on: null, ends_on: null }];
     const playerDemand = { system_slug: "dnd-5e-2024", availability, preferred_format: "any" };
-    const gmSupply = {
-      system_slug: "dnd-5e-2024",
-      availability,
-      preferred_format: "one_shot",
-      minimum_players: 3,
-      maximum_players: 5
-    };
-    const venueWindow = {
-      availability: availability[0],
-      table_count: 1,
-      max_people_per_table: 6,
-      approval_required: true
-    };
-    const formation = {
-      title: "Tuesday D&D",
-      description: "A production table test.",
-      event_type: "one_shot",
-      join_mode: "request",
-      beginner_friendly: true,
-      expected_sessions: 1,
-      expectations: {}
-    };
+    const gmSupply = { system_slug: "dnd-5e-2024", availability, preferred_format: "one_shot", minimum_players: 3, maximum_players: 5 };
+    const venueWindow = { availability: availability[0], table_count: 1, max_people_per_table: 6, approval_required: false };
+    const formation = { title: "Tuesday D&D", description: "A production table test.", event_type: "one_shot", join_mode: "request", beginner_friendly: true, expected_sessions: 1, expectations: {} };
 
     await DDDProductionAPI.postPlayerDemand(playerDemand);
     await DDDProductionAPI.postGMSupply(gmSupply);
@@ -147,10 +84,7 @@ async function run() {
     global.fetch = async () => jsonResponse(401, { detail: "An authenticated session is required." });
     DDDProductionAPI.configure({ baseUrl: DDDProductionConfig.apiBaseUrl });
     await assert.rejects(() => DDDProductionAPI.getMe(), (error) => {
-      assert.equal(error.name, "ProductionApiError");
-      assert.equal(error.status, 401);
-      assert.match(error.message, /authenticated session/i);
-      return true;
+      assert.equal(error.name, "ProductionApiError"); assert.equal(error.status, 401); assert.match(error.message, /authenticated session/i); return true;
     });
   });
 
@@ -158,10 +92,7 @@ async function run() {
     global.fetch = async () => jsonResponse(409, { detail: "That display name is already in use." });
     DDDProductionAPI.configure({ baseUrl: DDDProductionConfig.apiBaseUrl });
     await assert.rejects(() => DDDProductionAPI.putPlayerOnboarding({ display_name: "Taken" }), (error) => {
-      assert.equal(error.name, "ProductionApiError");
-      assert.equal(error.status, 409);
-      assert.equal(error.detail, "That display name is already in use.");
-      return true;
+      assert.equal(error.name, "ProductionApiError"); assert.equal(error.status, 409); assert.equal(error.detail, "That display name is already in use."); return true;
     });
   });
 
@@ -173,7 +104,6 @@ async function run() {
       if (url.endsWith("/api/v1/auth/session")) return jsonResponse(200, { authenticated: true, id: "identity-1", email: "player@example.com" });
       return jsonResponse(404, {});
     };
-
     const session = await DDDProductionAuth.signIn("player@example.com", "test-password");
     assert.equal(session.user.email, "player@example.com");
     assert.equal(session.access_token, "netlify-identity-cookie");
@@ -192,27 +122,26 @@ async function run() {
       if (url.endsWith("/api/v1/auth/session")) return jsonResponse(200, { authenticated: false });
       return jsonResponse(404, {});
     };
-
     const result = await DDDProductionAuth.signUp("new@example.com", "test-password");
     assert.equal(result.session, null);
     assert.equal(result.user.email, "new@example.com");
     assert.equal(calls[0].options.credentials, "same-origin");
   });
 
-  await test("confirmation token is removed from URL before exchange", async () => {
+  await test("confirmation is consumed without assuming a browser session", async () => {
     window.location.hash = "#confirmation_token=one-time-token";
     history.replaced = null;
     const calls = [];
     global.fetch = async (url, options) => {
       calls.push({ url, options });
       if (url.endsWith("/api/v1/auth/confirm")) return jsonResponse(200, { confirmed: true, id: "identity-2", email: "confirmed@example.com" });
-      if (url.endsWith("/api/v1/auth/session")) return jsonResponse(200, { authenticated: true, id: "identity-2", email: "confirmed@example.com" });
-      return jsonResponse(404, {});
+      throw new Error(`Unexpected auth request after confirmation: ${url}`);
     };
-
     const session = await DDDProductionAuth.getSession();
-    assert.equal(history.replaced, "/join.html");
-    assert.equal(session.user.email, "confirmed@example.com");
+    assert.equal(history.replaced, "/play.html");
+    assert.equal(session, null);
+    assert.equal(DDDProductionAuth.didConfirmEmail(), true);
+    assert.equal(calls.length, 1);
     assert.equal(calls[0].url, "https://dinnerdiceanddragons.netlify.app/api/v1/auth/confirm");
     assert.deepEqual(JSON.parse(calls[0].options.body), { token: "one-time-token" });
     window.location.hash = "";
@@ -220,10 +149,7 @@ async function run() {
 
   await test("sign-out clears the server Identity session", async () => {
     let captured = null;
-    global.fetch = async (url, options) => {
-      captured = { url, options };
-      return jsonResponse(204, null);
-    };
+    global.fetch = async (url, options) => { captured = { url, options }; return jsonResponse(204, null); };
     await DDDProductionAuth.signOut();
     assert.equal(captured.url, "https://dinnerdiceanddragons.netlify.app/api/v1/auth/logout");
     assert.equal(captured.options.method, "POST");
@@ -237,7 +163,4 @@ async function run() {
   console.log("\nAll production API and Netlify Identity browser tests passed.");
 }
 
-run().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+run().catch((error) => { console.error(error); process.exit(1); });

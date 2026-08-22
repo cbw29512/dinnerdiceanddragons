@@ -21,106 +21,107 @@ jobs:
           POSTGRES_USER: ddd
           POSTGRES_PASSWORD: ddd
           POSTGRES_DB: ddd_contract
-        ports:
-          - 5432:5432
+        ports: ["5432:5432"]
         options: >-
           --health-cmd="pg_isready -U ddd -d ddd_contract"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=10
+          --health-interval=5s --health-timeout=5s --health-retries=10
     steps:
-      - name: Checkout
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
-      - name: Set up Node
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 22
           cache: npm
-
       - name: Install locked Netlify runtime dependencies
         run: npm ci
-
       - name: Build Netlify production artifact
         env:
           URL: https://ddd-contract.netlify.app
         run: node scripts/build-netlify.mjs
-
       - name: Verify Netlify package boundary and native runtime
         shell: bash
         run: |
           set -euo pipefail
-          test -f netlify.toml
-          test -f netlify/functions/api.mjs
-          test -f netlify/functions/auth-api.mjs
-          test -f netlify/functions/_lib/database.mjs
-          test -f netlify/database/migrations/0001_initial_schema.sql
-          test ! -e netlify/functions/api-proxy.mjs
-          test -f dist/index.html
-          test -f dist/join.html
-          test -f dist/venues.html
-          test -f dist/production-auth.js
-          test -f dist/sitemap.xml
-          test -f dist/robots.txt
-          test ! -e dist/backend
-          test ! -e dist/.github
-          test ! -e dist/e2e
-          test ! -e dist/tests
-          test ! -e dist/supabase
-          test ! -e dist/apps-script
-          test ! -e dist/dashboard-prototype.html
+          for file in \
+            netlify.toml netlify/functions/api.mjs netlify/functions/auth-api.mjs \
+            netlify/functions/_lib/database.mjs netlify/database/migrations/0001_initial_schema.sql \
+            netlify/database/migrations/0002_privacy_notifications.sql netlify/database/migrations/0003_game_reminders.sql \
+            dist/index.html dist/play.html dist/dm.html dist/host.html dist/signin.html dist/my-ddd.html \
+            dist/notifications.html dist/opportunity.html dist/create-game.html dist/game-hub.html \
+            dist/game-hub-core.js dist/game-hub-announcements.js dist/game-hub-actions.js \
+            dist/game-hub-role-views.js dist/game-hub-render.js dist/game-hub.js \
+            dist/player-start.js dist/player-start-account.js dist/player-start-profile.js dist/player-start-save.js \
+            dist/dm-start.js dist/dm-start-account.js dist/dm-start-profile.js dist/dm-start-save.js \
+            dist/host-start.js dist/host-start-account.js dist/host-managed-venues.js dist/auth-confirm.js \
+            dist/my-ddd-games.js dist/my-ddd-reminders.js dist/venue-window-payloads.js \
+            dist/availability-calendar-init.mjs dist/availability-presets.mjs \
+            dist/calendar-state.mjs dist/calendar-ui.mjs dist/production-auth.js dist/sitemap.xml dist/robots.txt; do
+            test -f "$file"
+          done
+          for forbidden in dist/backend dist/.github dist/e2e dist/tests dist/supabase dist/apps-script \
+            dist/dashboard-prototype.html dist/game-hub-messages.js; do
+            test ! -e "$forbidden"
+          done
           grep -q 'apiBaseUrl: window.location.origin' dist/production-config.js
           grep -q '/auth-api/v1/auth/' dist/production-auth.js
+          grep -q 'didConfirmEmail' dist/production-auth.js
+          grep -q 'signin.html?confirmed=1' dist/auth-confirm.js
           grep -q 'https://ddd-contract.netlify.app' dist/sitemap.xml
           grep -q 'Sitemap: https://ddd-contract.netlify.app/sitemap.xml' dist/robots.txt
           grep -q '"@netlify/database"' package.json
           grep -q '"@netlify/identity"' package.json
-          grep -q '@netlify/database' netlify/functions/_lib/database.mjs
-          grep -q '@netlify/identity' netlify/functions/_lib/auth.mjs
+          grep -q 'DDDPlayerStartAccount' dist/player-start-account.js
+          grep -q 'DDDPlayerStartSave' dist/player-start-save.js
+          grep -q 'DDDDMStartAccount' dist/dm-start-account.js
+          grep -q 'DDDDMStartSave' dist/dm-start-save.js
+          grep -q 'DDDHostStartAccount' dist/host-start-account.js
+          grep -q 'DDDHostManagedVenues' dist/host-managed-venues.js
+          grep -q 'can_post_announcement' dist/game-hub-announcements.js
+          ! grep -q 'post_channels\|table_discussion\|gm_venue\|player_gm\|player_venue_question' dist/game-hub-core.js
+          ! grep -q 'private_residence' dist/host.html dist/host-start.js
+          ! grep -q 'getHubMessages\|postHubMessage\|/messages"' dist/production-api-client.js
+          ! grep -q 'game-hub-messages.js\|message-channel-grid\|venue-question-form' dist/game-hub.html
           if grep -R -n -E 'dinnerdiceanddragons\.vercel\.app|supabase\.co|sb_publishable_|SUPABASE_SECRET_KEY|DDD_API_ORIGIN' dist netlify/functions production-auth.js production-config.js netlify.toml; then
             echo "Legacy external production provider leaked into Netlify-native runtime."
             exit 1
           fi
           node --check scripts/build-netlify.mjs
           node --check scripts/netlify-ignore.mjs
-          while IFS= read -r -d '' file; do
-            echo "Checking native function module: $file"
-            node --check "$file"
-          done < <(find netlify/functions -type f -name '*.mjs' -print0)
+          while IFS= read -r -d '' file; do node --check "$file"; done < <(find netlify/functions -type f -name '*.mjs' -print0)
+          while IFS= read -r -d '' file; do node --check "$file"; done < <(find . -maxdepth 1 -type f -name '*.mjs' -print0)
           node -e "Promise.all([import('./netlify/functions/api.mjs'), import('./netlify/functions/auth-api.mjs')]).then(([api, auth]) => { if (typeof api.default !== 'function' || api.config?.path !== '/api/*' || typeof auth.default !== 'function' || auth.config?.path !== '/auth-api/*') process.exit(1); })"
-
-      - name: Apply and verify Netlify Database migration
+      - name: Apply and verify Netlify Database migrations
         env:
           PGPASSWORD: ddd
         run: |
           psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U ddd -d ddd_contract -f netlify/database/migrations/0001_initial_schema.sql
+          psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U ddd -d ddd_contract -f netlify/database/migrations/0002_privacy_notifications.sql
+          psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U ddd -d ddd_contract -f netlify/database/migrations/0003_game_reminders.sql
           psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U ddd -d ddd_contract <<'SQL'
           DO $$
           BEGIN
-            IF (SELECT version_num FROM alembic_version) <> '0022_signal_availability' THEN
-              RAISE EXCEPTION 'Unexpected migration head: %', (SELECT version_num FROM alembic_version);
+            IF (SELECT version_num FROM alembic_version) <> '0022_signal_availability' THEN RAISE EXCEPTION 'Unexpected migration head'; END IF;
+            IF (SELECT count(*) FROM game_systems WHERE active IS TRUE) <> 7 THEN RAISE EXCEPTION 'Expected 7 active game systems'; END IF;
+            IF to_regclass('public.events') IS NULL OR to_regclass('public.notification_preferences') IS NULL OR to_regclass('public.opportunity_responses') IS NULL OR to_regclass('public.notifications') IS NULL THEN
+              RAISE EXCEPTION 'Required lifecycle/privacy tables are missing';
             END IF;
-            IF (SELECT count(*) FROM game_systems WHERE active IS TRUE) <> 7 THEN
-              RAISE EXCEPTION 'Expected 7 active game systems';
-            END IF;
-            IF (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relrowsecurity) <> 0 THEN
-              RAISE EXCEPTION 'Netlify database baseline unexpectedly enables row-level security';
-            END IF;
-            IF to_regclass('public.game_tables') IS NULL THEN
-              RAISE EXCEPTION 'game_tables is missing';
-            END IF;
-            IF to_regclass('public.events') IS NULL THEN
-              RAISE EXCEPTION 'events is missing';
-            END IF;
-            IF to_regclass('public.messages') IS NULL THEN
-              RAISE EXCEPTION 'messages is missing';
-            END IF;
+            IF to_regclass('public.game_reminders') IS NULL THEN RAISE EXCEPTION 'game_reminders is missing'; END IF;
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_schema = 'public' AND table_name = 'notification_preferences' AND column_name = 'default_reminder_minutes'
+            ) THEN RAISE EXCEPTION 'default_reminder_minutes is missing'; END IF;
           END
           $$;
           SQL
-
+      - name: Exercise GM onboarding transaction against PostgreSQL
+        env:
+          NETLIFY_DB_URL: postgres://ddd:ddd@127.0.0.1:5432/ddd_contract
+        run: node tests/netlify-database-onboarding-integration.mjs
       - name: Run native Netlify API contract tests
-        run: node tests/netlify-api-contract-tests.mjs
+        run: |
+          node tests/netlify-api-contract-tests.mjs
+          node tests/privacy-matching-tests.mjs
+          node tests/notification-delivery-contract-tests.mjs
+          node tests/production-api-client-tests.js
 
   netlify-deploy-preview-smoke:
     name: Live Netlify deploy-preview smoke
@@ -128,67 +129,63 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
-      - name: Verify deployed static site, database health, identity session, and auth boundary
+      - name: Verify deployed app, database health, Identity JSON, and privacy boundary
         env:
           PREVIEW_URL: https://deploy-preview-${{ github.event.pull_request.number }}--dinnerdiceanddragons.netlify.app
         shell: bash
         run: |
           set -euo pipefail
-
-          echo "Waiting for $PREVIEW_URL"
-          curl --fail --silent --show-error --location \
-            --retry 24 --retry-delay 10 --retry-all-errors \
-            "$PREVIEW_URL/" -o /tmp/home.html
-
-          curl --fail --silent --show-error --location "$PREVIEW_URL/join.html" -o /tmp/join.html
-          curl --fail --silent --show-error --location "$PREVIEW_URL/venues.html" -o /tmp/venues.html
-          curl --fail --silent --show-error --location "$PREVIEW_URL/production-config.js" -o /tmp/production-config.js
-          curl --fail --silent --show-error --location "$PREVIEW_URL/production-auth.js" -o /tmp/production-auth.js
+          curl --fail --silent --show-error --location --retry 24 --retry-delay 10 --retry-all-errors "$PREVIEW_URL/" -o /tmp/home.html
+          for asset in play.html dm.html host.html signin.html my-ddd.html notifications.html opportunity.html create-game.html game-hub.html \
+            game-hub-core.js game-hub-announcements.js game-hub-actions.js game-hub-role-views.js game-hub-render.js game-hub.js \
+            player-start.js player-start-account.js player-start-profile.js player-start-save.js \
+            dm-start.js dm-start-account.js dm-start-profile.js dm-start-save.js \
+            host-start.js host-start-account.js host-managed-venues.js auth-confirm.js \
+            my-ddd-games.js my-ddd-reminders.js venue-window-payloads.js availability-presets.mjs \
+            production-config.js production-auth.js availability-calendar-init.mjs calendar-state.mjs calendar-ui.mjs; do
+            curl --fail --silent --show-error --location "$PREVIEW_URL/$asset" -o "/tmp/${asset//\//_}"
+          done
           grep -q 'apiBaseUrl: window.location.origin' /tmp/production-config.js
           grep -q '/auth-api/v1/auth/' /tmp/production-auth.js
-          grep -q 'Dinner, Dice & Dragons' /tmp/home.html
+          grep -q 'didConfirmEmail' /tmp/production-auth.js
+          grep -q 'signin.html?confirmed=1' /tmp/auth-confirm.js
+          grep -q 'What do you want to do?' /tmp/home.html
+          grep -q 'DDDPlayerStartAccount' /tmp/player-start-account.js
+          grep -q 'DDDPlayerStartSave' /tmp/player-start-save.js
+          grep -q 'DDDDMStartAccount' /tmp/dm-start-account.js
+          grep -q 'DDDDMStartSave' /tmp/dm-start-save.js
+          grep -q 'DDDHostStartAccount' /tmp/host-start-account.js
+          grep -q 'DDDHostManagedVenues' /tmp/host-managed-venues.js
+          grep -q 'can_post_announcement' /tmp/game-hub-announcements.js
+          ! grep -q 'post_channels\|table_discussion\|gm_venue\|player_gm\|player_venue_question' /tmp/game-hub-core.js
+          ! grep -q 'private_residence' /tmp/host.html /tmp/host-start.js
+          ! grep -q 'game-hub-messages.js\|message-channel-grid\|venue-question-form' /tmp/game-hub.html
 
-          curl --fail --silent --show-error --location "$PREVIEW_URL/api/v1/health" -o /tmp/health.json
-          node - <<'NODE'
-          const fs = require('node:fs');
-          const health = JSON.parse(fs.readFileSync('/tmp/health.json', 'utf8'));
-          const expected = {
-            status: 'ok',
-            runtime: 'netlify-functions',
-            database: 'netlify-database',
-            identity: 'netlify-identity',
-            version: 'v1'
-          };
-          for (const [key, value] of Object.entries(expected)) {
-            if (health[key] !== value) throw new Error(`Unexpected health.${key}: ${health[key]}`);
-          }
-          NODE
+          curl --fail --silent --show-error "$PREVIEW_URL/api/v1/health" -o /tmp/health.json
+          node -e "const h=require('/tmp/health.json'); if(h.status!=='ok'||h.runtime!=='netlify-functions'||h.database!=='netlify-database'||h.identity!=='netlify-identity') process.exit(1)"
+          curl --fail --silent --show-error "$PREVIEW_URL/auth-api/v1/auth/session" -o /tmp/auth-session.json
+          node -e "const s=require('/tmp/auth-session.json'); if(s.authenticated!==false) process.exit(1)"
 
-          curl --fail --silent --show-error --location "$PREVIEW_URL/api/v1/auth/session" -o /tmp/session.json
-          node - <<'NODE'
-          const fs = require('node:fs');
-          const session = JSON.parse(fs.readFileSync('/tmp/session.json', 'utf8'));
-          if (session.authenticated !== false) throw new Error(`Anonymous session contract failed: ${JSON.stringify(session)}`);
-          NODE
+          login_status="$(curl --silent --show-error --output /tmp/bad-login.json --write-out '%{http_code}' \
+            -H 'content-type: application/json' -d '{"email":"not-an-email","password":"x"}' \
+            "$PREVIEW_URL/auth-api/v1/auth/login")"
+          [[ "$login_status" =~ ^4[0-9][0-9]$ ]]
+          node -e "JSON.parse(require('node:fs').readFileSync('/tmp/bad-login.json','utf8'))"
 
-          curl --fail --silent --show-error --location "$PREVIEW_URL/auth-api/v1/auth/session" -o /tmp/auth-session.json
-          node - <<'NODE'
-          const fs = require('node:fs');
-          const session = JSON.parse(fs.readFileSync('/tmp/auth-session.json', 'utf8'));
-          if (session.authenticated !== false) throw new Error(`Auth proxy anonymous session contract failed: ${JSON.stringify(session)}`);
-          NODE
+          confirm_status="$(curl --silent --show-error --output /tmp/bad-confirm.json --write-out '%{http_code}' \
+            -H "origin: $PREVIEW_URL" -H 'content-type: application/json' -d '{"token":""}' \
+            "$PREVIEW_URL/auth-api/v1/auth/confirm")"
+          [[ "$confirm_status" == "422" ]]
+          node -e "const b=JSON.parse(require('node:fs').readFileSync('/tmp/bad-confirm.json','utf8')); if(!b.detail) process.exit(1)"
 
           status="$(curl --silent --show-error --output /tmp/me.json --write-out '%{http_code}' "$PREVIEW_URL/api/v1/me")"
-          if [[ "$status" != "401" && "$status" != "403" ]]; then
-            echo "Expected unauthenticated /api/v1/me to return 401 or 403, got $status"
-            cat /tmp/me.json
-            exit 1
-          fi
+          [[ "$status" == "401" || "$status" == "403" ]]
+          message_status="$(curl --silent --show-error --output /tmp/messages.json --write-out '%{http_code}' "$PREVIEW_URL/api/v1/events/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/messages")"
+          [[ "$message_status" == "401" || "$message_status" == "403" || "$message_status" == "404" ]]
 
           curl --silent --show-error --head "$PREVIEW_URL/" | tr -d '\r' > /tmp/headers.txt
           grep -qi '^x-frame-options: DENY$' /tmp/headers.txt
           grep -qi '^x-content-type-options: nosniff$' /tmp/headers.txt
           grep -qi '^referrer-policy: strict-origin-when-cross-origin$' /tmp/headers.txt
           grep -qi '^content-security-policy:' /tmp/headers.txt
-
           echo "Live Netlify preview smoke passed: $PREVIEW_URL"

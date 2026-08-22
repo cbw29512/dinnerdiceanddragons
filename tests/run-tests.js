@@ -2,15 +2,7 @@
 
 const assert = require("node:assert/strict");
 
-// Minimal browser globals for testing browser modules without third-party packages.
 global.window = globalThis;
-const storage = new Map();
-global.localStorage = {
-  getItem(key) { return storage.has(key) ? storage.get(key) : null; },
-  setItem(key, value) { storage.set(key, String(value)); },
-  removeItem(key) { storage.delete(key); },
-  clear() { storage.clear(); }
-};
 global.DDD_PLAYER_DEMAND = [];
 
 require("../table-match.js");
@@ -66,22 +58,6 @@ test("keeps explained match score inside 0-100", () => {
   assert.equal(best.demand + best.distance + best.schedule + best.capacity, best.total);
 });
 
-test("turns a saved local Player profile into normalized demand signals", () => {
-  localStorage.setItem("ddd-preview-player", JSON.stringify({
-    player_system: ["D&D 5e (2024)"],
-    availability_day: ["Tuesday"],
-    availability_start: ["18:00"],
-    availability_end: ["22:00"],
-    postal_code: "29501",
-    radius: "25"
-  }));
-  const signals = DDDTableMatch.allSignals();
-  assert.equal(signals.length, 1);
-  assert.equal(signals[0].system, "D&D 5e");
-  assert.equal(signals[0].local, true);
-  localStorage.clear();
-});
-
 test("derives Forming until venue and minimum Players commit", () => {
   const state = DDDLifecycleModel.defaultState();
   state.venueApproved = true;
@@ -111,7 +87,7 @@ test("Completed is terminal in lifecycle derivation", () => {
   assert.equal(DDDLifecycleModel.deriveStatus(state), "completed");
 });
 
-test("production Player adapter strips pilot identity and separates future matching fields", () => {
+test("production Player adapter strips identity and maps recurring availability", () => {
   const mapped = DDDProductionOnboardingAdapters.player({
     user_id: "forged-user",
     player_id: "forged-player",
@@ -191,7 +167,7 @@ test("production GM adapter expands Any format and defers cadence and expectatio
   assert.equal(mapped.deferred.table_expectations, "No PvP");
 });
 
-test("production Venue adapter keeps table-window supply out of Step 2 payload", () => {
+test("production Venue adapter is public-venue only and keeps table windows separate", () => {
   const mapped = DDDProductionOnboardingAdapters.venue({
     user_id: "forged-user",
     venue_id: "forged-venue",
@@ -202,30 +178,25 @@ test("production Venue adapter keeps table-window supply out of Step 2 payload",
     city: "Florence",
     state: "sc",
     postal_code: "29501",
-    window_day: "Tuesday",
-    window_start: "18:00",
-    window_end: "22:00",
     table_count: "1",
     seats_per_table: "6",
-    recurrence: "Weekly",
     purchase_policy: "One purchase per guest",
     age_policy: "All ages until 9 PM",
-    accessibility: "Accessible entrance and parking",
-    approval_required: "on"
+    accessibility: "Accessible entrance and parking"
   });
 
   assert.equal(mapped.payload.name, "Florence Game Night Cafe");
+  assert.equal(mapped.payload.venue_type, "public_venue");
   assert.equal(mapped.payload.state_region, "SC");
   assert.equal(mapped.payload.manager_role, "manager");
   assert.equal(Object.hasOwn(mapped.payload, "user_id"), false);
   assert.equal(Object.hasOwn(mapped.payload, "venue_id"), false);
   assert.equal(Object.hasOwn(mapped.payload, "email"), false);
   assert.equal(Object.hasOwn(mapped.payload, "table_count"), false);
-  assert.equal(Object.hasOwn(mapped.payload, "approval_required"), false);
+  assert.equal(Object.hasOwn(mapped.deferred, "approval_required"), false);
   assert.equal(mapped.deferred.table_count, "1");
   assert.equal(mapped.deferred.seats_per_table, "6");
   assert.equal(mapped.deferred.purchase_policy, "One purchase per guest");
-  assert.equal(mapped.deferred.approval_required, true);
 });
 
 if (failures) {

@@ -1,384 +1,246 @@
 (() => {
   "use strict";
 
-  const ROLE_DESTINATIONS = Object.freeze({
-    player: "join.html#player",
-    gm: "join.html#gm",
-    venue: "venues.html#signup"
+  const ROLE_META = Object.freeze({
+    player: Object.freeze({
+      accountRole: "player",
+      destination: "play.html",
+      icon: "🎲",
+      label: "Player",
+      action: "Find a Game"
+    }),
+    gm: Object.freeze({
+      accountRole: "gm",
+      destination: "dm.html",
+      icon: "🧙",
+      label: "DM",
+      action: "DM a Game"
+    }),
+    venue: Object.freeze({
+      accountRole: "venue_manager",
+      destination: "host.html",
+      icon: "🍽️",
+      label: "Venue",
+      action: "Host Games"
+    }),
+    admin: Object.freeze({
+      accountRole: "admin",
+      destination: "admin-venues.html",
+      icon: "🛡️",
+      label: "Admin",
+      action: "Venue Verification"
+    })
   });
-  const SUPPORT_URL = "https://buymeacoffee.com/divclass016";
 
+  const DESTINATIONS = Object.freeze(
+    Object.fromEntries(Object.entries(ROLE_META).map(([role, meta]) => [role, meta.destination]))
+  );
+
+  function pageRole() {
+    const page = String(window.location.pathname || "").split("/").filter(Boolean).pop() || "";
+    if (page === "play.html") return "player";
+    if (page === "dm.html") return "gm";
+    if (page === "host.html") return "venue";
+    if (page === "admin-venues.html") return "admin";
+    return null;
+  }
+
+  let selectedRole = pageRole() || "player";
   let initialized = false;
-  let selectedRole = "player";
+  let accountRoles = new Set();
 
-  function logError(message, error) {
+  function log(message, error) {
     console.error(`[Dinner Dice & Dragons] ${message}`, error);
   }
 
-  function element(tag, attributes = {}, text = "") {
+  function el(tag, attrs = {}, text = "") {
     const node = document.createElement(tag);
-    for (const [name, value] of Object.entries(attributes)) {
+    Object.entries(attrs).forEach(([name, value]) => {
       if (value === true) node.setAttribute(name, "");
-      else if (value !== false && value !== null && value !== undefined) node.setAttribute(name, String(value));
-    }
+      else if (value !== false && value != null) node.setAttribute(name, String(value));
+    });
     if (text) node.textContent = text;
     return node;
-  }
-
-  function ensureSupportFooter() {
-    const footer = document.querySelector("footer");
-    if (!footer || footer.querySelector(".ddd-support-footer")) return;
-
-    const support = element("div", { class: "ddd-support-footer" });
-    const message = element(
-      "span",
-      {},
-      "Want to help keep Dinner, Dice & Dragons running? Contributions help cover the time, effort, and costs of operating the site."
-    );
-    const link = element(
-      "a",
-      {
-        href: SUPPORT_URL,
-        target: "_blank",
-        rel: "noopener noreferrer",
-        "aria-label": "Support Dinner, Dice & Dragons on Buy Me a Coffee (opens in a new tab)"
-      },
-      "☕ Support DD&D"
-    );
-    support.append(message, link);
-
-    const footerShell = footer.querySelector(".shell") || footer;
-    footerShell.append(support);
-  }
-
-  function roleLabel(role) {
-    return role === "gm" ? "DM" : role === "venue" ? "Venue" : "Player";
   }
 
   function accountButton() {
     return document.getElementById("ddd-global-account-button");
   }
 
-  function dialog() {
-    return document.getElementById("ddd-global-account-dialog");
-  }
-
-  function statusNode() {
-    return document.getElementById("ddd-auth-status");
-  }
-
-  function announce(message, success = false) {
-    const node = statusNode();
-    if (!node) return;
-    node.className = `ddd-account-status${success ? " is-success" : ""}`;
-    node.textContent = message;
-  }
-
-  function setBusy(busy) {
-    document.querySelectorAll("#ddd-auth-form input, #ddd-auth-form button").forEach((node) => {
-      node.disabled = Boolean(busy);
-    });
-  }
-
-  function roleButton(role, icon, label, detail, pressed) {
-    const button = element("button", {
-      type: "button",
-      "data-ddd-role": role,
-      "aria-pressed": String(pressed)
-    });
-    button.append(
-      element("span", { "aria-hidden": "true" }, icon),
-      element("strong", {}, label),
-      element("small", {}, detail)
-    );
-    return button;
-  }
-
-  function labeledInput(labelText, inputAttributes) {
-    const label = element("label");
-    label.append(document.createTextNode(labelText), element("input", inputAttributes));
-    return label;
-  }
-
-  function ensureDialogMarkup() {
-    if (dialog()) return dialog();
-
-    const panel = element("dialog", {
-      id: "ddd-global-account-dialog",
-      class: "ddd-account-dialog",
-      "aria-labelledby": "ddd-account-title"
-    });
-    const shell = element("div", { class: "ddd-account-shell" });
-    const close = element(
-      "button",
-      { class: "ddd-account-close", type: "button", "aria-label": "Close account panel" },
-      "×"
-    );
-    const heading = element("div", { class: "ddd-account-heading" });
-    heading.append(
-      element("p", { class: "ddd-account-kicker" }, "YOUR DDD ACCOUNT"),
-      element("h2", { id: "ddd-account-title" }, "One login. Every way you play."),
-      element(
-        "p",
-        {},
-        "Use the same account as a Player, DM, or Venue manager. Pick what you want to do and we keep you on that path."
-      )
-    );
-
-    const rolePicker = element("div", {
-      class: "ddd-role-picker",
-      role: "group",
-      "aria-label": "Choose what you want to do"
-    });
-    rolePicker.append(
-      roleButton("player", "🎲", "Player", "Find a table", true),
-      roleButton("gm", "🧙", "DM", "Run a game", false),
-      roleButton("venue", "🍽️", "Venue", "Host tables", false)
-    );
-
-    const form = element("form", { id: "ddd-auth-form", class: "ddd-auth-form" });
-    form.append(
-      labeledInput("Email address", {
-        id: "ddd-auth-email",
-        type: "email",
-        autocomplete: "email",
-        required: true
-      }),
-      labeledInput("Password", {
-        id: "ddd-auth-password",
-        type: "password",
-        autocomplete: "current-password",
-        minlength: "8",
-        required: true
-      })
-    );
-
-    const authActions = element("div", { class: "ddd-auth-actions" });
-    authActions.append(
-      element("button", { class: "button primary", id: "ddd-sign-in", type: "submit" }, "Sign In"),
-      element("button", { class: "button secondary", id: "ddd-create-account", type: "button" }, "Create Account"),
-      element("button", { class: "button secondary", id: "ddd-sign-out", type: "button", hidden: true }, "Sign Out")
-    );
-    form.append(
-      authActions,
-      element(
-        "p",
-        { class: "ddd-account-status", id: "ddd-auth-status", role: "status", "aria-live": "polite" },
-        "Sign in or create an account to continue."
-      )
-    );
-
-    const continueRole = element(
-      "a",
-      { class: "ddd-continue-role", id: "ddd-continue-role", href: ROLE_DESTINATIONS.player },
-      "Continue as Player →"
-    );
-    const footnote = element(
-      "p",
-      { class: "ddd-account-footnote" },
-      "Your account can hold multiple roles. Choosing one here does not remove your other roles."
-    );
-
-    shell.append(close, heading, rolePicker, form, continueRole, footnote);
-    panel.append(shell);
-    document.body.append(panel);
-    return panel;
-  }
-
-  function ensureHeaderControls() {
-    if (accountButton()) return;
-    const nav = document.querySelector("header .nav-right, .site-header nav, header nav");
-    if (!nav) return;
-
-    nav.querySelectorAll('[data-ddd-legacy-role-link="true"]').forEach((node) => node.remove());
-    const roleGroup = element("div", { class: "ddd-header-role-links", "aria-label": "Start by role" });
-    for (const [role, label] of [["player", "Find a Game"], ["gm", "Run a Game"], ["venue", "For Venues"]]) {
-      roleGroup.append(element("a", { href: ROLE_DESTINATIONS[role], "data-ddd-role-link": role }, label));
+  function ensureHeader() {
+    try {
+      if (accountButton()) return;
+      const nav = document.querySelector("header .nav-right, .site-header nav, header nav");
+      if (!nav) return;
+      const roles = el("div", { class: "ddd-header-role-links", "aria-label": "Start by role" });
+      [["player", "Find a Game"], ["gm", "Run a Game"], ["venue", "For Venues"]].forEach(([role, label]) => {
+        roles.append(el("a", { href: DESTINATIONS[role], "data-ddd-role-link": role }, label));
+      });
+      nav.prepend(roles);
+      nav.append(el("button", {
+        id: "ddd-global-account-button",
+        class: "ddd-account-trigger",
+        type: "button",
+        "aria-haspopup": "dialog",
+        "aria-controls": "ddd-global-account-dialog",
+        "aria-expanded": "false"
+      }, "Sign In"));
+    } catch (error) {
+      log("Unable to build shared header controls", error);
     }
+  }
 
-    const button = element("button", {
-      id: "ddd-global-account-button",
-      class: "ddd-account-trigger",
-      type: "button",
-      "aria-haspopup": "dialog",
-      "aria-controls": "ddd-global-account-dialog"
-    }, "Sign In");
-    nav.prepend(roleGroup);
-    nav.append(button);
+  function roleButtons(dialog) {
+    return dialog.querySelector(".ddd-role-picker");
+  }
+
+  function ensureDialog() {
+    const existing = document.getElementById("ddd-global-account-dialog");
+    if (existing) return existing;
+    const dialog = el("dialog", { id: "ddd-global-account-dialog", class: "ddd-account-dialog" });
+    const shell = el("div", { class: "ddd-account-shell" });
+    const close = el("button", { type: "button", class: "ddd-account-close", "aria-label": "Close account panel" }, "×");
+    const heading = el("div", { class: "ddd-account-heading" });
+    heading.append(
+      el("p", { class: "ddd-account-kicker" }, "YOUR DDD ACCOUNT"),
+      el("h2", { id: "ddd-account-title" }, "What do you want to do?")
+    );
+    const roles = el("div", { class: "ddd-role-picker", role: "group", "aria-label": "Choose a DDD role" });
+    const status = el("p", { id: "ddd-auth-status", class: "ddd-account-status", role: "status", "aria-live": "polite" });
+    const continueLink = el("a", { id: "ddd-continue-role", class: "ddd-continue-role", href: DESTINATIONS.player }, "Continue to Find a Game →");
+    const accountLink = el("a", { id: "ddd-account-home", class: "button secondary", href: "signin.html" }, "Sign In");
+    shell.append(close, heading, roles, continueLink, accountLink, status);
+    dialog.append(shell);
+    document.body.append(dialog);
+    return dialog;
+  }
+
+  function availableRoleEntries(signedIn) {
+    const entries = ["player", "gm", "venue"];
+    if (signedIn && accountRoles.has("admin")) entries.push("admin");
+    return entries;
+  }
+
+  function renderRolePicker(signedIn) {
+    const dialog = ensureDialog();
+    const picker = roleButtons(dialog);
+    if (!picker) return;
+    picker.replaceChildren();
+
+    const visibleRoles = availableRoleEntries(signedIn);
+    if (!visibleRoles.includes(selectedRole)) selectedRole = pageRole() && visibleRoles.includes(pageRole()) ? pageRole() : "player";
+
+    visibleRoles.forEach((role) => {
+      const meta = ROLE_META[role];
+      const hasRole = accountRoles.has(meta.accountRole);
+      const button = el("button", {
+        type: "button",
+        "data-ddd-role": role,
+        "aria-pressed": String(role === selectedRole)
+      });
+      button.append(
+        el("span", { "aria-hidden": "true" }, meta.icon),
+        el("strong", {}, meta.label),
+        el("small", {}, signedIn ? (hasRole ? "On this account" : "Set up") : meta.action)
+      );
+      button.addEventListener("click", () => syncRole(role));
+      picker.append(button);
+    });
   }
 
   function syncRole(role) {
-    selectedRole = ROLE_DESTINATIONS[role] ? role : "player";
+    selectedRole = DESTINATIONS[role] ? role : "player";
     document.querySelectorAll("[data-ddd-role]").forEach((button) => {
       button.setAttribute("aria-pressed", String(button.dataset.dddRole === selectedRole));
     });
     const link = document.getElementById("ddd-continue-role");
     if (link) {
-      link.href = ROLE_DESTINATIONS[selectedRole];
-      link.textContent = `Continue as ${roleLabel(selectedRole)} →`;
+      const meta = ROLE_META[selectedRole];
+      link.href = meta.destination;
+      link.textContent = `Continue to ${meta.action} →`;
     }
   }
 
-  function syncProfileEmails(session) {
-    const email = session?.user?.email || "";
-    const signedIn = Boolean(session?.access_token);
-    document.querySelectorAll('#player-form [name="email"], #gm-form [name="email"], #venue-form [name="email"]').forEach((input) => {
-      if (signedIn) input.value = email;
-      input.readOnly = signedIn;
-    });
+  async function loadAccountRoles(signedIn) {
+    accountRoles = new Set();
+    if (!signedIn || !window.DDDProductionAPI?.getMeOptional) return;
+    try {
+      const me = await window.DDDProductionAPI.getMeOptional();
+      for (const role of Array.isArray(me?.roles) ? me.roles : []) accountRoles.add(String(role));
+    } catch (error) {
+      log("Unable to load DDD account roles", error);
+    }
   }
 
-  function renderSession(session, message = "") {
-    const emailInput = document.getElementById("ddd-auth-email");
-    const passwordInput = document.getElementById("ddd-auth-password");
-    const signIn = document.getElementById("ddd-sign-in");
-    const create = document.getElementById("ddd-create-account");
-    const signOut = document.getElementById("ddd-sign-out");
+  async function renderSession(session) {
+    const signedIn = Boolean(session?.access_token);
     const trigger = accountButton();
-    const signedIn = Boolean(session?.access_token);
-    const email = session?.user?.email || "";
+    const home = document.getElementById("ddd-account-home");
+    const status = document.getElementById("ddd-auth-status");
+    const title = document.getElementById("ddd-account-title");
 
-    if (emailInput) {
-      emailInput.disabled = signedIn;
-      if (signedIn) emailInput.value = email;
-    }
-    if (passwordInput) {
-      passwordInput.disabled = signedIn;
-      if (signedIn) passwordInput.value = "";
-    }
-    if (signIn) signIn.hidden = signedIn;
-    if (create) create.hidden = signedIn;
-    if (signOut) signOut.hidden = !signedIn;
+    await loadAccountRoles(signedIn);
+    renderRolePicker(signedIn);
+    syncRole(selectedRole);
+
+    const context = pageRole();
     if (trigger) {
-      trigger.textContent = signedIn ? "My Account" : "Sign In";
       trigger.classList.toggle("is-signed-in", signedIn);
+      trigger.textContent = signedIn ? `${context ? ROLE_META[context].label : "My DDD"} ▾` : "Sign In";
+      trigger.setAttribute("aria-label", signedIn ? "Switch DDD role or open My DDD" : "Sign in to Dinner, Dice & Dragons");
     }
-
-    syncProfileEmails(session);
-    if (message) announce(message, signedIn);
-    else if (signedIn) announce(`Signed in as ${email}. Choose Player, DM, or Venue to continue.`, true);
-    else announce("Sign in or create an account to continue.");
-  }
-
-  async function ensureIdentity() {
-    try {
-      const session = await window.DDDProductionAuth.getSession();
-      if (!session) return null;
-      return await window.DDDProductionAPI.getMe();
-    } catch (error) {
-      logError("Unable to establish DDD identity", error);
-      return null;
+    if (title) title.textContent = signedIn ? "Switch DDD role" : "What do you want to do?";
+    if (home) {
+      home.href = signedIn ? "my-ddd.html" : "signin.html";
+      home.textContent = signedIn ? "Open My DDD" : "Sign In";
+    }
+    if (status) {
+      status.textContent = signedIn
+        ? `Signed in as ${session.user.email}. One account can use more than one DDD role.`
+        : "Choose a role to create an account, or sign in to an existing one.";
     }
   }
 
-  async function handleSignIn(event) {
-    event.preventDefault();
-    const email = document.getElementById("ddd-auth-email")?.value || "";
-    const password = document.getElementById("ddd-auth-password")?.value || "";
-    setBusy(true);
-    announce("Signing in…");
-    try {
-      const session = await window.DDDProductionAuth.signIn(email, password);
-      await ensureIdentity();
-      renderSession(session);
-    } catch (error) {
-      renderSession(null, error?.message || "Sign in failed.");
-    } finally {
-      setBusy(false);
-    }
+  function openDialog(dialog) {
+    const trigger = accountButton();
+    trigger?.setAttribute("aria-expanded", "true");
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
   }
 
-  async function handleCreateAccount() {
-    const email = document.getElementById("ddd-auth-email")?.value || "";
-    const password = document.getElementById("ddd-auth-password")?.value || "";
-    if (!email || !password) {
-      announce("Enter an email address and password first.");
-      return;
-    }
-
-    setBusy(true);
-    announce("Creating your account…");
-    try {
-      const result = await window.DDDProductionAuth.signUp(email, password);
-      if (result.session) {
-        await ensureIdentity();
-        renderSession(result.session, `Account created and signed in as ${result.session.user?.email || email}.`);
-      } else {
-        renderSession(null, "Account created. Check your email to confirm it, then return and sign in.");
-      }
-    } catch (error) {
-      renderSession(null, error?.message || "Account creation failed.");
-    } finally {
-      setBusy(false);
-    }
+  function closeDialog(dialog) {
+    accountButton()?.setAttribute("aria-expanded", "false");
+    if (typeof dialog.close === "function") dialog.close();
+    else dialog.removeAttribute("open");
   }
 
-  async function handleSignOut() {
-    setBusy(true);
-    try {
-      await window.DDDProductionAuth.signOut();
-      renderSession(null, "Signed out.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function openAccount(role = selectedRole) {
-    syncRole(role);
-    const panel = ensureDialogMarkup();
-    if (typeof panel.showModal === "function") panel.showModal();
-    else panel.setAttribute("open", "");
-  }
-
-  function bindUi() {
-    ensureHeaderControls();
-    const panel = ensureDialogMarkup();
-    accountButton()?.addEventListener("click", () => openAccount(selectedRole));
-    panel.querySelector(".ddd-account-close")?.addEventListener("click", () => panel.close());
-    panel.addEventListener("click", (event) => {
-      if (event.target === panel) panel.close();
+  function bind() {
+    const dialog = ensureDialog();
+    accountButton()?.addEventListener("click", async () => {
+      const session = await window.DDDProductionAuth.getSession().catch(() => null);
+      await renderSession(session);
+      openDialog(dialog);
     });
-    panel.querySelectorAll("[data-ddd-role]").forEach((button) => {
-      button.addEventListener("click", () => syncRole(button.dataset.dddRole));
-    });
-    document.querySelectorAll("[data-ddd-role-link]").forEach((link) => {
-      link.addEventListener("click", () => {
-        try { sessionStorage.setItem("ddd-role-intent", link.dataset.dddRole || "player"); } catch {}
-      });
-    });
-    document.getElementById("ddd-auth-form")?.addEventListener("submit", handleSignIn);
-    document.getElementById("ddd-create-account")?.addEventListener("click", handleCreateAccount);
-    document.getElementById("ddd-sign-out")?.addEventListener("click", handleSignOut);
+    dialog.querySelector(".ddd-account-close")?.addEventListener("click", () => closeDialog(dialog));
+    dialog.addEventListener("close", () => accountButton()?.setAttribute("aria-expanded", "false"));
   }
 
   async function init() {
     if (initialized) return;
     initialized = true;
-    ensureSupportFooter();
-    if (!window.DDDProductionAuth || !window.DDDProductionAPI) {
-      logError("Global account UI requires production auth and API clients", new Error("Missing dependency"));
-      return;
-    }
-
     try {
-      const storedIntent = sessionStorage.getItem("ddd-role-intent");
-      if (storedIntent && ROLE_DESTINATIONS[storedIntent]) selectedRole = storedIntent;
-    } catch {}
-
-    bindUi();
-    syncRole(selectedRole);
-    window.DDDProductionAuth.onAuthStateChange((session) => renderSession(session));
-
-    try {
-      const session = await window.DDDProductionAuth.init();
-      if (session) await ensureIdentity();
-      renderSession(session);
+      ensureHeader();
+      bind();
+      const session = await window.DDDProductionAuth?.init?.();
+      await renderSession(session);
+      window.DDDProductionAuth?.onAuthStateChange?.((nextSession) => { void renderSession(nextSession); });
     } catch (error) {
-      renderSession(null, error?.message || "Account sign-in is temporarily unavailable.");
+      log("Unable to initialize shared account UI", error);
+      await renderSession(null);
     }
   }
 
-  window.DDDGlobalAuthUI = Object.freeze({ init, openAccount, syncRole });
+  window.DDDGlobalAuthUI = Object.freeze({ init, syncRole });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
-  else init();
+  else void init();
 })();

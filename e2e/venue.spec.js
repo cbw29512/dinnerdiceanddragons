@@ -1,38 +1,84 @@
 const { test, expect } = require("@playwright/test");
+const { installAuthenticatedSession } = require("./helpers");
 
-test("Venue can save an open table and hand off to the private production Game Hub", async ({ page }) => {
-  await page.goto("/venues.html#signup");
-  const form = page.locator("#venue-form");
+const VENUE_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 
-  await expect(page.getByRole("heading", { name: /Bring organized D&D groups/i })).toBeVisible();
-  await form.locator('[name="business_name"]').fill("Browser Test Tavern");
-  await form.locator('[name="contact_name"]').fill("Venue Manager");
-  await form.locator('[name="email"]').fill("venue@example.com");
-  await form.locator('[name="address"]').fill("100 Test Street");
-  await form.locator('[name="city"]').fill("Florence");
-  await form.locator('[name="state"]').fill("SC");
-  await form.locator('[name="postal_code"]').fill("29501");
-  await form.locator('[name="window_day"]').selectOption({ label: "Tuesday" });
-  await form.locator('[name="window_start"]').fill("18:00");
-  await form.locator('[name="window_end"]').fill("22:00");
-  await form.locator('[name="purchase_policy"]').fill("One food or drink purchase per guest.");
-  await form.locator('.check-label input[type="checkbox"]').last().check();
+test("Venue manager saves guided availability durably without a browser-only pending schedule", async ({ page }) => {
+  await installAuthenticatedSession(page, { email: "venue@example.test" });
+  let venuePayload = null;
+  let calendarPayload = null;
 
-  await form.getByRole("button", { name: "Save My Open Table" }).click();
-  await expect(form.locator(".form-status")).toContainText("Saved on this device");
+  await page.route("**/api/v1/me", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ddd_user_id: "venue-user", email: "venue@example.test", status: "active", roles: [] })
+    });
+  });
+  await page.route("**/api/v1/onboarding/venue", async (route) => {
+    venuePayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify({
+        venue_id: VENUE_ID,
+        venue_manager_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        name: venuePayload.name,
+        slug: "browser-test-tavern",
+        role: "manager",
+        venue_verified: false,
+        manager_verified: false
+      })
+    });
+  });
+  await page.route(`**/api/v1/matching/venues/${VENUE_ID}/table-windows`, async (route) => {
+    expect(route.request().method()).toBe("PUT");
+    calendarPayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        venue_id: VENUE_ID,
+        active: true,
+        matching_eligible: false,
+        table_count: calendarPayload.table_count,
+        max_people_per_table: calendarPayload.max_people_per_table,
+        availability: calendarPayload.availability
+      })
+    });
+  });
 
-  const stored = await page.evaluate(() => localStorage.getItem("ddd-preview-venue"));
-  expect(stored).toBeTruthy();
-  expect(JSON.parse(stored).business_name).toBe("Browser Test Tavern");
+  await page.goto("/host.html");
+  await page.getByLabel("Host / manager name").fill("Venue Manager");
+  await page.getByRole("button", { name: "Continue" }).click();
 
-  const hubLink = page.getByRole("link", { name: "See the Venue Game Hub" });
-  await expect(hubLink).toBeVisible();
-  await hubLink.click();
-  await expect(page).toHaveURL(/game-hub\.html\?role=venue_manager$/);
+  await expect(page.getByRole("heading", { name: "Where will games be hosted?" })).toBeVisible();
+  await page.getByLabel("Venue name").fill("Browser Test Tavern");
+  await page.getByLabel("Public street address").fill("100 Test Street");
+  await page.getByLabel("City").fill("Florence");
+  await page.getByLabel("State").fill("SC");
+  await page.getByLabel("ZIP code").fill("29501");
+  await page.getByRole("button", { name: "Continue" }).click();
 
-  // The legacy Venue form now hands off to the real authenticated application.
-  // A signed-out browser must fail closed instead of revealing a sample Venue dashboard.
-  await expect(page.locator("#hub-error-title")).toHaveText("Sign in to open your Game Hubs.");
-  await expect(page.locator("#hub-content")).toBeHidden();
-  await expect(page.locator("#hub-index")).toBeHidden();
+  await expect(page.getByRole("heading", { name: "When can you host a game?" })).toBeVisible();
+  await page.getByRole("button", { name: "Saturday 6–10 PM" }).click();
+  await expect(page.locator('[name="availability_day[]"]')).toHaveValue("Saturday");
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  await page.getByLabel("Purchase policy").selectOption({ label: "Each guest should purchase food or drink" });
+  await page.getByRole("button", { name: "Review" }).click();
+  await page.locator("#conduct-check").check();
+  await page.getByRole("button", { name: "Submit Venue" }).click();
+
+  await expect(page.getByRole("heading", { name: "Your venue and table times are saved." })).toBeVisible();
+  expect(venuePayload.name).toBe("Browser Test Tavern");
+  expect(venuePayload.venue_type).toBe("public_venue");
+  expect(calendarPayload).not.toBeNull();
+  expect(calendarPayload.availability).toHaveLength(1);
+  expect(calendarPayload.availability[0].day_of_week).toBe("saturday");
+  expect(calendarPayload.availability[0].start_time).toBe("18:00");
+  expect(calendarPayload.availability[0].end_time).toBe("22:00");
+  expect(calendarPayload.table_count).toBe(1);
+  expect(calendarPayload.max_people_per_table).toBe(6);
+  expect(await page.evaluate(() => localStorage.getItem("ddd-pending-production-venue-window"))).toBeNull();
 });

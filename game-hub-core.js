@@ -12,31 +12,9 @@
       player: "player-view",
       venue_manager: "venue-view"
     }),
-    ROLE_CHANNELS: Object.freeze({
-      gm: ["table_announcement", "table_discussion", "gm_venue", "player_gm"],
-      player: ["table_announcement", "table_discussion", "player_gm", "player_venue_question"],
-      venue_manager: ["table_announcement", "gm_venue", "player_venue_question"]
-    }),
-    CHANNEL_LABELS: Object.freeze({
-      table_announcement: "Announcements",
-      table_discussion: "Table Discussion",
-      gm_venue: "DM ↔ Venue",
-      player_gm: "Player ↔ DM",
-      player_venue_question: "Player ↔ Venue"
-    }),
-    CATEGORY_LABELS: Object.freeze({
-      accessibility: "Accessibility",
-      food_allergies: "Food / allergies",
-      parking: "Parking",
-      seating: "Seating",
-      venue_policy: "Venue policy",
-      other: "Other"
-    }),
     state: {
       eventId: "",
       hub: null,
-      messages: [],
-      nextCursor: "",
       role: ""
     },
     UUID_PATTERN: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i

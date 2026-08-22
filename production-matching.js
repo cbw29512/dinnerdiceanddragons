@@ -16,8 +16,8 @@
 
   function asPositiveInteger(value, fieldName) {
     const parsed = Number(value);
-    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 20) {
-      throw new ProductionMatchingError(`${fieldName} must be between 1 and 20.`);
+    if (!Number.isSafeInteger(parsed) || parsed < 1) {
+      throw new ProductionMatchingError(`${fieldName} must be a whole number of 1 or more.`);
     }
     return parsed;
   }
@@ -74,8 +74,9 @@
   }
 
   function gmPayloads(mapped, rawValues) {
-    const minimumPlayers = asPositiveInteger(rawValues.minimum_players, "Minimum Players");
-    const maximumPlayers = asPositiveInteger(rawValues.maximum_players, "Maximum Players");
+    const requestedPlayers = rawValues.player_count;
+    const minimumPlayers = asPositiveInteger(requestedPlayers ?? rawValues.minimum_players, "Player count");
+    const maximumPlayers = asPositiveInteger(requestedPlayers ?? rawValues.maximum_players, "Player count");
     if (maximumPlayers < minimumPlayers) {
       throw new ProductionMatchingError("Maximum Players cannot be below Minimum Players.");
     }
@@ -120,6 +121,38 @@
     return results;
   }
 
+  async function refreshMatches() {
+    let match = null;
+    try {
+      match = await window.DDDProductionAPI.findMyTable(60);
+    } catch (error) {
+      console.error("[Dinner Dice & Dragons] Matching signal saved, but immediate match refresh failed", error);
+      return {
+        match: null,
+        opportunities: [],
+        refreshError: error,
+        refreshStage: "find-my-table"
+      };
+    }
+
+    try {
+      return {
+        match,
+        opportunities: await window.DDDProductionAPI.getMatchingOpportunities(),
+        refreshError: null,
+        refreshStage: null
+      };
+    } catch (error) {
+      console.error("[Dinner Dice & Dragons] Matching signal saved, but opportunity refresh failed", error);
+      return {
+        match,
+        opportunities: [],
+        refreshError: error,
+        refreshStage: "opportunities"
+      };
+    }
+  }
+
   async function syncAndFind(type, mapped, rawValues) {
     if (!window.DDDProductionAPI?.isConfigured?.()) {
       throw new ProductionMatchingError("Production matching API is not configured.");
@@ -128,9 +161,7 @@
     const signals = type === "Player"
       ? await ensurePlayerDemands(mapped)
       : await ensureGMSupplies(mapped, rawValues);
-    const match = await window.DDDProductionAPI.findMyTable(60);
-    const opportunities = await window.DDDProductionAPI.getMatchingOpportunities();
-    return { signals, match, opportunities };
+    return { signals, ...(await refreshMatches()) };
   }
 
   window.DDDProductionMatching = Object.freeze({
@@ -139,6 +170,7 @@
     comparablePlayerDemand,
     gmPayloads,
     playerPayloads,
+    refreshMatches,
     syncAndFind
   });
 })();
