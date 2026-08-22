@@ -66,6 +66,7 @@ console.log("GM onboarding Netlify Database integration and rollback checks pass
 await import("./netlify-database-player-integration.mjs");
 await import("./netlify-database-venue-onboarding-integration.mjs");
 await import("./netlify-database-venue-calendar-integration.mjs");
+await import("./netlify-database-rate-limit-integration.mjs");
 await import("./netlify-database-matching-inputs-integration.mjs");
 await import("./netlify-database-game-on-integration.mjs");
 await import("./netlify-database-game-on-concurrency-integration.mjs");

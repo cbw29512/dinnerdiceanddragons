@@ -23,9 +23,17 @@ function policy(scope) {
   return value;
 }
 
+function canonicalTimestamp(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new SupabaseRestError("Rate-limit state contains an invalid timestamp.", 500);
+  }
+  return date.toISOString();
+}
+
 function refill(row, config, nowMs) {
-  const lastMs = Date.parse(row.last_refill_at);
-  const elapsedSeconds = Number.isFinite(lastMs) ? Math.max(0, (nowMs - lastMs) / 1000) : 0;
+  const lastMs = Date.parse(canonicalTimestamp(row.last_refill_at));
+  const elapsedSeconds = Math.max(0, (nowMs - lastMs) / 1000);
   const rate = config.refillTokens / config.refillSeconds;
   return Math.min(config.capacity, Number(row.tokens) + elapsedSeconds * rate);
 }
@@ -69,7 +77,8 @@ export async function enforceRateLimit(userId, scope) {
       continue;
     }
 
-    const available = refill(row, config, nowMs);
+    const observedRefillAt = canonicalTimestamp(row.last_refill_at);
+    const available = refill({ ...row, last_refill_at: observedRefillAt }, config, nowMs);
     if (available < 1) {
       const wait = retryAfterSeconds(available, config);
       throw new SupabaseRestError(
@@ -80,11 +89,12 @@ export async function enforceRateLimit(userId, scope) {
     }
 
     // Optimistic compare-and-swap prevents two concurrent requests from consuming
-    // the same token. PostgREST returns [] when another request won the race.
+    // the same token. Database clients may hydrate TIMESTAMPTZ as Date objects, so
+    // canonicalize the observed value before using the string-filter adapter.
     const updated = await updateRows("api_rate_limit_buckets", {
       user_id: eq(userId),
       scope: eq(scope),
-      last_refill_at: eq(row.last_refill_at)
+      last_refill_at: eq(observedRefillAt)
     }, {
       tokens: available - 1,
       last_refill_at: now,
