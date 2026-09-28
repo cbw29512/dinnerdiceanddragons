@@ -1,0 +1,42 @@
+/* Dinner, Dice & Dragons design pass: header support pill, compact mobile header,
+   homepage quick start, one support card, and the hidden (config-driven) offer slot. */
+.ddd-header-actions{display:flex;align-items:center;gap:.5rem;flex:0 0 auto}
+.site-header nav{align-items:center}
+header a.ddd-bmc{display:inline-flex;align-items:center;gap:.35rem;min-height:44px;box-sizing:border-box;padding:.45rem .85rem;border:1px solid rgba(217,170,69,.5);border-radius:999px;background:transparent;color:var(--gold,var(--accent,#d9aa45))!important;font-weight:800!important;text-decoration:none!important;white-space:nowrap}
+header a.ddd-bmc:hover,header a.ddd-bmc:focus-visible{background:rgba(217,170,69,.1)}
+header a.ddd-bmc:focus-visible{outline:3px solid var(--gold,var(--accent,#d9aa45));outline-offset:3px}
+header .header-link{text-decoration:none;color:var(--muted,#b8b7b2)}
+header .header-link:hover,header .header-link:focus-visible{color:var(--text,#f5f2ea)}
+
+.ddd-quick-start{display:flex;flex-wrap:wrap;gap:.6rem;margin:1.2rem 0 .7rem}
+.ddd-quick-start .button{min-height:48px;gap:.4rem}
+.ddd-quick-note{margin:0;font-size:.92rem}
+
+.ddd-support-card,.ddd-offer-slot:not([hidden]){display:flex;align-items:center;justify-content:space-between;gap:1.5rem;box-sizing:border-box;margin:1rem 0 3rem;padding:1.4rem 1.6rem;border-radius:16px;background:var(--panel,#171b23)}
+.ddd-support-card{border:1px dashed rgba(217,170,69,.45)}
+.ddd-support-card h2,.ddd-offer-slot h2{margin:.25rem 0 .4rem;font-size:1.45rem;line-height:1.2}
+.ddd-support-card p.muted,.ddd-offer-slot p{margin:0;max-width:62ch}
+.ddd-support-button{flex:0 0 auto;border-color:rgba(217,170,69,.6)!important;color:var(--accent,#d9aa45)!important;background:transparent!important}
+.ddd-support-button:hover{background:rgba(217,170,69,.1)!important}
+.ddd-offer-slot[hidden]{display:none!important}
+.ddd-offer-slot:not([hidden]){border:1px solid var(--line,#343c4a);margin:0 0 1rem}
+.ddd-offer-slot .button{flex:0 0 auto}
+.ddd-offer-disclosure{margin-top:.6rem!important;font-size:.85rem;color:var(--muted,#b8b7b2)}
+
+@media(max-width:700px){
+  header .nav,.site-header .nav-wrap{position:relative;min-height:0;padding:.55rem 0 .65rem;gap:.5rem}
+  header .brand{min-height:44px;padding-right:9.75rem;font-size:.95rem;line-height:1.2}
+  header .shell:not(:has(.ddd-account-trigger)) .brand{padding-right:3.5rem}
+  .ddd-header-actions{position:absolute;top:.55rem;right:0;gap:.4rem}
+  .ddd-bmc-label{display:none}
+  header a.ddd-bmc{padding:.45rem .75rem}
+  .ddd-header-actions .ddd-account-trigger{width:auto!important;grid-column:auto!important;max-width:8.5rem;padding:.5rem .95rem;overflow:hidden;text-overflow:ellipsis}
+  header nav:has(.ddd-header-role-links)>a{display:none}
+  header .nav-right{display:flex!important;flex-wrap:wrap;gap:.4rem}
+  .site-header nav{gap:.35rem .9rem}
+  .ddd-quick-start{display:grid;grid-template-columns:1fr 1fr}
+  .ddd-quick-start .primary{grid-column:1/-1}
+  .ddd-quick-start .button{padding:.6rem .5rem}
+  .ddd-support-card,.ddd-offer-slot:not([hidden]){flex-direction:column;align-items:stretch;padding:1.2rem}
+  .ddd-support-card .button,.ddd-offer-slot .button{width:100%}
+}
