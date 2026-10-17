@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW_DIR = ROOT / ".github" / "workflows"
+DEPENDENCY_REVIEW_WORKFLOW = WORKFLOW_DIR / "dependency-review.yml"
 DOCKERFILE = ROOT / "backend" / "Dockerfile"
 PYPROJECT = ROOT / "backend" / "pyproject.toml"
 REQUIREMENTS_LOCK = ROOT / "backend" / "requirements.lock"
@@ -39,6 +40,21 @@ def check_workflow_action_pins() -> list[str]:
                 errors.append(
                     f"{path.relative_to(ROOT)}: remote GitHub Action is not pinned to a 40-character commit SHA: {reference}"
                 )
+    return errors
+
+
+def check_dependency_review_gate() -> list[str]:
+    if not DEPENDENCY_REVIEW_WORKFLOW.is_file():
+        return [".github/workflows/dependency-review.yml: required dependency-review PR gate is missing"]
+
+    text = DEPENDENCY_REVIEW_WORKFLOW.read_text(encoding="utf-8")
+    errors: list[str] = []
+    if "pull_request:" not in text:
+        errors.append(".github/workflows/dependency-review.yml: gate must run on pull requests")
+    if "actions/dependency-review-action@" not in text:
+        errors.append(
+            ".github/workflows/dependency-review.yml: GitHub dependency-review action is missing"
+        )
     return errors
 
 
@@ -125,7 +141,12 @@ def check_python_lock() -> list[str]:
 
 def check_security_governance_files() -> list[str]:
     errors: list[str] = []
-    for relative in ("SECURITY.md", ".github/dependabot.yml", "backend/requirements.lock"):
+    for relative in (
+        "SECURITY.md",
+        ".github/dependabot.yml",
+        ".github/workflows/dependency-review.yml",
+        "backend/requirements.lock",
+    ):
         if not (ROOT / relative).is_file():
             errors.append(f"{relative}: required supply-chain/security file is missing")
     return errors
@@ -135,6 +156,7 @@ def main() -> int:
     try:
         errors = [
             *check_workflow_action_pins(),
+            *check_dependency_review_gate(),
             *check_container_inputs(),
             *check_python_build_backend(),
             *check_python_lock(),
