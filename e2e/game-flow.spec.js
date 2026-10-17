@@ -32,6 +32,7 @@ function opportunity(overrides = {}) {
       state_region: "SC"
     },
     viewer_roles: ["gm"],
+    your_responses: { gm: "pending" },
     your_player_distance_miles: null,
     your_gm_distance_miles: 4.2,
     ...overrides
@@ -40,7 +41,7 @@ function opportunity(overrides = {}) {
 
 function matcherResponse(item) {
   return {
-    boom: true,
+    boom: item.status === "forming",
     run: {
       computed_opportunities: 1,
       persisted_count: 1,
@@ -57,6 +58,12 @@ async function fulfillJson(route, body, status = 200) {
   await route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
 }
 
+async function clickContinue(form) {
+  const button = form.getByRole("button", { name: "Continue" });
+  await expect(button).toBeVisible();
+  await button.click();
+}
+
 async function installGmApi(page) {
   const item = opportunity();
   await page.route(`${API_BASE}/api/v1/**`, async (route) => {
@@ -68,6 +75,7 @@ async function installGmApi(page) {
       await fulfillJson(route, { display_name: "Browser GM", roles: ["gm"] });
       return;
     }
+    if (path === "/api/v1/notifications") return fulfillJson(route, []);
     if (path === "/api/v1/onboarding/gm" && request.method() === "PUT") {
       await fulfillJson(route, { role: "gm", display_name: "Browser GM" });
       return;
@@ -92,6 +100,18 @@ async function installGmApi(page) {
       await fulfillJson(route, { ...item, your_player_fit_flags: [], your_player_availability_overlap: null, explanations: [] });
       return;
     }
+    if (path === `/api/v1/matching/opportunities/${MATCH_ID}/respond` && request.method() === "POST") {
+      const payload = request.postDataJSON();
+      item.status = "forming";
+      item.your_responses = { gm: payload.decision };
+      await fulfillJson(route, {
+        role: "gm",
+        decision: payload.decision,
+        table_status: "forming",
+        progress: { gmAccepted: true, venueAccepted: true, acceptedPlayers: 3, formed: true }
+      });
+      return;
+    }
     if (path === `/api/v1/matching/opportunities/${MATCH_ID}/form` && request.method() === "POST") {
       await fulfillJson(route, {
         event_id: EVENT_ID,
@@ -108,25 +128,36 @@ async function installGmApi(page) {
   });
 }
 
-test("GM signup enters production matching and forms the real Event", async ({ page }) => {
+test("GM activates matching, accepts BOOM, and creates the real Event", async ({ page }) => {
   await installGmApi(page);
   await installAuthenticatedSession(page, { email: "gm-browser@example.test" });
   await page.goto("/join.html#gm");
 
   const form = page.locator("#gm-form");
+  await expect(form.locator(".ddd-step-progress")).toContainText("Step 1 of 4");
+  await form.locator('[name="postal_code"]').fill("29501");
+  await clickContinue(form);
+
   await form.locator('[name="display_name"]').fill("Browser GM");
   await expect(form.locator('[name="email"]')).toHaveValue("gm-browser@example.test");
   await expect(form.locator('[name="email"]')).toHaveAttribute("readonly", "");
-  await form.locator('[name="postal_code"]').fill("29501");
+  await clickContinue(form);
+
+  await clickContinue(form);
+
   await form.locator('[name="style"]').fill("Friendly roleplay with tactical combat.");
   await form.locator('[name="expectations"]').fill("Respectful table, no PvP, use safety tools.");
   await form.locator('.check-label input[type="checkbox"]').check();
-  await form.getByRole("button", { name: "Find Players + Venue" }).click();
+  await form.getByRole("button", { name: "Activate DM Matching" }).click();
 
   await expect(form.locator(".form-status")).toContainText("Saved and matched");
-  const build = page.getByRole("link", { name: "Build This Table" });
-  await expect(build).toBeVisible();
-  await build.click();
+  const accept = page.getByRole("button", { name: "Accept Match" }).first();
+  await expect(accept).toBeVisible();
+  await accept.click();
+
+  const finish = page.getByRole("link", { name: /Table Formed.*Finish Event Setup/i });
+  await expect(finish).toBeVisible();
+  await finish.click();
   await expect(page).toHaveURL(new RegExp(`create-game\\.html\\?table_match_id=${MATCH_ID}$`));
 
   const eventForm = page.locator("#game-form");
@@ -145,12 +176,13 @@ test("GM signup enters production matching and forms the real Event", async ({ p
   await expect(page.locator("#game-hub-link")).toHaveAttribute("href", `game-hub.html?event=${EVENT_ID}`);
 });
 
-test("matched Player can request a real Event seat from signup results", async ({ page }) => {
+test("matched Player walks onboarding and requests a real Event seat", async ({ page }) => {
   const converted = opportunity({
     status: "converted",
     event_id: EVENT_ID,
     event_status: "venue_requested",
     viewer_roles: ["player"],
+    your_responses: { player: "accepted" },
     your_player_distance_miles: 3.1,
     your_gm_distance_miles: null
   });
@@ -159,6 +191,7 @@ test("matched Player can request a real Event seat from signup results", async (
     const request = route.request();
     const path = new URL(request.url()).pathname;
     if (path === "/api/v1/me") return fulfillJson(route, { display_name: "Browser Player", roles: ["player"] });
+    if (path === "/api/v1/notifications") return fulfillJson(route, []);
     if (path === "/api/v1/onboarding/player" && request.method() === "PUT") return fulfillJson(route, { role: "player" });
     if (path === "/api/v1/matching/player-demands" && request.method() === "GET") return fulfillJson(route, []);
     if (path === "/api/v1/matching/player-demands" && request.method() === "POST") return fulfillJson(route, { id: "55555555-5555-4555-8555-555555555555", status: "active", ...request.postDataJSON() });
@@ -182,12 +215,19 @@ test("matched Player can request a real Event seat from signup results", async (
 
   await page.goto("/join.html#player");
   const form = page.locator("#player-form");
+  await expect(form.locator(".ddd-step-progress")).toContainText("Step 1 of 4");
   await form.locator('[name="display_name"]').fill("Browser Player");
   await expect(form.locator('[name="email"]')).toHaveValue("player-browser@example.test");
   await expect(form.locator('[name="email"]')).toHaveAttribute("readonly", "");
+  await clickContinue(form);
+
+  await clickContinue(form);
+
   await form.locator('[name="postal_code"]').fill("29501");
+  await clickContinue(form);
+
   await form.locator('.check-label input[type="checkbox"]').check();
-  await form.getByRole("button", { name: "Find My Table" }).click();
+  await form.getByRole("button", { name: "Activate Matching" }).click();
 
   const seatButton = page.getByRole("button", { name: "Request My Seat" });
   await expect(seatButton).toBeVisible();
@@ -197,6 +237,8 @@ test("matched Player can request a real Event seat from signup results", async (
 
 test("production match values render as inert text on Event creation", async ({ page }) => {
   const malicious = opportunity({
+    status: "forming",
+    your_responses: { gm: "accepted" },
     system: {
       slug: "dnd-5e-2014",
       name: '<img id="system-xss" src=x onerror="window.__dddStoredXss=1">',
@@ -214,6 +256,7 @@ test("production match values render as inert text on Event creation", async ({ 
     const request = route.request();
     const path = new URL(request.url()).pathname;
     if (path === "/api/v1/me") return fulfillJson(route, { display_name: "Browser GM", roles: ["gm"] });
+    if (path === "/api/v1/notifications") return fulfillJson(route, []);
     if (path === `/api/v1/matching/opportunities/${MATCH_ID}`) {
       return fulfillJson(route, { ...malicious, your_player_fit_flags: [], your_player_availability_overlap: null, explanations: [] });
     }

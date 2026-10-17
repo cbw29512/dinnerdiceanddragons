@@ -14,6 +14,12 @@ const REQUIRED_FILES = [
   "index.html",
   "join.html",
   "venues.html",
+  "notifications.html",
+  "opportunity.html",
+  "game-hub.html",
+  "availability-calendar-init.mjs",
+  "calendar-state.mjs",
+  "calendar-ui.mjs",
   "production-config.js",
   "production-api-client.js",
   "production-auth.js",
@@ -46,10 +52,10 @@ const EXCLUDED_FILES = new Set([
   "location-matching-notes.txt"
 ]);
 const PUBLIC_EXTENSIONS = new Set([
-  ".html", ".css", ".js", ".json", ".xml", ".svg", ".png", ".jpg", ".jpeg",
+  ".html", ".css", ".js", ".mjs", ".json", ".xml", ".svg", ".png", ".jpg", ".jpeg",
   ".webp", ".gif", ".avif", ".ico", ".woff", ".woff2", ".webmanifest"
 ]);
-const TEXT_EXTENSIONS = new Set([".html", ".css", ".js", ".json", ".xml", ".svg", ".webmanifest"]);
+const TEXT_EXTENSIONS = new Set([".html", ".css", ".js", ".mjs", ".json", ".xml", ".svg", ".webmanifest"]);
 
 function normalizedDeployUrl() {
   const raw = String(process.env.URL || "").trim();
@@ -114,7 +120,17 @@ async function assertProductionArtifact(deployUrl) {
     throw new Error("Netlify production auth client is not using the dedicated auth route.");
   }
 
-  const forbiddenNames = ["backend", ".github", "e2e", "games", "tests", "supabase", "apps-script", "dashboard-prototype.html"];
+  const apiClient = await readFile(path.join(OUT, "production-api-client.js"), "utf8");
+  if (apiClient.includes("getHubMessages") || apiClient.includes("postHubMessage") || apiClient.includes('/messages"')) {
+    throw new Error("Direct Game Hub messaging client code remains in the production artifact.");
+  }
+
+  const gameHub = await readFile(path.join(OUT, "game-hub.html"), "utf8");
+  if (gameHub.includes("game-hub-messages.js") || gameHub.includes("message-channel-grid") || gameHub.includes("venue-question-form")) {
+    throw new Error("Direct Game Hub communication controls remain in the production artifact.");
+  }
+
+  const forbiddenNames = ["backend", ".github", "e2e", "games", "tests", "supabase", "apps-script", "dashboard-prototype.html", "game-hub-messages.js"];
   const topLevel = new Set(await readdir(OUT));
   for (const name of forbiddenNames) {
     if (topLevel.has(name)) throw new Error(`Forbidden deployment content found in dist: ${name}`);

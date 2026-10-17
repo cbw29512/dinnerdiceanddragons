@@ -16,30 +16,27 @@
     rt.setStatus(hubs.length ? "Choose a Game Hub." : "No live Game Hubs found.");
   }
 
+  function chooseInitialRole(roles) {
+    const preferred = rt.requestedRole();
+    if (preferred && roles.includes(preferred)) return preferred;
+    return roles[0] || "";
+  }
+
   async function loadHub() {
     rt.setVisible("hub-loading", true);
     rt.setVisible("hub-error", false);
     rt.setVisible("hub-index", false);
     rt.setVisible("hub-content", false);
-    rt.setStatus("Loading live Event and communication state…");
-    const [hub, page] = await Promise.all([
-      window.DDDProductionAPI.getGameHub(rt.state.eventId),
-      window.DDDProductionAPI.getHubMessages(rt.state.eventId, { limit: 50 })
-    ]);
+    rt.setStatus("Loading live Event logistics…");
+    const hub = await window.DDDProductionAPI.getGameHub(rt.state.eventId);
     rt.state.hub = hub;
-    rt.state.messages = page.items || [];
-    rt.state.nextCursor = page.next_cursor || "";
     rt.state.role = chooseInitialRole(hub.capabilities.viewer_roles || []);
     window.DDDGameHubRender.renderHub();
+    window.DDDGameHubAnnouncements?.bind?.();
+    await window.DDDGameHubAnnouncements?.load?.();
     rt.setVisible("hub-loading", false);
     rt.setVisible("hub-content", true);
     rt.setStatus("Live Game Hub loaded.", "success");
-  }
-
-  function chooseInitialRole(roles) {
-    const preferred = rt.requestedRole();
-    if (preferred && roles.includes(preferred)) return preferred;
-    return roles[0] || "";
   }
 
   async function reloadHubState() {
@@ -48,11 +45,13 @@
       rt.state.role = chooseInitialRole(rt.state.hub.capabilities.viewer_roles);
     }
     window.DDDGameHubRender.renderHub();
+    window.DDDGameHubAnnouncements?.bind?.();
+    await window.DDDGameHubAnnouncements?.load?.();
   }
 
   async function mutateRegistration(registrationId, action) {
     try {
-      rt.setStatus(`Updating Player registration…`);
+      rt.setStatus("Updating Player registration…");
       await window.DDDProductionAPI.decideRegistration(rt.state.eventId, registrationId, action);
       await reloadHubState();
       rt.setStatus(`Player registration ${rt.humanize(action)} action completed.`, "success");
@@ -77,17 +76,10 @@
 
   async function mutateBooking(action) {
     try {
+      if (!["approve", "decline", "cancel"].includes(action)) throw new Error("Unsupported Venue booking action.");
       const booking = rt.state.hub.event.booking;
-      const note = rt.byId("venue-booking-message");
-      const message = String(note?.value || "").trim();
-      if (action === "question" && !message) {
-        rt.setStatus("Type the Venue question before sending it to the DM.", "error");
-        note?.focus();
-        return;
-      }
       rt.setStatus("Updating Venue booking…");
-      await window.DDDProductionAPI.decideVenueBooking(booking.id, action, message || null);
-      if (note) note.value = "";
+      await window.DDDProductionAPI.decideVenueBooking(booking.id, action);
       await reloadHubState();
       rt.setStatus(`Venue booking ${rt.humanize(action)} action completed.`, "success");
     } catch (error) {

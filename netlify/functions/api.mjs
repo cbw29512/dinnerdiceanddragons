@@ -1,4 +1,5 @@
 import { confirmEmail, getUser, login, logout, signup, verifyRequestOrigin } from "@netlify/identity";
+import { listAnnouncements, postAnnouncement } from "./_lib/announcements.mjs";
 import { currentUser, publicCurrentUser, userRoles } from "./_lib/auth.mjs";
 import { databaseHealth } from "./_lib/database.mjs";
 import { json, methodNotAllowed, noContent, notFound, pathParts, readJson, route } from "./_lib/http.mjs";
@@ -19,9 +20,7 @@ import {
   formTableMatch,
   getEvent,
   getGameHub,
-  getHubMessages,
   listGameHubs,
-  postHubMessage,
   requestRegistration
 } from "./_lib/lifecycle.mjs";
 import {
@@ -31,6 +30,11 @@ import {
   saveGMOnboarding,
   savePlayerOnboarding
 } from "./_lib/onboarding.mjs";
+import {
+  handleNotificationPreferences,
+  handleNotifications,
+  handleOpportunityResponse
+} from "./_lib/privacy-route-handlers.mjs";
 import { enforceRateLimit, RATE_LIMIT_SCOPES } from "./_lib/rate-limit.mjs";
 import { SupabaseRestError } from "./_lib/supabase-rest.mjs";
 import { verifyVenueClaim } from "./_lib/venue-verification.mjs";
@@ -61,37 +65,28 @@ function credentials(payload) {
 
 async function auth(request, parts) {
   const action = parts[1];
-
   if (action === "session" && parts.length === 2) {
     if (request.method !== "GET") return methodNotAllowed(["GET"]);
     const user = await getUser();
     return json(user ? { authenticated: true, id: user.id, email: user.email } : { authenticated: false });
   }
-
   if (request.method !== "POST") return methodNotAllowed(["POST"]);
   try {
     verifyRequestOrigin(request);
-
     if (action === "signup" && parts.length === 2) {
       const { email, password } = credentials(await readJson(request));
       const user = await signup(email, password, {});
-      return json({
-        status: "confirmation_required",
-        email: user?.email || email
-      }, 201);
+      return json({ status: "confirmation_required", email: user?.email || email }, 201);
     }
-
     if (action === "login" && parts.length === 2) {
       const { email, password } = credentials(await readJson(request));
       const user = await login(email, password);
       return json({ authenticated: true, id: user.id, email: user.email });
     }
-
     if (action === "logout" && parts.length === 2) {
       await logout();
       return noContent();
     }
-
     if (action === "confirm" && parts.length === 2) {
       const payload = await readJson(request);
       const token = String(payload?.token || "").trim();
@@ -103,7 +98,6 @@ async function auth(request, parts) {
     if (error instanceof SupabaseRestError) throw error;
     throw authFailure(error, action === "login" ? "Email or password is incorrect." : "Authentication request could not be completed.");
   }
-
   return notFound();
 }
 
@@ -177,6 +171,10 @@ async function matching(request, parts) {
     if (request.method !== "GET") return methodNotAllowed(["GET"]);
     return json(await listOpportunities(user));
   }
+  if (parts[1] === "opportunities" && parts[2] && parts[3] === "respond" && parts.length === 4) {
+    await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.TABLE_FORMATION);
+    return handleOpportunityResponse(user, request, parts[2]);
+  }
   if (parts[1] === "opportunities" && parts[2] && parts.length === 3) {
     if (request.method !== "GET") return methodNotAllowed(["GET"]);
     return json(await getOpportunity(user, parts[2]));
@@ -201,17 +199,11 @@ async function events(request, parts) {
     if (request.method !== "GET") return methodNotAllowed(["GET"]);
     return json(await getGameHub(user, eventId));
   }
-  if (parts[2] === "messages" && parts.length === 3) {
-    if (request.method === "GET") {
-      const url = new URL(request.url);
-      return json(await getHubMessages(user, eventId, {
-        limit: url.searchParams.get("limit") || 50,
-        cursor: url.searchParams.get("cursor") || ""
-      }));
-    }
+  if (parts[2] === "announcements" && parts.length === 3) {
+    if (request.method === "GET") return json(await listAnnouncements(user, eventId));
     if (request.method === "POST") {
       await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.HUB_MESSAGE);
-      return json(await postHubMessage(user, eventId, await readJson(request)), 201);
+      return json(await postAnnouncement(user, eventId, await readJson(request)), 201);
     }
     return methodNotAllowed(["GET", "POST"]);
   }
@@ -243,16 +235,14 @@ async function booking(request, parts) {
   const { user } = await activeUser(request);
   await enforceRateLimit(user.id, RATE_LIMIT_SCOPES.VENUE_BOOKING);
   const payload = await readJson(request);
-  return json(await decideVenueBooking(user, parts[1], payload.action, payload.message));
+  if (!["approve", "decline", "cancel"].includes(payload.action)) {
+    throw new SupabaseRestError("Unsupported Venue booking action.", 422);
+  }
+  return json(await decideVenueBooking(user, parts[1], payload.action, null));
 }
 
 async function admin(request, parts) {
-  if (
-    parts.length !== 6 ||
-    parts[1] !== "venues" ||
-    parts[3] !== "manager-claims" ||
-    parts[5] !== "verify"
-  ) return notFound();
+  if (parts.length !== 6 || parts[1] !== "venues" || parts[3] !== "manager-claims" || parts[5] !== "verify") return notFound();
   if (request.method !== "POST") return methodNotAllowed(["POST"]);
   const { user } = await activeUser(request);
   await verifyVenueClaim(user, parts[2], parts[4]);
@@ -276,6 +266,14 @@ export default async (request) => route(async () => {
   if (parts[0] === "me" && parts.length === 1) return identity(request);
   if (parts[0] === "onboarding") return onboarding(request, parts);
   if (parts[0] === "matching") return matching(request, parts);
+  if (parts[0] === "notifications") {
+    const { user } = await activeUser(request);
+    return handleNotifications(user, request, parts);
+  }
+  if (parts[0] === "notification-preferences" && parts.length === 1) {
+    const { user } = await activeUser(request);
+    return handleNotificationPreferences(user, request);
+  }
   if (parts[0] === "game-hubs" && parts.length === 1) {
     if (request.method !== "GET") return methodNotAllowed(["GET"]);
     const { user } = await activeUser(request);
@@ -287,6 +285,4 @@ export default async (request) => route(async () => {
   return notFound();
 });
 
-export const config = {
-  path: "/api/*"
-};
+export const config = { path: "/api/*" };

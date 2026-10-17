@@ -6,9 +6,10 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.zippopotam.us; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Bring D&amp;D Groups to Your Venue | Dinner, Dice &amp; Dragons</title>
-  <meta name="description" content="Restaurants, breweries, cafes, game stores, and public venues can turn open tables into organized recurring D&D game nights with clear schedules, headcounts, and one DM point of contact.">
+  <meta name="description" content="Restaurants, breweries, cafes, game stores, and public venues can turn open tables into organized recurring D&D game nights with clear schedules and headcounts.">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="global-auth-ui.css">
+  <link rel="stylesheet" href="availability-calendar.css">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to main content</a>
@@ -45,8 +46,8 @@
           <div><strong>Clear schedule</strong><span>when the group arrives and leaves</span></div><b>+</b>
           <div><strong>Expected headcount</strong><span>how many guests are coming</span></div><b>+</b>
           <div><strong>Your policies up front</strong><span>purchase · age · space · house rules</span></div><b>+</b>
-          <div><strong>One DM contact</strong><span>one person coordinates the group</span></div><b>=</b>
-          <div class="match-result"><strong>An organized game night</strong><span>without asking staff to run D&amp;D</span></div>
+          <div><strong>DDD-coordinated confirmations</strong><span>structured approvals without exposing private guest contact information</span></div><b>=</b>
+          <div class="match-result"><strong>An organized game night</strong><span>without asking staff to run D&amp;D or contact strangers</span></div>
         </div>
       </aside>
     </div>
@@ -67,7 +68,7 @@
     <div class="shell">
       <div class="section-heading"><p class="eyebrow">YOU DO NOT HAVE TO WAIT FOR A GROUP TO ASK</p><h2>Your open table can help start the game night.</h2><p>Players, DMs, and venues can each create the first signal that reveals an opportunity.</p></div>
       <div class="steps">
-        <article><span>🎲</span><h3>A Player wants a game</h3><p>Nearby DMs can see that people are interested in a particular game and schedule.</p></article>
+        <article><span>🎲</span><h3>A Player wants a game</h3><p>DDD watches that Player's game, schedule, and travel preferences for a compatible table.</p></article>
         <article><span>🧙</span><h3>A DM wants to run</h3><p>Compatible Players and venue openings can be matched to the DM.</p></article>
         <article><span>🍽️</span><h3>You have a table to fill</h3><p>Compatible DMs and Player interest can be matched to the hours you want used.</p></article>
       </div>
@@ -77,8 +78,8 @@
   <section class="section" id="signup">
     <div class="shell">
       <div class="template-intro">
-        <div><p class="eyebrow">POST AN OPEN TABLE</p><h2>When would you like a D&amp;D group in your venue?</h2><p>Start with one weekly table window. Once the venue and manager are verified, that opening can enter live matching.</p></div>
-        <div class="template-summary"><strong>Example:</strong><span>Tuesday · 6–10 PM · 1 table · up to 6 guests · food/drink purchase required</span></div>
+        <div><p class="eyebrow">POST OPEN TABLES</p><h2>When would you like D&amp;D groups in your venue?</h2><p>Mark every recurring window you want available. Once the venue and manager are verified, those openings can enter live matching.</p></div>
+        <div class="template-summary"><strong>Example:</strong><span>Tuesday · 6–10 PM + Saturday · 1–6 PM · 1 table · up to 6 guests</span></div>
       </div>
       <form class="panel form-grid prototype-form" id="venue-form" data-profile-type="Venue" novalidate>
         <h3 class="form-section-title">1. Your business</h3>
@@ -90,23 +91,19 @@
         <label>State<input name="state" autocomplete="address-level1" maxlength="2" placeholder="SC" required></label>
         <label>ZIP code<input name="postal_code" autocomplete="postal-code" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="29501" required></label>
 
-        <h3 class="form-section-title">2. When do you want a group?</h3>
-        <label>Day<select name="window_day" required><option value="">Choose day</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option></select></label>
-        <label>Available from<input type="time" name="window_start" value="18:00" required></label>
-        <label>Must end by<input type="time" name="window_end" value="22:00" required></label>
-        <label>How many tables?<select name="table_count"><option selected>1</option><option>2</option><option>3</option><option>4</option></select></label>
+        <h3 class="form-section-title">2. When do you want groups?</h3>
+        <div class="availability-builder"><p class="microcopy">Drag across every time window when your venue can host a table. Tap a saved block to edit recurrence.</p><div class="availability-list" aria-live="polite"></div><button class="button secondary add-availability" type="button">+ Add Another Time Window</button></div>
+        <label>How many tables are available during these windows?<select name="table_count"><option selected>1</option><option>2</option><option>3</option><option>4</option></select></label>
         <label>Maximum guests per table<select name="seats_per_table"><option>4</option><option selected>6</option><option>8</option></select></label>
-        <label>Frequency<select name="recurrence" required><option selected>Weekly</option></select></label>
-        <p class="microcopy">Weekly openings are enabled for the first production matching flow. More recurrence patterns can be added after the live three-way flow is proven.</p>
 
-        <h3 class="form-section-title">3. What should the DM know?</h3>
+        <h3 class="form-section-title">3. What should DDD know about the venue?</h3>
         <label>Food / drink purchase policy<textarea name="purchase_policy" rows="3" placeholder="Example: One food or drink purchase per guest" required></textarea></label>
         <label>Age or alcohol notes<textarea name="age_policy" rows="3" placeholder="All ages until 9 PM; alcohol served"></textarea></label>
         <label>Accessibility, parking, noise, or seating notes<textarea name="accessibility" rows="3" placeholder="Accessible entrance, parking, quieter back room, fixed booth seating..."></textarea></label>
-        <label class="check-label"><input type="checkbox" name="approval_required" checked><span>I want to approve each DM booking request before the table is confirmed.</span></label>
+        <label class="check-label"><input type="checkbox" name="approval_required" checked><span>I want to approve each final Event booking before the table is confirmed.</span></label>
         <label class="check-label"><input type="checkbox" required><span>I confirm this is a public/community venue and agree to the <a href="conduct.html">Code of Conduct</a>.</span></label>
-        <button class="button primary" type="submit">Save My Open Table</button>
-        <p class="microcopy">Venue details save to your DDD account. New venues are verified before their table windows become active in matching.</p>
+        <button class="button primary" type="submit">Save My Open Tables</button>
+        <p class="microcopy">Venue details save to your DDD account. New venues are verified before their table windows become active in matching. DDD handles match alerts and structured confirmations without giving Players your private manager contact details.</p>
         <p class="form-status" role="status" aria-live="polite"></p>
       </form>
       <div class="next-step"><strong>When a game is confirmed:</strong><a class="button secondary" href="game-hub.html?role=venue_manager">See the Venue Game Hub</a></div>
@@ -121,7 +118,10 @@
 <script src="production-auth.js"></script>
 <script src="global-auth-ui.js"></script>
 <script src="production-onboarding-adapters.js"></script>
+<script src="venue-window-payloads.js"></script>
 <script src="production-onboarding.js"></script>
+<script src="availability.js"></script>
+<script type="module" src="availability-calendar-init.mjs"></script>
 <script src="forms.js"></script>
 </body>
 </html>

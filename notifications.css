@@ -1,0 +1,9 @@
+.ddd-notification-link { display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:0 10px; border:1px solid rgba(255,255,255,.18); border-radius:10px; text-decoration:none; white-space:nowrap; }
+.notification-list { display:grid; gap:12px; }
+.notification-card { display:grid; gap:10px; }
+.notification-card.is-read { opacity:.72; }
+.notification-meta { display:flex; flex-wrap:wrap; gap:8px 14px; color:var(--muted,#a9bdd5); font-size:.9rem; }
+.notification-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.notification-preferences { display:grid; gap:12px; margin-top:20px; }
+.notification-preferences .check-label { margin:0; }
+.notification-empty { text-align:center; padding:24px; }

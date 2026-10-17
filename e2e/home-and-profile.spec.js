@@ -41,27 +41,29 @@ test("Join page keeps account access in the header instead of a buried account s
   await expect(page.locator("#player").getByRole("heading", { name: /Find a D&D table that fits/i })).toBeVisible();
 });
 
-test("unsigned Player can edit preferences and keep a local draft until signing in", async ({ page }) => {
+test("unsigned Player can use the calendar and keep a local draft until signing in", async ({ page }) => {
   await page.goto("/join.html#player");
   const form = page.locator("#player-form");
+
+  await expect(form.locator(".ddd-step-progress")).toContainText("Step 1 of 4");
+  await form.locator('[name="display_name"]').fill("Browser Test Player");
+  await form.locator('[name="email"]').fill("player@example.com");
+  await form.getByRole("button", { name: "Continue" }).click();
 
   await expect(form.locator(".experience-entry")).toHaveCount(1);
   await form.locator(".add-experience").click();
   await expect(form.locator(".experience-entry")).toHaveCount(2);
   await form.locator(".experience-entry").last().locator(".remove-experience").click();
   await expect(form.locator(".experience-entry")).toHaveCount(1);
+  await form.getByRole("button", { name: "Continue" }).click();
 
-  await expect(form.locator(".availability-entry")).toHaveCount(1);
-  await form.locator(".add-availability").click();
-  await expect(form.locator(".availability-entry")).toHaveCount(2);
-  await form.locator(".availability-entry").last().locator(".remove-availability").click();
-  await expect(form.locator(".availability-entry")).toHaveCount(1);
-
-  await form.locator('[name="display_name"]').fill("Browser Test Player");
-  await form.locator('[name="email"]').fill("player@example.com");
+  await expect(form.locator(".calendar-grid")).toBeVisible();
+  await expect(form.locator(".availability-chip")).toHaveCount(1);
   await form.locator('[name="postal_code"]').fill("29501");
+  await form.getByRole("button", { name: "Continue" }).click();
+
   await form.locator('.check-label input[type="checkbox"]').check();
-  await form.getByRole("button", { name: "Find My Table" }).click();
+  await form.getByRole("button", { name: "Activate Matching" }).click();
 
   await expect(form.locator(".form-status")).toContainText("Saved on this device as a draft");
   const stored = await page.evaluate(() => localStorage.getItem("ddd-preview-player"));
